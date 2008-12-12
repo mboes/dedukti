@@ -49,27 +49,30 @@ toplevel = do
 declarations =
       (do rule; declarations) --  Rules are accumulated by side-effect.
   <|> (do eof; return [])
-  <|> (do b <- binding
+  <|> (do b <- complexBinding
           dot lexer
           ds <- declarations
           return (b:ds))
 
-declaration = do
-  optional rule
+-- | A binding whose type is an applicative term
+simpleBinding = binding True
 
-binding = do
-  ident <- identifier lexer
-  reservedOp lexer ":"
-  exp <- expression
-  return (ident ::: exp)
+-- | A binding of arbitrary type.
+complexBinding = binding False
+
+binding simple = do
+  { ident <- identifier lexer;
+    reservedOp lexer ":";
+    exp <- if simple then applicative else expression;
+    return (ident ::: exp) } <?> "binding"
 
 rule = do
-  env <- brackets lexer (sepBy binding (comma lexer))
-  lhs <- applicative
-  reservedOp lexer "-->"
-  rhs <- applicative
-  dot lexer
-  addRule (env :@ lhs :--> rhs)
+  { env <- brackets lexer (sepBy complexBinding (comma lexer));
+    lhs <- applicative;
+    reservedOp lexer "-->";
+    rhs <- applicative;
+    dot lexer;
+    addRule (env :@ lhs :--> rhs) } <?> "rule"
 
 name = do
   ident <- qName <|> uName
@@ -90,24 +93,31 @@ qName = try (ident <?> "qualified identifier")
 -- Unqualified name.
 uName = identifier lexer
 
+-- | Expressions that are either a name or an application of a
+-- expression to one or more arguments.
 applicative = do
   exps <- many1 (parens lexer expression <|> baseType <|> name)
   return $ case exps of
              [exp] -> exp
              f:args -> apply f args (repeat nann)
 
-expression = (try lambda <?> "lambda expression") <|> do
-  domain <- applicative
-  option domain $ do
-               reservedOp lexer "->"
-               range <- expression
-               return ((domain .-> range) %% nann)
-
-lambda = do
-  b <- binding <?> "binding"
-  reservedOp lexer "=>"
-  exp <- expression
-  return (Lam b exp %% nann)
+-- We first try to parse as the domain of a lambda or pi. If we later
+-- find out there was no arrow after the domain, then we take the
+-- domain to be an expression, and return that.
+expression = do
+  domain <- try (parens lexer complexBinding <|> simpleBinding)
+            <|> return Hole `ap` applicative
+  case domain of
+    b@(x ::: ty) -> pi b <|> lambda b
+    b@(Hole ty)  -> pi b <|> lambda b <|> return ty
+    where pi domain = do
+                reservedOp lexer "->"
+                range <- expression
+                return (Pi domain range %% nann)
+          lambda domain = do
+                   reservedOp lexer "=>"
+                   range <- expression
+                   return (Lam domain range %% nann)
 
 baseType = choice [ reserved lexer "Type" >> return Type
                   , reserved lexer "Kind" >> return Kind ]
