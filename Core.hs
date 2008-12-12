@@ -14,8 +14,8 @@ data Expr id a = Lam (TVar id a) (Expr id a) a
                  deriving Show
 
 data TVar id a = id ::: Expr id a
-                 | Hole (Expr id a)
-                   deriving Show
+               | Hole (Expr id a)
+                 deriving Show
 
 data Rule id a = Expr id a :--> Expr id a
                  deriving Show
@@ -25,15 +25,19 @@ data TyRule id a = [TVar id a] :@ Rule id a
                    deriving Show
 infix 8 :@
 
+x .-> y = Pi (Hole x) y
+infixr .->
+
+range (Pi (Hole ty) _ _) = ty
+range (Pi (x ::: ty) _ _) = ty
+range _ = error "'range' only applicable to arrow types."
+
 -- Phantom type used to express no annotation.
 data Unannot
 nann = error "No annotation." :: Unannot
 
 instance Show Unannot where
     show _ = "*"
-
-x .-> y = Pi (Hole x) y
-infixr .->
 
 -- | Invariant: in abstract xs t annots, length annots == length xs.
 abstract :: [TVar id a] -> Expr id a -> [a] -> Expr id a
