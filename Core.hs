@@ -34,7 +34,7 @@ range _ = error "'range' only applicable to arrow types."
 
 -- Phantom type used to express no annotation.
 data Unannot
-nann = error "No annotation." :: Unannot
+nann = error "No annotation."
 
 instance Show Unannot where
     show _ = "*"
