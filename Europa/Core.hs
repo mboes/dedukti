@@ -1,4 +1,4 @@
-module Core where
+module Europa.Core where
 
 import Control.Applicative as A
 import Data.Traversable as A

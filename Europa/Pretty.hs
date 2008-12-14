@@ -1,6 +1,6 @@
-module Pretty where
+module Europa.Pretty (pretty) where
 
-import Core
+import Europa.Core
 import Text.PrettyPrint.Leijen
 
 

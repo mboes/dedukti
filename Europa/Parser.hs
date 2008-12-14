@@ -1,8 +1,8 @@
-module Parser (Pa, Parser.parse) where
+module Europa.Parser (Pa, Europa.Parser.parse) where
 
 import Text.Parsec
 import Text.Parsec.Token
-import Core
+import Europa.Core
 import Prelude hiding (pi)
 import Control.Monad (ap)
 import Control.Monad.Identity
@@ -12,7 +12,7 @@ import Control.Monad.Identity
 type Pa t = t String Unannot
 
 -- The parsing monad.
-type P a = ParsecT String [Pa TyRule] Identity a
+type P = Parsec String [Pa TyRule]
 
 parse :: SourceName -> String -> Either ParseError ([Pa TVar], [Pa TyRule])
 parse = runParser toplevel []
