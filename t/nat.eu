@@ -1,0 +1,17 @@
+nat : Type.
+
+0 : nat.
+
+S : nat -> nat.
+
+1 : nat.
+
+[] 1 --> (S 0).
+
+plus : nat -> nat -> nat.
+[x : nat] plus x 0 --> x.
+[x : nat] (plus 0) x --> x.
+[x : nat, y : nat] plus x (S y) --> S (plus x y).
+[x : nat, y : nat] (plus (S x)) y --> S (plus x y).
+
+

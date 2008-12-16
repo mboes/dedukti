@@ -1,0 +1,7 @@
+P : nat.nat -> Type.
+
+y : P (nat.S nat.0).
+
+w : P (nat.S nat.0).
+
+[] w --> (x : P (nat.plus nat.0 (nat.S nat.0)) => x) y.
