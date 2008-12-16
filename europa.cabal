@@ -1,0 +1,25 @@
+name:           europa
+version:        0.0
+author:         Mathieu Boespflug
+maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
+homepage:       http://www.lix.polytechnique.fr/~mboes/src/europa.git
+synopsis:       A type-checker for the λΠ-modulo calculus.
+description:
+    Europa is a proof checker for the λΠ-modulo calculus, a
+    dependently typed λ-calculus with the addition of typed rewrite
+    rules, capable of expressing proofs in Deduction Modulo [1].
+
+    [1] G. Dowek, Th. Hardin, C. Kirchner, Theorem proving modulo,
+    /Journal of Automated Reasoning/, 31, 2003, pp. 33-72.
+category:       Theorem provers
+license:        GPL
+license-file:   COPYING
+cabal-version:  >= 1.2.0
+build-type:     Simple
+tested-with:    GHC ==6.10
+
+executable:          europa
+main-is:             Europa.hs
+other-modules:       Europa.Core, Europa.Parser, Europa.Pretty
+build-depends:	     base >= 4, mtl >= 1.1, parsec >= 3.0.0, wl-pprint >= 1.0
+extensions:	     EmptyDataDecls, PatternGuards
