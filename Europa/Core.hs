@@ -32,6 +32,23 @@ range (Pi (Hole ty) _ _) = ty
 range (Pi (x ::: ty) _ _) = ty
 range _ = error "'range' only applicable to arrow types."
 
+isAbstraction (Lam _ _ _) = True
+isAbstraction (Pi _ _ _)  = True
+isAbstraction _           = False
+
+isApplication (App _ _ _) = True
+isApplication _           = False
+
+isVariable (Var _ _) = True
+isVariable _         = False
+
+isAtomic (Var _ _) = True
+isAtomic Type      = True
+isAtomic Kind      = True
+isAtomic _         = False
+
+isApplicative x = isAtomic x || isApplication x
+
 -- Phantom type used to express no annotation.
 data Unannot
 nann = error "No annotation."
