@@ -44,7 +44,7 @@ toplevel = do
   whiteSpace lexer
   decls <- declarations
   rules <- getState
-  return (decls, rules)
+  return (decls, reverse rules)
 
 declarations =
       (do rule; declarations) --  Rules are accumulated by side-effect.
