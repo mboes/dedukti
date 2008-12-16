@@ -70,7 +70,7 @@ rule = do
   { env <- brackets lexer (sepBy complexBinding (comma lexer));
     lhs <- applicative;
     reservedOp lexer "-->";
-    rhs <- applicative;
+    rhs <- expression;
     dot lexer;
     addRule (env :@ lhs :--> rhs) } <?> "rule"
 
