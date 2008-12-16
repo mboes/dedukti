@@ -101,12 +101,14 @@ applicative = do
 -- We first try to parse as the domain of a lambda or pi. If we later
 -- find out there was no arrow after the domain, then we take the
 -- domain to be an expression, and return that.
-expression = do
-  domain <- try (parens lexer complexBinding <|> simpleBinding)
-            <|> return Hole `ap` applicative
-  case domain of
-    b@(x ::: ty) -> pi b <|> lambda b
-    b@(Hole ty)  -> pi b <|> lambda b <|> return ty
+expression =
+    try $ do
+      { domain <- try (parens lexer complexBinding <|> simpleBinding)
+                  <|> return Hole `ap` applicative;
+        case domain of
+          b@(x ::: ty) -> pi b <|> lambda b
+          b@(Hole ty)  -> pi b <|> lambda b <|> return ty;
+      } <|> applicative
     where pi domain = do
                 reservedOp lexer "->"
                 range <- expression
