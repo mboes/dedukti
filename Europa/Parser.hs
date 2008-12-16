@@ -74,21 +74,18 @@ rule = do
     dot lexer;
     addRule (env :@ lhs :--> rhs) } <?> "rule"
 
-name = do
-  ident <- qName <|> uName
-  return $ Var ident nann
-
--- Qualified name.
-qName = try (ident <?> "qualified identifier")
-    where ident = do
-            c <- identStart lexDef
-            cs <- many (identLetter lexDef)
-            let qualifier = c:cs
-            char '.'
-            c <- identStart lexDef
-            cs <- many (identLetter lexDef)
-            let name = c:cs
-            return (qualifier ++ "." ++ name)
+-- Qualified or unqualified name.
+name = ident <?> "identifier" where
+    ident = do
+      c <- identStart lexDef
+      cs <- many (identLetter lexDef)
+      x <- (do let qualifier = c:cs
+               c <- try $ do char '.'; identStart lexDef
+               cs <- many (identLetter lexDef)
+               let name = c:cs
+               return (qualifier ++ "." ++ name)) <|> return (c:cs)
+      whiteSpace lexer
+      return (Var x nann)
 
 -- Unqualified name.
 uName = identifier lexer
