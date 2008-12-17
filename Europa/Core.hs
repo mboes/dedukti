@@ -30,6 +30,8 @@ infixr .->
 
 range (Pi (Hole ty) _ _) = ty
 range (Pi (x ::: ty) _ _) = ty
+range (Lam (Hole ty) _ _) = ty
+range (Lam (x ::: ty) _ _) = ty
 range _ = error "'range' only applicable to arrow types."
 
 isAbstraction (Lam _ _ _) = True
