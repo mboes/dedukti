@@ -112,3 +112,9 @@ annot = head . toList
 -- | Apply annotations to an annotation expecting context.
 (%%%) :: ([a] -> Expr id a) -> [a] -> Expr id a
 (%%%) = ($)
+
+-- | Turn nested applications into a list.
+unapply :: (Eq a, Eq id) => Expr id a -> [Expr id a]
+unapply = reverse . aux where
+    aux (App t1 t2 _) = t2 : aux t1
+    aux t = [t]
