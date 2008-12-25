@@ -11,14 +11,14 @@ data Expr id a = Lam (TVar id a) (Expr id a) a
                | Var id a
                | Type
                | Kind
-                 deriving Show
+                 deriving (Eq, Ord, Show)
 
 data TVar id a = id ::: Expr id a
                | Hole (Expr id a)
-                 deriving Show
+                 deriving (Eq, Ord, Show)
 
 data Rule id a = Expr id a :--> Expr id a
-                 deriving Show
+                 deriving (Eq, Ord, Show)
 infix 9 :-->
 
 data TyRule id a = [TVar id a] :@ Rule id a
