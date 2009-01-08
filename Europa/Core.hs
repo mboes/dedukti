@@ -63,10 +63,12 @@ env & (x ::: t) = Map.insert x t env
 
 -- Phantom type used to express no annotation.
 data Unannot
+
 nann = error "No annotation."
 
-instance Show Unannot where
-    show _ = "*"
+instance Eq Unannot
+instance Ord Unannot
+instance Show Unannot
 
 -- | Invariant: in abstract xs t annots, length annots == length xs.
 abstract :: [TVar id a] -> Expr id a -> [a] -> Expr id a
