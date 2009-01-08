@@ -1,11 +1,14 @@
 module Europa.Parser (Pa, Europa.Parser.parse) where
 
-import Text.Parsec
+import Text.Parsec hiding (ParseError)
 import Text.Parsec.Token
 import Europa.Core
 import Prelude hiding (pi)
 import Control.Monad (ap)
 import Control.Monad.Identity
+import qualified Control.Exception as Exception
+import qualified Data.Map as Map
+import Data.Typeable (Typeable)
 
 
 -- The AST type as returned by the Parser.
@@ -14,8 +17,18 @@ type Pa t = t String Unannot
 -- The parsing monad.
 type P = Parsec String [Pa TyRule]
 
-parse :: SourceName -> String -> Either ParseError ([Pa TVar], [Pa TyRule])
-parse = runParser toplevel []
+newtype ParseError = ParseError String
+    deriving Typeable
+
+instance Show ParseError where
+    show (ParseError e) = e
+
+instance Exception.Exception ParseError
+
+parse :: SourceName -> String -> ([Pa TVar], [Pa TyRule])
+parse name input = case runParser toplevel [] name input of
+                     Left e -> Exception.throw (ParseError (show e))
+                     Right x -> x
 
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
