@@ -63,24 +63,25 @@ primitiveVar s xs = Hs.Paren $ application $ (Hs.Var $ Hs.UnQual $ Hs.Ident s) :
 primitiveCon s [] = Hs.Con $ Hs.UnQual $ Hs.Ident s
 primitiveCon s xs = Hs.Paren $ application $ (Hs.Con $ Hs.UnQual $ Hs.Ident s) : xs
 
-primitiveAbstraction c Nothing t =
-    primitiveCon c [Hs.Paren (Hs.Lambda (!) [Hs.PWildCard] t)]
-primitiveAbstraction c (Just x) t =
-    primitiveCon c [Hs.Paren (Hs.Lambda (!) [pvar x] t)]
-
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
-primLam       = primitiveAbstraction "Lam"
 primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String ('X':c))]
+
+primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (!) [pat] t)]
 
 primApps c = foldl primApp (primCon c)
 
-primTLam       = primitiveAbstraction "TLam"
-primTPi        = primitiveAbstraction "TPi"
+typedAbstraction c pat ty t =
+    primitiveCon c [ primBox (check ty) (untyped ty)
+                   , Hs.Paren (Hs.Lambda (!) [pat] t)]
+
+primTLam       = typedAbstraction "TLam"
+primTPi        = typedAbstraction "TPi"
 primTApp t1 t2 = primitiveCon "TApp" [t1, t2]
 primTType      = primitiveCon "TType" []
 primTKind      = primitiveCon "TKind" []
-primTBox x     = primitiveCon "TBox" [var (x ++ "_ty")]
+
+primBox ty code = primitiveCon "Box" [ty, code]
 
 primtypeOf t = primitiveVar "typeOf" [t]
 
@@ -134,7 +135,7 @@ instance CodeGen Record where
 
     emit v@VtType (RS x ty _) =
         Rec x ty v [Hs.Match (!) (varName (x ++ "_ty")) []
-                           (Hs.UnGuardedRhs (typed primap ty))
+                           (Hs.UnGuardedRhs (typed ty))
                            (Hs.BDecls [])]
 
     emit v@VtSort (RS x ty _) =
@@ -146,7 +147,7 @@ clause :: String -> Em TyRule -> Hs.Match
 clause x rule@(env :@ (lhs :--> rhs)) =
     Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
 --      (Hs.UnGuardedRhs (untyped primap rhs)) (Hs.BDecls [])
-      (Hs.UnGuardedRhs (typed primTApp rhs)) (Hs.BDecls [])
+      (Hs.UnGuardedRhs (typed rhs)) (Hs.BDecls [])
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
 pattern env (Var x _) | Map.member x env = pvar x
@@ -156,8 +157,8 @@ pattern env expr = case unapply expr of
 -- | Turn an expression into object code with types erased.
 untyped :: Em Expr -> Hs.Exp
 untyped (Var x _)            = var x
-untyped (Lam (x ::: ty) t _) = primLam (Just x) (untyped t)
-untyped (Lam (Hole ty) t _)  = primLam Nothing (untyped t)
+untyped (Lam (x ::: ty) t _) = primLam (pvar x) (untyped t)
+untyped (Lam (Hole ty) t _)  = primLam Hs.PWildCard (untyped t)
 untyped (Pi b t _)           = untyped (Lam b t undefined)
 untyped (App t1 t2 _)        = primApp (untyped t1) (untyped t2)
 untyped Type                 = primCon "Type"
@@ -166,20 +167,20 @@ untyped Kind                 = primCon "Kind"
 -- | Turn a term into its Haskell representation, including all types.
 typed :: Em Expr -> Hs.Exp
 typed (Var x _)              = var x
-typed (Lam b@(x ::: ty) t _) = primTLam (Just x) (typed t)
-typed (Lam (Hole ty) t a)    = primTLam Nothing (typed t)
-typed (Pi b@(x ::: ty) t _)  = primTPi (Just x) (typed t)
-typed (Pi (Hole ty) t a)     = primTPi Nothing (typed t)
+typed (Lam b@(x ::: ty) t _) = primTLam (pvar x) ty (typed t)
+typed (Lam (Hole ty) t a)    = primTLam Hs.PWildCard ty (typed t)
+typed (Pi b@(x ::: ty) t _)  = primTPi (pvar x) ty (typed t)
+typed (Pi (Hole ty) t a)     = primTPi Hs.PWildCard ty (typed t)
 typed (App t1 t2 _)          = primTApp (typed t1) (typed t2)
 typed Type                   = primTType
 typed Kind                   = primTKind
 
 check :: Em Expr -> Hs.Exp
-check (Var x _)              = primTBox x
-check (Lam b@(x ::: ty) t _) = primTLam (Just x) (primtypeOf (check t))
-check (Lam (Hole ty) t a)    = primTLam Nothing (primtypeOf (check t))
-check (Pi b@(x ::: ty) t _)  = primTPi (Just x) (primtypeOf (check t))
-check (Pi (Hole ty) t a)     = primTPi Nothing (primtypeOf (check t))
+check (Var x _)              = var x
+check (Lam b@(x ::: ty) t _) = primTLam (pvar x) ty (primtypeOf (check t))
+check (Lam (Hole ty) t a)    = primTLam Hs.PWildCard ty (primtypeOf (check t))
+check (Pi b@(x ::: ty) t _)  = primTPi (pvar x) ty (primtypeOf (check t))
+check (Pi (Hole ty) t a)     = primTPi Hs.PWildCard ty (primtypeOf (check t))
 check (App t1 t2 _)          = primApp (check t1) (check t2)
 check Type                   = primTType
 check Kind                   = primTKind
