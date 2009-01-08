@@ -85,7 +85,7 @@ rule = do
     reservedOp lexer "-->";
     rhs <- expression;
     dot lexer;
-    addRule (env :@ lhs :--> rhs) } <?> "rule"
+    addRule (foldl (&) Map.empty env :@ lhs :--> rhs) } <?> "rule"
 
 -- Qualified or unqualified name.
 name = ident <?> "identifier" where

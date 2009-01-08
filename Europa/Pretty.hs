@@ -2,6 +2,7 @@ module Europa.Pretty (pretty) where
 
 import Europa.Core
 import Text.PrettyPrint.Leijen
+import qualified Data.Map as Map
 
 
 instance Pretty id => Pretty (Expr id a) where
@@ -26,9 +27,11 @@ instance Pretty id => Pretty (Rule id a) where
     pretty (lhs :--> rhs) = pretty lhs <+> text "-->" <+> pretty rhs
 
 instance Pretty id => Pretty (TyRule id a) where
-    pretty ([] :@ rule) = text "[]" <+> pretty rule
-    pretty (env :@ rule) =
-        encloseSep (text "[ ") (text " ]") (text ", ") (map pretty env)
-        <+> pretty rule
+    pretty (env :@ rule)
+        | Map.null env = text "[]" <+> pretty rule
+        | otherwise =
+            encloseSep (text "[ ") (text " ]") (text ", ")
+                       (map pretty (Map.elems env))
+            <+> pretty rule
 
     prettyList = vcat . map (\x -> pretty x <> dot)
