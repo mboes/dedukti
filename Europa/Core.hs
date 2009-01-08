@@ -3,6 +3,7 @@ module Europa.Core where
 import Control.Applicative as A
 import Data.Traversable as A
 import Data.Foldable as A
+import qualified Data.Map as Map
 
 
 data Expr id a = Lam (TVar id a) (Expr id a) a
@@ -21,8 +22,10 @@ data Rule id a = Expr id a :--> Expr id a
                  deriving (Eq, Ord, Show)
 infix 9 :-->
 
-data TyRule id a = [TVar id a] :@ Rule id a
-                   deriving Show
+type Env id a = Map.Map id (Expr id a)
+
+data TyRule id a = Env id a :@ Rule id a
+                 deriving (Eq, Ord, Show)
 infix 8 :@
 
 x .-> y = Pi (Hole x) y
@@ -50,6 +53,9 @@ isAtomic Kind      = True
 isAtomic _         = False
 
 isApplicative x = isAtomic x || isApplication x
+
+(&) :: Ord id => Env id a -> TVar id a -> Env id a
+env & (x ::: t) = Map.insert x t env
 
 -- Phantom type used to express no annotation.
 data Unannot
