@@ -28,6 +28,10 @@ data TyRule id a = Env id a :@ Rule id a
                  deriving (Eq, Ord, Show)
 infix 8 :@
 
+data RuleSet id a = RS { rs_name :: id
+                       , rs_type :: Expr id a
+                       , rs_rules :: [TyRule id a] }
+
 x .-> y = Pi (Hole x) y
 infixr .->
 
