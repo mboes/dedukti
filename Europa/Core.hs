@@ -91,7 +91,7 @@ apply _ _ _= error "Fewer annotations than number of applications."
 (%%%) = ($)
 
 -- | Turn nested applications into a list.
-unapply :: (Eq a, Eq id) => Expr id a -> [Expr id a]
+unapply :: Expr id a -> [Expr id a]
 unapply = reverse . aux where
     aux (App t1 t2 _) = t2 : aux t1
     aux t = [t]
