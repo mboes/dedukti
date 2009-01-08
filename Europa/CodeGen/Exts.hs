@@ -71,15 +71,12 @@ primitiveAbstraction c (Just x) t =
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
 primLam       = primitiveAbstraction "Lam"
-primCon c     = primitiveCon "TCon" [Hs.Lit (Hs.String ('X':c))]
-primType      = primCon "Type"
-primKind      = primCon "Kind"
+primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String ('X':c))]
 
 primApps c = foldl primApp (primCon c)
 
 primTLam       = primitiveAbstraction "TLam"
 primTPi        = primitiveAbstraction "TPi"
-primtap  t1 t2 = primitiveVar "tap" [t1, t2]
 primTApp t1 t2 = primitiveCon "TApp" [t1, t2]
 primTType      = primitiveCon "TType" []
 primTKind      = primitiveCon "TKind" []
@@ -149,35 +146,33 @@ clause :: String -> Em TyRule -> Hs.Match
 clause x rule@(env :@ (lhs :--> rhs)) =
     Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
 --      (Hs.UnGuardedRhs (untyped primap rhs)) (Hs.BDecls [])
-      (Hs.UnGuardedRhs (typed primtap rhs)) (Hs.BDecls [])
+      (Hs.UnGuardedRhs (typed primTApp rhs)) (Hs.BDecls [])
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
 pattern env (Var x _) | Map.member x env = pvar x
 pattern env expr = case unapply expr of
                      Var x _ : xs -> primAppsP x (map (pattern env) xs)
 
--- | Turn an expression into object code with types erased. This function is
--- parameterised by the representation of term applications, either as
--- syntactic 'App' or as the semantic 'ap'.
-untyped :: (Hs.Exp -> Hs.Exp -> Hs.Exp) -> Em Expr -> Hs.Exp
-untyped ap (Var x _)            = var x
-untyped ap (Lam (x ::: ty) t _) = primLam (Just x) (untyped ap t)
-untyped ap (Lam (Hole ty) t _)  = primLam Nothing (untyped ap t)
-untyped ap (Pi b t _)           = untyped ap (Lam b t undefined)
-untyped ap (App t1 t2 _)        = ap (untyped ap t1) (untyped ap t2)
-untyped ap Type                 = primType
-untyped ap Kind                 = primKind
+-- | Turn an expression into object code with types erased.
+untyped :: Em Expr -> Hs.Exp
+untyped (Var x _)            = var x
+untyped (Lam (x ::: ty) t _) = primLam (Just x) (untyped t)
+untyped (Lam (Hole ty) t _)  = primLam Nothing (untyped t)
+untyped (Pi b t _)           = untyped (Lam b t undefined)
+untyped (App t1 t2 _)        = primApp (untyped t1) (untyped t2)
+untyped Type                 = primCon "Type"
+untyped Kind                 = primCon "Kind"
 
 -- | Turn a term into its Haskell representation, including all types.
-typed :: (Hs.Exp -> Hs.Exp -> Hs.Exp) -> Em Expr -> Hs.Exp
-typed ap (Var x _)              = var x
-typed ap (Lam b@(x ::: ty) t _) = primTLam (Just x) (typed ap t)
-typed ap (Lam (Hole ty) t a)    = primTLam Nothing (typed ap t)
-typed ap (Pi b@(x ::: ty) t _)  = primTPi (Just x) (typed ap t)
-typed ap (Pi (Hole ty) t a)     = primTPi Nothing (typed ap t)
-typed ap (App t1 t2 _)          = ap (typed ap t1) (typed ap t2)
-typed ap Type                   = primTType
-typed ap Kind                   = primTKind
+typed :: Em Expr -> Hs.Exp
+typed (Var x _)              = var x
+typed (Lam b@(x ::: ty) t _) = primTLam (Just x) (typed t)
+typed (Lam (Hole ty) t a)    = primTLam Nothing (typed t)
+typed (Pi b@(x ::: ty) t _)  = primTPi (Just x) (typed t)
+typed (Pi (Hole ty) t a)     = primTPi Nothing (typed t)
+typed (App t1 t2 _)          = primTApp (typed t1) (typed t2)
+typed Type                   = primTType
+typed Kind                   = primTKind
 
 check :: Em Expr -> Hs.Exp
 check (Var x _)              = primTBox x
