@@ -4,12 +4,27 @@ module Europa.Runtime
     , box, typeOf
     , runChecks) where
 
-import Control.Monad hiding (ap)
 import qualified Data.ByteString.Char8 as B
+import Control.Monad hiding (ap)
+import Control.Exception
 import Text.Show.Functions
+import Data.Typeable hiding (typeOf)
 import Data.Maybe (fromJust)
 import Prelude hiding (pi)
 
+
+-- Exceptions
+
+newtype  SortError = SortError Term
+    deriving (Show, Typeable)
+
+newtype TypeError = TypeError Term
+    deriving (Show, Typeable)
+
+instance Exception SortError
+instance Exception TypeError
+
+-- Convertible and static terms.
 
 data Code = Var !Int
           | Con !B.ByteString
@@ -20,8 +35,6 @@ data Code = Var !Int
           | Kind
             deriving (Eq, Show)
 
-instance Eq (Code -> Code)
-
 data Term = TLam !Term !(Term -> Term)
           | TPi  !Term !(Term -> Term)
           | TApp !Term !Term
@@ -29,11 +42,13 @@ data Term = TLam !Term !(Term -> Term)
           | Box Code Code
             deriving Show
 
+instance Eq (Code -> Code)
+
 ap :: Code -> Code -> Code
 ap (Lam f) t = f t
 ap t1 t2 = App t1 t2
 
-obj :: Box -> Code
+obj :: Term -> Code
 obj (Box _ obj) = obj
 
 incr x = if x >= 0 then x + 1 else x - 1
@@ -51,23 +66,26 @@ convertible n Type Type = True
 convertible n Kind Kind = True
 convertible n _ _ = False
 
-box :: Term -> Code -> Code -> Term
-box ty ty_code obj_code | Just Type <- typeOf (-1) ty = Box ty_code obj_code
-                        | Just Kind <- typeOf (-1) ty = Box ty_code obj_code
-                        | otherwise = error "box exception."
+bbox, sbox :: Term -> Code -> Code -> Term
 
-typeOf :: Int -> Term -> Maybe Code
-typeOf n (Box ty _) = return ty
-typeOf n (TLam bx@(Box Type a) f) = do
-  return $ Pi a (\x -> fromJust $ typeOf n (f (Box a x)))
-typeOf n (TPi bx@(Box Type a) f) = do
-  typeOf (incr n) (f (Box a (Var n)))
-typeOf n (TApp t1 bx@(Box ty2 t2)) = do
-  Pi tya f <- typeOf n t1
-  guard (convertible (-1) tya ty2)
-  return $ f t2
-typeOf n TType = return Kind
-typeOf n t = error (show t)
+-- | A big box holds terms of sort Type or Kind
+bbox = box [Type, Kind]
+
+-- | A small box holds terms of sort Type.
+sbox = box [Type]
+
+box sorts ty ty_code obj_code
+    | typeOf (-1) ty `elem` sorts = Box ty_code obj_code
+    | otherwise = throw (SortError ty)
+
+typeOf :: Int -> Term -> Code
+typeOf n (Box ty _) = ty
+typeOf n (TLam bx@(Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
+typeOf n (TPi bx@(Box Type a) f) = typeOf (incr n) (f (Box a (Var n)))
+typeOf n (TApp t1 bx@(Box ty2 t2))
+    | Pi tya f <- typeOf n t1, convertible (-1) tya ty2 = f t2
+typeOf n TType = Kind
+typeOf n t = throw (TypeError t)
 
 -- | Check that all items in the list are of sort Type or Kind.
 runChecks :: [Maybe Code] -> IO ()
