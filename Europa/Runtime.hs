@@ -14,8 +14,8 @@ import Prelude hiding (pi)
 data Code = Var !Int
           | Con !B.ByteString
           | Lam !(Code -> Code)
-          | Pi  !Code !(Code -> Code)
-          | App !Code !Code
+          | Pi  Code !(Code -> Code)
+          | App Code Code
           | Type
           | Kind
             deriving (Eq, Show)
