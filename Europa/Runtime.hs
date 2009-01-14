@@ -88,9 +88,5 @@ typeOf n TType = Kind
 typeOf n t = throw (TypeError t)
 
 -- | Check that all items in the list are of sort Type or Kind.
-runChecks :: [Maybe Code] -> IO ()
-runChecks = undefined
--- runChecks = mapM_ check where
---     check (Just Type) = return ()
---     check (Just Kind)  = return ()
---     check _            = fail "Sort check failure."
+runChecks :: [Term] -> IO ()
+runChecks = mapM_ (\(Box _ _) -> return ())
