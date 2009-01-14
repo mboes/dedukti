@@ -1,11 +1,9 @@
-module Europa.CodeGen (Variant(..), CodeGen(..)) where
+module Europa.CodeGen (CodeGen(..)) where
 
 import Europa.Core
 import Europa.Module
 import qualified Data.ByteString as B
 
-data Variant = VtObject | VtType | VtSort
-               deriving (Show, Eq)
 
 class CodeGen o where
     type Id o
@@ -13,7 +11,7 @@ class CodeGen o where
     type Bundle o
 
     -- | Emit code corresponding to an individual rule set.
-    emit :: Variant -> RuleSet (Id o) (A o) -> o
+    emit :: RuleSet (Id o) (A o) -> o
 
     coalesce :: [o] -> Bundle o
 

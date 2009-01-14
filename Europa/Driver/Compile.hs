@@ -21,8 +21,5 @@ compile :: Module -> EuM ()
 compile mod = do
   let path = srcPathFromModule mod
   (decls, rules) <- return (parse path) `ap` liftIO (readFile path)
-  let code = foldr emits [] (Rule.ruleSets decls rules) :: [CG.Code]
+  let code = map CG.emit (Rule.ruleSets decls rules) :: [CG.Code]
   dump mod $ CG.serialize (undefined :: CG.Code) mod $ CG.coalesce code
-    where emits x xs =   CG.emit CG.VtObject x
-                       : CG.emit CG.VtType x
-                       : CG.emit CG.VtSort x : xs
