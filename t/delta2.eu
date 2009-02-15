@@ -1,3 +1,6 @@
+;; Same as delta1.eu but with d2 declared of type 'delta delta', which of
+;; course is ill-typed.
+
 delta : a : Type -> (b : Type -> b -> b) -> a -> a.
 [] delta --> a : Type => x : Type -> Type => (x (a -> a)) (x a).
 
