@@ -1,7 +1,6 @@
 module Europa.Runtime
     ( Code(..), Term(..), ap
-    , convertible
-    , box, typeOf
+    , bbox, sbox, obj
     , runChecks) where
 
 import qualified Data.ByteString.Char8 as B
@@ -11,6 +10,7 @@ import Text.Show.Functions
 import Data.Typeable hiding (typeOf)
 import Data.Maybe (fromJust)
 import Prelude hiding (pi)
+import System.IO
 
 
 -- Exceptions
@@ -40,6 +40,7 @@ data Term = TLam !Term !(Term -> Term)
           | TApp !Term !Term
           | TType
           | Box Code Code
+          | UBox Term Code
             deriving Show
 
 instance Eq (Code -> Code)
@@ -75,7 +76,7 @@ bbox = box [Type, Kind]
 sbox = box [Type]
 
 box sorts ty ty_code obj_code
-    | typeOf (-1) ty `elem` sorts = Box ty_code obj_code
+    | typeOf 1000 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw (SortError ty)
 
 typeOf :: Int -> Term -> Code
@@ -84,6 +85,9 @@ typeOf n (TLam bx@(Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
 typeOf n (TPi bx@(Box Type a) f) = typeOf (incr n) (f (Box a (Var n)))
 typeOf n (TApp t1 bx@(Box ty2 t2))
     | Pi tya f <- typeOf n t1, convertible (-1) tya ty2 = f t2
+typeOf n (TApp t1 bx@(UBox tty2 t2))
+    | Pi tya f <- typeOf n t1, ty2 <- typeOf n tty2,
+      convertible (-1) tya ty2 = f t2
 typeOf n TType = Kind
 typeOf n t = throw (TypeError t)
 

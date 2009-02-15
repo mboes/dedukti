@@ -7,21 +7,92 @@ import Europa.Module
 import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
-import qualified Data.Map as Map (member)
+import qualified Data.Map as Map
 import qualified Data.ByteString as B
 import Data.Char (ord, toUpper)
-import Data.List (intercalate)
+import Data.List (intercalate, concatMap)
 
 
-type Em a = a String Unannot
+type Em a = a (Id Record) (A Record)
 
 -- External view of record.
 type Code = Record
 
 data Record = Rec { rec_name    :: String
                   , rec_type    :: Em Expr
-                  , rec_variant :: Variant
-                  , rec_code    :: [Hs.Match] }
+                  , rec_code    :: [Hs.Decl] }
+
+instance CodeGen Record where
+    type Id Record     = String
+    type A Record      = Unannot
+    type Bundle Record = [Hs.Decl]
+
+    interface = error "Unimplemented."
+
+    coalesce records = concatMap rec_code records ++ [main]
+        where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
+                                       (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
+              checks = primitiveVar "runChecks"
+                       [Hs.List $ map (var . (++ "_box") . rec_name) records]
+
+    serialize _ (Module mod) decls =
+        packString $ prettyPrint $
+        Hs.Module (!) modname [] Nothing Nothing imports decls
+        where imports = [ Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime")
+                                        False False Nothing Nothing ]
+              modname = Hs.ModuleName $ intercalate "." $ map upcase (toList mod)
+
+    emit rs@(RS x ty rules) = Rec x ty [function rs, def_ty, def_box]
+        where def_ty  = value (x ++ "_ty") (code ty)
+              def_box = value (x ++ "_box")
+                                     (primbbox (term ty) (var (x ++ "_ty")) (var x))
+
+function :: Em RuleSet -> Hs.Decl
+function (RS x _ []) = Hs.FunBind [defaultClause x]
+function (RS x _ rs) =
+    Hs.FunBind [Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
+    where n = Rule.arity (head rs)
+          rhs = foldr primLam (application (var "__" : variables n)) (pvariables n)
+          f | n > 0     = Hs.FunBind (map (clause "__") rs ++ [defaultClause x])
+            | otherwise = Hs.FunBind (map (clause "__") rs)
+
+clause :: String -> Em TyRule -> Hs.Match
+clause x rule@(env :@ (lhs :--> rhs)) =
+    Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
+      (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
+
+defaultClause :: Id Record -> Hs.Match
+defaultClause x =
+    Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
+
+value :: Id Record -> Hs.Exp -> Hs.Decl
+value x rhs =
+    Hs.FunBind [Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
+
+
+pattern :: Em Env -> Em Expr -> Hs.Pat
+pattern env (Var x _) | Map.member x env = pvar x
+pattern env expr = case unapply expr of
+                     Var x _ : xs -> primAppsP x (map (pattern env) xs)
+
+-- | Turn an expression into object code with types erased.
+code :: Em Expr -> Hs.Exp
+code (Var x _)            = var x
+code (Lam (x ::: ty) t _) = primLam (pvar x) (code t)
+code (Lam (Hole ty) t _)  = primLam Hs.PWildCard (code t)
+code (Pi (x ::: ty) t _)  = primPi (code ty) (pvar x) (code t)
+code (Pi (Hole ty) t _)   = primPi (code ty) Hs.PWildCard (code t)
+code (App t1 t2 _)        = primap (code t1) (code t2)
+code Type                 = primType
+
+-- | Turn a term into its Haskell representation, including all types.
+term :: Em Expr -> Hs.Exp
+term (Var x _)     = var (x ++ "_box")
+term (Lam b t _)   = primTLam b (term t)
+term (Pi b t _)    = primTPi  b (term t)
+term (App t1 t2 _) = primTApp (term t1) (primUBox (term t2) (code t2))
+term Type          = primTType
+term Kind          = primTKind
 
 (!) :: Hs.SrcLoc
 (!) = Hs.SrcLoc "" 0 0
@@ -66,14 +137,24 @@ primitiveCon s xs = Hs.Paren $ application $ (Hs.Con $ Hs.UnQual $ Hs.Ident s) :
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
 primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String ('X':c))]
+primType      = primitiveCon "Type" []
+primKind      = primitiveCon "Kind" []
 
 primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (!) [pat] t)]
+primPi  dom pat range = primitiveCon "Pi" [dom, Hs.Paren (Hs.Lambda (!) [pat] range)]
 
 primApps c = foldl primApp (primCon c)
 
-typedAbstraction c pat ty t =
-    primitiveCon c [ primBox (check ty) (untyped ty)
-                   , Hs.Paren (Hs.Lambda (!) [pat] t)]
+typedAbstraction c b t =
+    let (pat, ty, ran) =
+            case b of
+              x ::: ty -> ( pvar (x ++ "_box")
+                          , ty
+                          , Hs.Let (Hs.BDecls [value x (primobj (var (x ++ "_box")))]) t )
+              Hole ty  -> (Hs.PWildCard, ty, t)
+        dom = if isVariable ty
+              then term ty else primsbox (term ty) primType (code ty)
+    in primitiveCon c [dom, Hs.Paren (Hs.Lambda (!) [pat] ran)]
 
 primTLam       = typedAbstraction "TLam"
 primTPi        = typedAbstraction "TPi"
@@ -81,7 +162,12 @@ primTApp t1 t2 = primitiveCon "TApp" [t1, t2]
 primTType      = primitiveCon "TType" []
 primTKind      = primitiveCon "TKind" []
 
-primBox ty code = primitiveCon "Box" [ty, code]
+primBox ty_code obj_code = primitiveCon "Box" [ty_code, obj_code]
+primUBox ty obj_code     = primitiveCon "UBox" [ty, obj_code]
+primbbox ty ty_code obj_code = primitiveVar "bbox" [ty, ty_code, obj_code]
+primsbox ty ty_code obj_code = primitiveVar "sbox" [ty, ty_code, obj_code]
+
+primobj t = primitiveVar "obj" [t]
 
 primtypeOf t = primitiveVar "typeOf" [t]
 
@@ -98,89 +184,3 @@ upcase (x:xs) = toUpper x : xs
 packString :: String -> B.ByteString
 packString = B.pack . map c2w where
     c2w = fromIntegral . ord
-
-instance CodeGen Record where
-    type Id Record     = String
-    type A Record      = Unannot
-    type Bundle Record = [Hs.Decl]
-
-    interface = error "Unimplemented."
-
-    coalesce records = decls ++ [main]
-        where decls = map (Hs.FunBind . rec_code) records
-              main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
-                                       (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
-              checks = primitiveVar "runChecks"
-                       [Hs.List $ map (var . (++ "_check") . rec_name) objects]
-              objects = filter ((== VtObject) . rec_variant) records
-
-    serialize _ (Module mod) decls =
-        packString $ prettyPrint $
-        Hs.Module (!) modname [] Nothing Nothing imports decls
-        where imports = [ Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime")
-                                        False False Nothing Nothing ]
-              modname = Hs.ModuleName $ intercalate "." $ map upcase (toList mod)
-
-    -- Assume all rules have same head constant and same arity.
-    emit v@VtObject (RS x ty rules)
-        | n == 0 = Rec x ty v clauses
-        | otherwise = Rec x ty v (clauses ++ [defclause])
-        where n = if null rules then 0 else Rule.arity (head rules)
-              -- default clause
-              defclause =
-                  Hs.Match (!) (varName x) (pvariables n)
-                        (Hs.UnGuardedRhs (primApps x (variables n)))
-                        (Hs.BDecls [])
-              clauses = map (clause x) rules
-
-    emit v@VtType (RS x ty _) =
-        Rec x ty v [Hs.Match (!) (varName (x ++ "_ty")) []
-                           (Hs.UnGuardedRhs (typed ty))
-                           (Hs.BDecls [])]
-
-    emit v@VtSort (RS x ty _) =
-        Rec x ty v [Hs.Match (!) (varName (x ++ "_check")) []
-                           (Hs.UnGuardedRhs (primtypeOf (check ty)))
-                           (Hs.BDecls [])]
-
-clause :: String -> Em TyRule -> Hs.Match
-clause x rule@(env :@ (lhs :--> rhs)) =
-    Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
---      (Hs.UnGuardedRhs (untyped primap rhs)) (Hs.BDecls [])
-      (Hs.UnGuardedRhs (typed rhs)) (Hs.BDecls [])
-
-pattern :: Em Env -> Em Expr -> Hs.Pat
-pattern env (Var x _) | Map.member x env = pvar x
-pattern env expr = case unapply expr of
-                     Var x _ : xs -> primAppsP x (map (pattern env) xs)
-
--- | Turn an expression into object code with types erased.
-untyped :: Em Expr -> Hs.Exp
-untyped (Var x _)            = var x
-untyped (Lam (x ::: ty) t _) = primLam (pvar x) (untyped t)
-untyped (Lam (Hole ty) t _)  = primLam Hs.PWildCard (untyped t)
-untyped (Pi b t _)           = untyped (Lam b t undefined)
-untyped (App t1 t2 _)        = primApp (untyped t1) (untyped t2)
-untyped Type                 = primCon "Type"
-untyped Kind                 = primCon "Kind"
-
--- | Turn a term into its Haskell representation, including all types.
-typed :: Em Expr -> Hs.Exp
-typed (Var x _)              = var x
-typed (Lam b@(x ::: ty) t _) = primTLam (pvar x) ty (typed t)
-typed (Lam (Hole ty) t a)    = primTLam Hs.PWildCard ty (typed t)
-typed (Pi b@(x ::: ty) t _)  = primTPi (pvar x) ty (typed t)
-typed (Pi (Hole ty) t a)     = primTPi Hs.PWildCard ty (typed t)
-typed (App t1 t2 _)          = primTApp (typed t1) (typed t2)
-typed Type                   = primTType
-typed Kind                   = primTKind
-
-check :: Em Expr -> Hs.Exp
-check (Var x _)              = var x
-check (Lam b@(x ::: ty) t _) = primTLam (pvar x) ty (primtypeOf (check t))
-check (Lam (Hole ty) t a)    = primTLam Hs.PWildCard ty (primtypeOf (check t))
-check (Pi b@(x ::: ty) t _)  = primTPi (pvar x) ty (primtypeOf (check t))
-check (Pi (Hole ty) t a)     = primTPi Hs.PWildCard ty (primtypeOf (check t))
-check (App t1 t2 _)          = primApp (check t1) (check t2)
-check Type                   = primTType
-check Kind                   = primTKind
