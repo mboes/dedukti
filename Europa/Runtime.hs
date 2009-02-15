@@ -89,4 +89,4 @@ typeOf n t = throw (TypeError t)
 
 -- | Check that all items in the list are of sort Type or Kind.
 runChecks :: [Term] -> IO ()
-runChecks = mapM_ (\(Box _ _) -> return ())
+runChecks ts = mapM_ (\(Box _ _) -> putStrLn "Check.") ts >> putStrLn "Ok."
