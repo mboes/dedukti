@@ -5,12 +5,10 @@ import Europa.Parser
 import Europa.EuM
 import Europa.Core
 import qualified Europa.CodeGen.Exts as CG
-import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Europa.Rule as Rule
-import qualified System.FilePath as FP
+import qualified Data.ByteString as B
 import System.IO
 import Control.Monad (ap)
-import qualified Data.ByteString as B
 
 
 dump :: Module -> B.ByteString -> EuM ()
