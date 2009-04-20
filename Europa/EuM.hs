@@ -4,6 +4,7 @@ module Europa.EuM (EuM, runEuM, warn, warnings
 
 import Control.Monad.Trans
 import Control.Exception
+import Control.Applicative (Applicative)
 import Text.PrettyPrint.Leijen
 
 
@@ -16,4 +17,4 @@ warnings :: EuM [Doc]
 warnings = undefined
 
 newtype EuM a = EuM { runEuM :: IO a }
-    deriving (Monad, MonadIO)
+    deriving (Monad, MonadIO, Functor, Applicative)
