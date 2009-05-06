@@ -9,37 +9,44 @@ import Europa.Module
 import Europa.Driver.Batch
 import Europa.Driver.Compile
 import Text.PrettyPrint.Leijen
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import System.Console.GetOpt
 import System.Exit
 import System.IO
 
 
-data Flag = Make
+data Flag = Make | Help
             deriving (Eq, Ord, Show)
 
 options = [ Option [] ["make"] (NoArg Make)
-                       "Build FILE and all its dependencies in one go." ]
+                       "Build FILE and all its dependencies in one go."
+          , Option ['h'] ["help"] (NoArg Help) "This usage information." ]
 
-data Usage = Help | WrongUsage
+data Usage = Long | Short
 
 printUsage format = do
   self <- parameter Config.imageName
-  let header = show $ text "Usage:"
-               <+> text self <+> text "[OPTION]..." <+> text "FILE"
+  let header = show $ text "Usage:" <+>
+               (text self <+> text "[OPTION]..." <+> text "FILE")
   case format of
-    Help -> io $ putStrLn (usageInfo header options) >> exitSuccess
-    WrongUsage -> io $ hPutStrLn stderr header >> exitFailure
+    Long -> io $ putStrLn (usageInfo header options)
+    Short -> io $ hPutStrLn stderr header
+
+bailout = printUsage Short >> io exitFailure
 
 main = do
   args <- getArgs
-  let (opts, args, errs) = getOpt Permute options args
-  when (length args /= 1 || not (null errs)) $ do
+  let (opts, files, errs) = getOpt RequireOrder options args
+  when (not (null errs)) $ do
          hPutDoc stderr (vsep (map text errs))
          exitFailure
-  let mod = moduleFromPath (head args)
   runEuM Config.defaultConfig $
          case opts of
-           _ | Make `elem` opts -> make [mod]
-             | otherwise -> compile mod
+           _ | Help `elem` opts -> printUsage Long
+           _ | Make `elem` opts -> do
+                     unless (length files == 1) bailout
+                     make [moduleFromPath (head files)]
+             | otherwise -> do
+                     unless (length files == 1) bailout
+                     compile (moduleFromPath (head files))
 
