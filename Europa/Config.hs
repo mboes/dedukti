@@ -3,6 +3,7 @@ module Europa.Config where
 
 
 data Verbosity = Quiet | Verbose | Debug
+                 deriving (Eq, Ord, Show)
 
 data Config = Config
     { homeDir :: FilePath

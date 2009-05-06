@@ -3,11 +3,12 @@ module Europa.EuM (EuM, runEuM, warn, warnings
                   , text
                   , Exception(..), throw, io) where
 
-import Europa.Config
+import Europa.Config as Config
 import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Exception
 import Control.Applicative
+import System.IO
 import Text.PrettyPrint.Leijen hiding ((<$>))
 
 
@@ -36,6 +37,11 @@ warn = undefined
 -- | Get the list of warnings so far.
 warnings :: EuM [Doc]
 warnings = undefined
+
+-- | Write message only if verbosity level is at least the given level.
+say :: Verbosity -> String -> EuM ()
+say v msg = do v' <- parameter Config.verbosity
+               when (v <= v') $ io $ hPutStrLn stderr msg
 
 -- | Shorter name for the oft used 'liftIO'.
 io :: IO a -> EuM a
