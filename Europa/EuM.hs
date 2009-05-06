@@ -49,9 +49,9 @@ warnings :: EuM [Doc]
 warnings = undefined
 
 -- | Write message only if verbosity level is at least the given level.
-say :: Verbosity -> String -> EuM ()
+say :: Verbosity -> Doc -> EuM ()
 say v msg = do v' <- parameter Config.verbosity
-               when (v <= v') $ io $ hPutStrLn stderr msg
+               when (v <= v') $ io $ hPutDoc stderr (msg <> line)
 
 -- | Shorter name for the oft used 'liftIO'.
 io :: IO a -> EuM a
