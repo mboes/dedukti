@@ -19,7 +19,7 @@ data Flag = Make | Help
             deriving (Eq, Ord, Show)
 
 options = [ Option [] ["make"] (NoArg Make)
-                       "Build FILE and all its dependencies in one go."
+                       "Build MODULE and all its dependencies in one go."
           , Option ['h'] ["help"] (NoArg Help) "This usage information." ]
 
 data Usage = Long | Short
@@ -27,7 +27,7 @@ data Usage = Long | Short
 printUsage format = do
   self <- parameter Config.imageName
   let header = show $ text "Usage:" <+>
-               (text self <+> text "[OPTION]..." <+> text "FILE")
+               (text self <+> text "[OPTION]..." <+> text "MODULE")
   case format of
     Long -> io $ putStrLn (usageInfo header options)
     Short -> io $ hPutStrLn stderr header
