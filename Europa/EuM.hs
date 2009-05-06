@@ -21,14 +21,11 @@ newtype EuM a = EuM (ReaderT Config IO a)
 runEuM :: Config -> EuM a -> IO a
 runEuM conf (EuM m) = runReaderT m conf
 
--- | Shorter name for the oft used 'liftIO'.
-io :: IO a -> EuM a
-io = liftIO
-
 -- | Get all global parameters.
 configuration :: EuM Config
 configuration = ask
 
+-- | Select one parameter.
 parameter :: (Config -> a) -> EuM a
 parameter sel = sel <$> ask
 
@@ -39,3 +36,7 @@ warn = undefined
 -- | Get the list of warnings so far.
 warnings :: EuM [Doc]
 warnings = undefined
+
+-- | Shorter name for the oft used 'liftIO'.
+io :: IO a -> EuM a
+io = liftIO
