@@ -15,12 +15,17 @@ import System.Exit
 import System.IO
 
 
-data Flag = Make | Help
+data Flag = Make | Help | Verbose | VeryVerbose
             deriving (Eq, Ord, Show)
 
 options = [ Option [] ["make"] (NoArg Make)
                        "Build MODULE and all its dependencies in one go."
-          , Option ['h'] ["help"] (NoArg Help) "This usage information." ]
+          , Option ['h'] ["help"] (NoArg Help) "This usage information."
+          , Option ['v'] [] (OptArg verb "v")
+                       "Be verbose. -vv to be even more verbose." ]
+    where verb Nothing = Verbose
+          verb (Just "v") = VeryVerbose
+          verb _ = error "Unrecognized verbosity level."
 
 data Usage = Long | Short
 
