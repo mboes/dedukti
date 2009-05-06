@@ -15,16 +15,16 @@ import System.Exit
 import System.IO
 
 
-data Flag = Make | Help | Verbose | VeryVerbose
+data Flag = FlagMake | FlagHelp | FlagVerbose | FlagVeryVerbose
             deriving (Eq, Ord, Show)
 
-options = [ Option [] ["make"] (NoArg Make)
+options = [ Option [] ["make"] (NoArg FlagMake)
                        "Build MODULE and all its dependencies in one go."
           , Option ['v'] [] (OptArg verb "v")
                        "Be verbose. -vv to be even more verbose."
-          , Option ['h'] ["help"] (NoArg Help) "This usage information." ]
-    where verb Nothing = Verbose
-          verb (Just "v") = VeryVerbose
+          , Option ['h'] ["help"] (NoArg FlagHelp) "This usage information." ]
+    where verb Nothing = FlagVerbose
+          verb (Just "v") = FlagVeryVerbose
           verb _ = error "Unrecognized verbosity level."
 
 data Usage = Long | Short
@@ -41,9 +41,9 @@ printUsage format = do
 bailout = printUsage Short >> io exitFailure
 
 initializeConfiguration = foldr aux Config.defaultConfig
-    where aux Verbose c     = c { Config.verbosity = Config.Verbose }
-          aux VeryVerbose c = c { Config.verbosity = Config.Debug }
-          aux _ c           = c
+    where aux FlagVerbose c     = c { Config.verbosity = Verbose }
+          aux FlagVeryVerbose c = c { Config.verbosity = Debug }
+          aux _ c               = c
 
 main = do
   args <- getArgs
@@ -53,8 +53,8 @@ main = do
          exitFailure
   runEuM (initializeConfiguration opts) $
          case undefined of
-           _ | Help `elem` opts -> printUsage Long
-           _ | Make `elem` opts -> do
+           _ | FlagHelp `elem` opts -> printUsage Long
+           _ | FlagMake `elem` opts -> do
                      unless (length files == 1) bailout
                      make [moduleFromPath (head files)]
              | otherwise -> do
