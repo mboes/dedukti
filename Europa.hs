@@ -20,9 +20,9 @@ data Flag = Make | Help | Verbose | VeryVerbose
 
 options = [ Option [] ["make"] (NoArg Make)
                        "Build MODULE and all its dependencies in one go."
-          , Option ['h'] ["help"] (NoArg Help) "This usage information."
           , Option ['v'] [] (OptArg verb "v")
-                       "Be verbose. -vv to be even more verbose." ]
+                       "Be verbose. -vv to be even more verbose."
+          , Option ['h'] ["help"] (NoArg Help) "This usage information." ]
     where verb Nothing = Verbose
           verb (Just "v") = VeryVerbose
           verb _ = error "Unrecognized verbosity level."
@@ -33,6 +33,7 @@ printUsage format = do
   self <- parameter Config.imageName
   let header = show $ text "Usage:" <+>
                (text self <+> text "[OPTION]..." <+> text "MODULE")
+               <$> text "Options:"
   case format of
     Long -> io $ putStrLn (usageInfo header options)
     Short -> io $ hPutStrLn stderr header
