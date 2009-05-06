@@ -18,7 +18,10 @@ getDirectoryFiles :: FilePath -> EuM [FilePath]
 getDirectoryFiles dir =
     io $ getDirectoryContents dir >>= filterM (doesFileExist . (dir </>))
 
-cmp x y = io $ IO.isStale x y
+cmp x y = do
+  s <- io $ IO.isStale x y
+  say Debug $ text "Compared" <+> text x <+> text y <> text ":" <+> text (show s)
+  return s
 
 -- | Generate a ruleset from the files in the given directory.
 rules :: String -> [FilePath] -> [Rule EuM FilePath]
@@ -45,4 +48,6 @@ make modules = do
   let targets = map (pathFromModule ".eu") modules
   files <- getDirectoryFiles "."
   config <- parameter Config.hsCompiler
-  sequence_ =<< mk (process cmp (rules config files)) targets
+  schedule <- mk (process cmp (rules config files)) targets
+  say Debug $ text "Tasks to execute:" <+> int (length schedule)
+  abortOnError schedule

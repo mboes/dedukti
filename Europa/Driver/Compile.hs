@@ -17,6 +17,7 @@ dump mod = io . B.writeFile (objPathFromModule mod)
 -- | Emit Haskell code for one module.
 compile :: Module -> EuM ()
 compile mod = do
+  say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
   (decls, rules) <- return (parse path) `ap` io (readFile path)
   let code = map CG.emit (Rule.ruleSets decls rules) :: [CG.Code]
