@@ -1,5 +1,7 @@
 module Europa.Driver.Batch (make) where
 
+import Europa.Driver.Compile
+import Europa.Module
 import Europa.EuM
 import qualified Europa.Config as Config
 import Control.Hmk
@@ -26,18 +28,20 @@ rules config = concatMap f . filter ((== ".eu") . takeExtension) where
                  hi   = stem <.> ".hi"
                  o    = stem <.> ".o"
              in [ Rule file [] Nothing cmp
-                , Rule euo  [file] (Just $ cmd_emit file) cmp
-                , Rule hi   [euo] (Just $ cmd_compile euo) cmp
-                , Rule o    [euo] (Just $ cmd_compile euo) cmp ]
+                , Rule euo  [file] (Just $ cmd_compile file) cmp
+                , Rule hi   [euo] (Just $ cmd_hscomp euo) cmp
+                , Rule o    [euo] (Just $ cmd_hscomp euo) cmp ]
              -- + main.
-        where cmd exe args _ = liftIO (rawSystem exe args >>= IO.testExitCode)
-              cmd_emit file = cmd (Config.imageName config) [file]
-              cmd_compile euo = cmd (Config.compiler config) [euo]
+        where cmd_compile file _ = do
+                compile (moduleFromPath file)
+                return TaskSuccess
+              cmd_hscomp euo _ = liftIO $ do
+                rawSystem (Config.hsCompiler config) [euo] >>= IO.testExitCode
 
 -- | Compile each of the files given as input and all of their
 -- dependencies, if necessary.
 make :: [FilePath] -> EuM ()
 make targets = do
-  files <- getDirectoryFiles "t"
+  files <- getDirectoryFiles "."
   config <- Config.get
   sequence_ =<< mk (process cmp (rules config files)) targets
