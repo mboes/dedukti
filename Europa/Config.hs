@@ -9,7 +9,7 @@ import System.IO.Unsafe
 data Config = Config
     { homeDir :: FilePath
     , imageName :: FilePath
-    , compiler :: FilePath
+    , hsCompiler :: FilePath
     }
 
 -- A mutable cell.
