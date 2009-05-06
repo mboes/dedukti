@@ -21,5 +21,11 @@ tested-with:    GHC ==6.10
 executable:          europa
 main-is:             Europa.hs
 other-modules:       Europa.Core, Europa.Parser, Europa.Pretty
-build-depends:	     base >= 4, mtl >= 1.1, parsec >= 3.0.0, wl-pprint >= 1.0
-extensions:	     EmptyDataDecls, PatternGuards
+build-depends:	     base >= 4, mtl >= 1.1, containers >= 0.2,
+                     directory, filepath, process,
+                     parsec >= 3.0.0, wl-pprint >= 1.0, bytestring >= 0.9.1.0,
+                     haskell-src-exts >= 0.4.8 && < 0.5,
+                     hmk >= 0.5
+
+extensions:	     EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
+                     DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms
