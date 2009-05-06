@@ -16,13 +16,13 @@ import System.Exit
 -- | Return a list of all files in the given directory.
 getDirectoryFiles :: FilePath -> EuM [FilePath]
 getDirectoryFiles dir =
-    liftIO $ getDirectoryContents dir >>= filterM (doesFileExist . (dir </>))
+    io $ getDirectoryContents dir >>= filterM (doesFileExist . (dir </>))
 
-cmp x y = liftIO $ IO.isStale x y
+cmp x y = io $ IO.isStale x y
 
 -- | Generate a ruleset from the files in the given directory.
-rules :: Config.Config -> [FilePath] -> [Rule EuM FilePath]
-rules config = concatMap f . filter ((== ".eu") . takeExtension) where
+rules :: String -> [FilePath] -> [Rule EuM FilePath]
+rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
     f file = let stem = dropExtension file
                  euo  = stem <.> ".euo"
                  hi   = stem <.> ".hi"
@@ -35,13 +35,13 @@ rules config = concatMap f . filter ((== ".eu") . takeExtension) where
         where cmd_compile file _ = do
                 compile (moduleFromPath file)
                 return TaskSuccess
-              cmd_hscomp euo _ = liftIO $ do
-                rawSystem (Config.hsCompiler config) [euo] >>= IO.testExitCode
+              cmd_hscomp euo _ = io $ do
+                rawSystem hscomp [euo] >>= IO.testExitCode
 
 -- | Compile each of the files given as input and all of their
 -- dependencies, if necessary.
 make :: [FilePath] -> EuM ()
 make targets = do
   files <- getDirectoryFiles "."
-  config <- Config.get
+  config <- parameter Config.hsCompiler
   sequence_ =<< mk (process cmp (rules config files)) targets

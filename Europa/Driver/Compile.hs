@@ -12,12 +12,12 @@ import Control.Monad (ap)
 
 
 dump :: Module -> B.ByteString -> EuM ()
-dump mod = liftIO . B.writeFile (objPathFromModule mod)
+dump mod = io . B.writeFile (objPathFromModule mod)
 
 -- | Emit Haskell code for one module.
 compile :: Module -> EuM ()
 compile mod = do
   let path = srcPathFromModule mod
-  (decls, rules) <- return (parse path) `ap` liftIO (readFile path)
+  (decls, rules) <- return (parse path) `ap` io (readFile path)
   let code = map CG.emit (Rule.ruleSets decls rules) :: [CG.Code]
   dump mod $ CG.serialize (undefined :: CG.Code) mod $ CG.coalesce code
