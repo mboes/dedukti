@@ -31,7 +31,7 @@ instance CodeGen Record where
 
     coalesce records = concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
-                                       (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
+                                       Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
               checks = primitiveVar "runChecks"
                        [Hs.List $ map (var . (++ "_box") . rec_name) records]
 
@@ -50,7 +50,7 @@ instance CodeGen Record where
 function :: Em RuleSet -> Hs.Decl
 function (RS x _ []) = Hs.FunBind [defaultClause x]
 function (RS x _ rs) =
-    Hs.FunBind [Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
+    Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
     where n = Rule.arity (head rs)
           rhs = foldr primLam (application (var "__" : variables n)) (pvariables n)
           f | n > 0     = Hs.FunBind (map (clause "__") rs ++ [defaultClause x])
@@ -59,15 +59,15 @@ function (RS x _ rs) =
 clause :: String -> Em TyRule -> Hs.Match
 clause x rule@(env :@ (lhs :--> rhs)) =
     Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
-      (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
+          Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
 
 defaultClause :: Id Record -> Hs.Match
 defaultClause x =
-    Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
+    Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
-    Hs.FunBind [Hs.Match (!) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
+    Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
 
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
