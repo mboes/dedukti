@@ -1,6 +1,8 @@
-module Europa.EuM (EuM, runEuM, warn, warnings
+module Europa.EuM (EuM, runEuM, warn, warnings, say
+                  , Verbosity(..)
                   , configuration, parameter
-                  , text
+                  , command
+                  , text, (<+>), (<>), int -- pretty-printing combinators.
                   , Exception(..), throw, io) where
 
 import Europa.Config as Config
@@ -9,6 +11,8 @@ import Control.Monad.Reader
 import Control.Exception
 import Control.Applicative
 import System.IO
+import System.Cmd
+import System.Exit
 import Text.PrettyPrint.Leijen hiding ((<$>))
 
 
@@ -29,6 +33,12 @@ configuration = ask
 -- | Select one parameter.
 parameter :: (Config -> a) -> EuM a
 parameter sel = sel <$> ask
+
+-- | Wrapper around 'rawSystem'.
+command :: String -> [String] -> EuM ExitCode
+command exe args = do
+  say Verbose $ text "**" <+> text exe <+> hsep (map (squotes . text) args)
+  io $ rawSystem exe args
 
 -- | Register a new warning.
 warn :: String -> EuM ()
