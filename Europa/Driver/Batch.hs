@@ -9,8 +9,8 @@ import qualified Control.Hmk.IO as IO
 import Control.Monad
 import System.FilePath
 import System.Directory
-import System.Cmd
-import System.Exit
+import Data.Typeable (Typeable)
+import Control.Exception
 
 
 -- | Return a list of all files in the given directory.
@@ -38,14 +38,31 @@ rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
         where cmd_compile file _ = do
                 compile (moduleFromPath file)
                 return TaskSuccess
-              cmd_hscomp euo _ = io $ do
-                rawSystem hscomp [euo] >>= IO.testExitCode
+              cmd_hscomp euo _ = do
+                command hscomp ["-x", "hs", euo] >>= io . IO.testExitCode
+
+data CommandError = CommandError
+    deriving Typeable
+
+instance Show CommandError where
+    show CommandError = "Command returned non-zero exit status."
+
+instance Exception CommandError
+
+-- | Perform each system action, aborting if an action returns
+-- non-zero exit code.
+abortOnError :: [EuM Result] -> EuM ()
+abortOnError = mapM_ f where
+    f cmd = do code <- cmd
+               case code of
+                 TaskSuccess -> return ()
+                 TaskFailure -> throw CommandError
 
 -- | Compile each of the modules given as input and all of their
 -- dependencies, if necessary.
 make :: [Module] -> EuM ()
 make modules = do
-  let targets = map (pathFromModule ".eu") modules
+  let targets = map (pathFromModule ".o") modules
   files <- getDirectoryFiles "."
   config <- parameter Config.hsCompiler
   schedule <- mk (process cmp (rules config files)) targets
