@@ -28,4 +28,5 @@ build-depends:	     base >= 4, mtl >= 1.1, containers >= 0.2,
                      hmk >= 0.5
 
 extensions:	     EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
-                     DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms
+                     DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
+                     FlexibleInstances
