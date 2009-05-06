@@ -38,10 +38,11 @@ rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
               cmd_hscomp euo _ = io $ do
                 rawSystem hscomp [euo] >>= IO.testExitCode
 
--- | Compile each of the files given as input and all of their
+-- | Compile each of the modules given as input and all of their
 -- dependencies, if necessary.
-make :: [FilePath] -> EuM ()
-make targets = do
+make :: [Module] -> EuM ()
+make modules = do
+  let targets = map (pathFromModule ".eu") modules
   files <- getDirectoryFiles "."
   config <- parameter Config.hsCompiler
   sequence_ =<< mk (process cmp (rules config files)) targets
