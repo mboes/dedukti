@@ -1,7 +1,7 @@
 module Main where
 
 import System.Environment
-import Europa.Config as Config
+import qualified Europa.Config as Config
 import Europa.EuM
 import Europa.Pretty
 import Europa.Parser
@@ -40,14 +40,19 @@ printUsage format = do
 
 bailout = printUsage Short >> io exitFailure
 
+initializeConfiguration = foldr aux Config.defaultConfig
+    where aux Verbose c     = c { Config.verbosity = Config.Verbose }
+          aux VeryVerbose c = c { Config.verbosity = Config.Debug }
+          aux _ c           = c
+
 main = do
   args <- getArgs
   let (opts, files, errs) = getOpt RequireOrder options args
   when (not (null errs)) $ do
          hPutDoc stderr (vsep (map text errs))
          exitFailure
-  runEuM Config.defaultConfig $
-         case opts of
+  runEuM (initializeConfiguration opts) $
+         case undefined of
            _ | Help `elem` opts -> printUsage Long
            _ | Make `elem` opts -> do
                      unless (length files == 1) bailout
