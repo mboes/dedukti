@@ -138,12 +138,18 @@ applicative = (\xs -> case xs of
 -- > rule ::= env term "-->" term
 -- > env ::= "[]"
 -- >       | "[" env2 "]"
--- > env2 ::= term
--- >        | term "," env2
+-- > env2 ::= binding
+-- >        | binding "," env2
 rule = ((\env lhs rhs -> foldl (&) Map.empty env :@ lhs :--> rhs)
-        <$> brackets lexer (sepBy domain (comma lexer))
+        <$> brackets lexer (sepBy binding (comma lexer))
         <*> term
         <*  op "-->"
         <*> term
         <*  dot lexer) >>= addRule
        <?> "rule"
+
+-- | Bindings inside environments.
+--
+-- > binding ::= id : term
+binding = ((:::) <$> try (identifier lexer <* op ":") <*> term)
+          <?> "binding"
