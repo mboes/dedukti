@@ -31,7 +31,7 @@ instance Pretty id => Pretty (TyRule id a) where
         | Map.null env = text "[]" <+> pretty rule
         | otherwise =
             encloseSep (text "[ ") (text " ]") (text ", ")
-                       (map pretty (Map.elems env))
+                       (map (\(x, y) -> pretty (x ::: y)) (Map.toList env))
             <+> pretty rule
 
     prettyList = vcat . map (\x -> pretty x <> dot)
