@@ -62,13 +62,14 @@ isApplicative x = isAtomic x || isApplication x
 env & (x ::: t) = Map.insert x t env
 
 -- Phantom type used to express no annotation.
-data Unannot
+data Unannot = Unannot deriving Show
 
-nann = error "No annotation."
+--nann = error "No annotation."
+nann = Unannot
 
 instance Eq Unannot
 instance Ord Unannot
-instance Show Unannot
+--instance Show Unannot
 
 -- | Invariant: in abstract xs t annots, length annots == length xs.
 abstract :: [TVar id a] -> Expr id a -> [a] -> Expr id a
