@@ -81,10 +81,16 @@ toplevel =
      <|> ((:) <$> declaration <*> toplevel)
      <|> (eof *> return []))
 
+-- | Binding construct.
+--
+-- > binding ::= id : term
+binding = ((:::) <$> try (identifier lexer <* op ":") <*> term)
+          <?> "binding"
+
 -- | Top-level declarations.
 --
 -- > declaration ::= id ":" term "."
-declaration = ((:::) <$> identifier lexer <* op ":" <*> term <* dot lexer)
+declaration = (binding <* dot lexer)
               <?> "declaration"
 
 -- | Left hand side of an abstraction or a product.
@@ -147,9 +153,3 @@ rule = ((\env lhs rhs -> foldl (&) Map.empty env :@ lhs :--> rhs)
         <*> term
         <*  dot lexer) >>= addRule
        <?> "rule"
-
--- | Bindings inside environments.
---
--- > binding ::= id : term
-binding = ((:::) <$> try (identifier lexer <* op ":") <*> term)
-          <?> "binding"
