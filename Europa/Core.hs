@@ -90,6 +90,19 @@ apply _ _ _= error "Fewer annotations than number of applications."
 (%%%) :: ([a] -> Expr id a) -> [a] -> Expr id a
 (%%%) = ($)
 
+-- | Applicative annotation operator.
+(<%%>) :: Applicative f => f (a -> Expr id a) -> a -> f (Expr id a)
+x <%%> a = x <*> pure a
+
+-- | Applicative multi-annotation operator.
+(<%%%>) :: Applicative f => f ([a] -> Expr id a) -> [a] -> f (Expr id a)
+x <%%%> a = x <*> pure a
+
+infixl 1 %%
+infixl 1 %%%
+infixl 1 <%%>
+infixl 1 <%%%>
+
 -- | Turn nested applications into a list.
 unapply :: Expr id a -> [Expr id a]
 unapply = reverse . aux where
