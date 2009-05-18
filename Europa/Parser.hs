@@ -1,13 +1,11 @@
 module Europa.Parser (Pa, Europa.Parser.parse) where
 
-import Text.Parsec hiding (ParseError)
-import Text.Parsec.Token
 import Europa.Core
-import Prelude hiding (pi)
-import Control.Monad (ap)
-import Control.Monad.Identity
-import qualified Control.Exception as Exception
+import Text.Parsec hiding (ParseError, parse)
+import Text.Parsec.Token
+import Control.Applicative hiding ((<|>), many)
 import qualified Data.Map as Map
+import qualified Control.Exception as Exception
 import Data.Typeable (Typeable)
 
 
@@ -26,9 +24,10 @@ instance Show ParseError where
 instance Exception.Exception ParseError
 
 parse :: SourceName -> String -> ([Pa TVar], [Pa TyRule])
-parse name input = case runParser toplevel [] name input of
-                     Left e -> Exception.throw (ParseError (show e))
-                     Right x -> x
+parse name input =
+    case runParser ((,) <$> toplevel <*> allRules) [] name input of
+      Left e -> Exception.throw (ParseError (show e))
+      Right x -> x
 
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
@@ -53,42 +52,12 @@ lexDef = LanguageDef
 lexer :: TokenParser st
 lexer = makeTokenParser lexDef
 
-toplevel = do
-  whiteSpace lexer
-  decls <- declarations
-  rules <- getState
-  return (decls, reverse rules)
+op = reservedOp lexer
 
-declarations =
-      (do rule; declarations) --  Rules are accumulated by side-effect.
-  <|> (do eof; return [])
-  <|> (do b <- complexBinding
-          dot lexer
-          ds <- declarations
-          return (b:ds))
-
--- | A binding whose type is an applicative term
-simpleBinding = binding True
-
--- | A binding of arbitrary type.
-complexBinding = binding False
-
-binding simple = do
-  { ident <- identifier lexer;
-    reservedOp lexer ":";
-    exp <- if simple then applicative else expression;
-    return (ident ::: exp) } <?> "binding"
-
-rule = do
-  { env <- brackets lexer (sepBy complexBinding (comma lexer));
-    lhs <- applicative;
-    reservedOp lexer "-->";
-    rhs <- expression;
-    dot lexer;
-    addRule (foldl (&) Map.empty env :@ lhs :--> rhs) } <?> "rule"
-
--- Qualified or unqualified name.
-name = ident <?> "identifier" where
+-- | Qualified or unqualified name.
+--
+-- > qid ::= id.id | id
+variable = ident <?> "qid" where
     ident = do
       c <- identStart lexDef
       cs <- many (identLetter lexDef)
@@ -96,40 +65,85 @@ name = ident <?> "identifier" where
                c <- try $ do char '.'; identStart lexDef
                cs <- many (identLetter lexDef)
                let name = c:cs
-               return (qualifier ++ "." ++ name)) <|> return (c:cs)
+               return (qualifier ++ "." ++ name))
+           <|> return (c:cs)
       whiteSpace lexer
       return (Var x nann)
 
--- Unqualified name.
-uName = identifier lexer
+-- | Root production rule of the grammar.
+--
+-- > toplevel ::= declaration toplevel
+-- >            | rule toplevel
+-- >            | eof
+toplevel =
+    whiteSpace lexer *>
+    (    (rule *> toplevel) -- Rules are accumulated by side-effect.
+     <|> ((:) <$> declaration <*> toplevel)
+     <|> (eof *> return []))
+
+-- | Top-level declarations.
+--
+-- > declaration ::= id ":" term "."
+declaration = ((:::) <$> identifier lexer <* op ":" <*> term <* dot lexer)
+              <?> "declaration"
+
+-- | Left hand side of an abstraction or a product.
+--
+-- > domain ::= id ":" applicative
+-- >          | applicative
+domain = (    ((:::) <$> try (identifier lexer <* op ":") <*> applicative)
+          <|> (Hole <$> applicative))
+         <?> "domain"
+
+-- |
+-- > sort ::= Type
+sort = Type <$ reserved lexer "Type"
+
+-- | Terms and types.
+--
+-- We first try to parse as the domain of a lambda or pi. If we
+-- later find out there was no arrow after the domain, then we take
+-- the domain to be an expression, and return that.
+--
+-- > term ::= domain "->" term
+-- >        | domain "=>" term
+-- >        | applicative
+term =     pi
+       <|> lambda
+       <|> applicative
+    where pi = try (Pi <$> domain <* op "->" <*> term <%%> nann)
+               <?> "pi"
+          lambda = try (Lam <$> domain <* op "=>" <*> term <%%> nann)
+                   <?> "lambda"
+
+-- | Constituents of an applicative form.
+--
+-- > simple ::= sort | qid | "(" term ")"
+simple = sort <|> variable <|> parens lexer term
 
 -- | Expressions that are either a name or an application of a
 -- expression to one or more arguments.
-applicative = do
-  exps <- many1 (parens lexer expression <|> baseType <|> name)
-  return $ case exps of
-             [exp] -> exp
-             f:args -> apply f args (repeat nann)
+--
+-- > applicative ::= simple
+-- >               | applicative simple
+-- >
+applicative = (\xs -> case xs of
+                        [t] -> t
+                        (f:ts) -> apply f ts (repeat nann))
+              <$> many1 simple
+              <?> "applicative"
 
--- We first try to parse as the domain of a lambda or pi. If we later
--- find out there was no arrow after the domain, then we take the
--- domain to be an expression, and return that.
-expression =
-    try $ do
-      { domain <- try (parens lexer complexBinding <|> simpleBinding)
-                  <|> return Hole `ap` applicative;
-        case domain of
-          b@(x ::: ty) -> pi b <|> lambda b
-          b@(Hole ty)  -> pi b <|> lambda b <|> return ty;
-      } <|> applicative
-    where pi domain = do
-                reservedOp lexer "->"
-                range <- expression
-                return (Pi domain range %% nann)
-          lambda domain = do
-                   reservedOp lexer "=>"
-                   range <- expression
-                   return (Lam domain range %% nann)
-
-baseType = choice [ reserved lexer "Type" >> return Type
-                  , reserved lexer "Kind" >> return Kind ]
+-- | A rule.
+--
+-- > rule ::= env term "-->" term
+-- > env ::= "[]"
+-- >       | "[" env2 "]"
+-- > env2 ::= term
+-- >        | term "," env2
+rule = ((\env lhs rhs -> foldl (&) Map.empty env :@ lhs :--> rhs)
+        <$> brackets lexer (sepBy domain (comma lexer))
+        <*> term
+        <*  op "-->"
+        <*> term
+        <*  dot lexer) >>= addRule
+       <?> "rule"
