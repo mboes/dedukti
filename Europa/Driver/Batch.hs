@@ -38,8 +38,10 @@ rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
         where cmd_compile file _ = do
                 compile (moduleFromPath file)
                 return TaskSuccess
-              cmd_hscomp euo _ = do
-                command hscomp ["-x", "hs", euo] >>= io . IO.testExitCode
+              cmd_hscomp euo _ =
+                  command hscomp [ "-x", "hs", euo
+                                 , "-XOverloadedStrings" ]
+                  >>= io . IO.testExitCode
 
 data CommandError = CommandError
     deriving Typeable
