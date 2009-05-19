@@ -9,6 +9,7 @@ import qualified Control.Hmk.IO as IO
 import Control.Monad
 import System.FilePath
 import System.Directory
+import System.IO.Error
 import Data.Typeable (Typeable)
 import Control.Exception
 
@@ -39,7 +40,7 @@ rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
                 compile (moduleFromPath file)
                 return TaskSuccess
               cmd_hscomp euo _ =
-                  command hscomp [ "-x", "hs", euo
+                  command hscomp [ "-c", "-x", "hs", euo
                                  , "-XOverloadedStrings" ]
                   >>= io . IO.testExitCode
 
@@ -66,7 +67,13 @@ make :: [Module] -> EuM ()
 make modules = do
   let targets = map (pathFromModule ".o") modules
   files <- getDirectoryFiles "."
+  -- Check that source files for targets exist.
+  mapM_ (exists files) (map (pathFromModule ".eu") modules)
   config <- parameter Config.hsCompiler
   schedule <- mk (process cmp (rules config files)) targets
   say Debug $ text "Tasks to execute:" <+> int (length schedule)
   abortOnError schedule
+    where exists files src
+              | src `elem` files = return undefined
+              | otherwise = throw $ mkIOError doesNotExistErrorType
+                            "" Nothing (Just src)
