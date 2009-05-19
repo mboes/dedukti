@@ -172,8 +172,8 @@ primobj t = primitiveVar "obj" [t]
 primtypeOf t = primitiveVar "typeOf" [t]
 
 -- | Build a pattern matching a constant.
-primConP c = Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String c)]
-primAppP t1 t2 = Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
+primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String ('X':c))]
+primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
 primAppsP c = foldl primAppP (primConP c)
 
 -- | Upcase a word.
