@@ -18,12 +18,12 @@ type Em a = a (Id Record) (A Record)
 -- External view of record.
 type Code = Record
 
-data Record = Rec { rec_name    :: String
+data Record = Rec { rec_name    :: Qid
                   , rec_type    :: Em Expr
                   , rec_code    :: [Hs.Decl] }
 
 instance CodeGen Record where
-    type Id Record     = String
+    type Id Record     = Qid
     type A Record      = Unannot
     type Bundle Record = [Hs.Decl]
 
@@ -33,7 +33,7 @@ instance CodeGen Record where
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
               checks = primitiveVar "runChecks"
-                       [Hs.List $ map (var . (++ "_box") . rec_name) records]
+                       [Hs.List $ map (var . (.$ "_box") . rec_name) records]
 
     serialize _ (Module mod) decls =
         B.pack $ prettyPrint $
@@ -43,20 +43,20 @@ instance CodeGen Record where
               modname = Hs.ModuleName $ intercalate "." $ map (upcase . B.unpack) (toList mod)
 
     emit rs@(RS x ty rules) = Rec x ty [function rs, def_ty, def_box]
-        where def_ty  = value (x ++ "_ty") (code ty)
-              def_box = value (x ++ "_box")
-                                     (primbbox (term ty) (var (x ++ "_ty")) (var x))
+        where def_ty  = value (x .$ "_ty") (code ty)
+              def_box = value (x .$ "_box")
+                                     (primbbox (term ty) (var (x .$ "_ty")) (var x))
 
 function :: Em RuleSet -> Hs.Decl
 function (RS x _ []) = Hs.FunBind [defaultClause x]
 function (RS x _ rs) =
     Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
     where n = Rule.arity (head rs)
-          rhs = foldr primLam (application (var "__" : variables n)) (pvariables n)
-          f | n > 0     = Hs.FunBind (map (clause "__") rs ++ [defaultClause x])
-            | otherwise = Hs.FunBind (map (clause "__") rs)
+          rhs = foldr primLam (application (var (qid "__") : variables n)) (pvariables n)
+          f | n > 0     = Hs.FunBind (map (clause (qid "__")) rs ++ [defaultClause x])
+            | otherwise = Hs.FunBind (map (clause (qid "__")) rs)
 
-clause :: String -> Em TyRule -> Hs.Match
+clause :: Id Record -> Em TyRule -> Hs.Match
 clause x rule@(env :@ (lhs :--> rhs)) =
     Hs.Match (!) (varName x) (map (pattern env) (Rule.patterns rule))
           Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
@@ -87,7 +87,7 @@ code Type                 = primType
 
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
-term (Var x _)     = var (x ++ "_box")
+term (Var x _)     = var (x .$ "_box")
 term (Lam b t _)   = primTLam b (term t)
 term (Pi b t _)    = primTPi  b (term t)
 term (App t1 t2 _) = primTApp (term t1) (primUBox (term t2) (code t2))
@@ -97,33 +97,33 @@ term Kind          = primTKind
 (!) :: Hs.SrcLoc
 (!) = Hs.SrcLoc "" 0 0
 
-varName :: String -> Hs.Name
-varName s = Hs.Ident ('x':s)
+varName :: Id Record -> Hs.Name
+varName x = Hs.Ident $ 'x' : symbolize x
 
-conName :: String -> Hs.Name
-conName s = Hs.Ident ('X':s)
+conName :: Id Record -> Hs.Name
+conName x = Hs.Ident $ 'X': symbolize x
 
 -- | Smart variable constructor.
-var :: String -> Hs.Exp
+var :: Id Record -> Hs.Exp
 var = Hs.Var . Hs.UnQual . varName
 
-pvar :: String -> Hs.Pat
+pvar :: Id Record -> Hs.Pat
 pvar = Hs.PVar . varName
 
 -- | Produce a set of variables x1, ..., xn
-variables n = map (var . show) [1..n]
+variables n = map (var . qid . B.pack . show) [1..n]
 
-pvariables n = map (pvar . show) [1..n]
+pvariables n = map (pvar . qid . B.pack . show) [1..n]
 
 -- | Smart constructor constructor.
-con :: String -> Hs.Exp
+con :: Id Record -> Hs.Exp
 con = Hs.Con . Hs.UnQual . conName
 
 application :: [Hs.Exp] -> Hs.Exp
 application = foldl1 Hs.App
 
 -- | Build a constructor pattern.
-papplication :: String -> [Hs.Pat] -> Hs.Pat
+papplication :: Id Record -> [Hs.Pat] -> Hs.Pat
 papplication c xs = Hs.PApp (Hs.UnQual (conName c)) xs
 
 -- Primitives
@@ -136,7 +136,7 @@ primitiveCon s xs = Hs.Paren $ application $ (Hs.Con $ Hs.UnQual $ Hs.Ident s) :
 
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
-primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String ('X':c))]
+primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String ('X': symbolize c))]
 primType      = primitiveCon "Type" []
 primKind      = primitiveCon "Kind" []
 
@@ -148,9 +148,9 @@ primApps c = foldl primApp (primCon c)
 typedAbstraction c b t =
     let (pat, ty, ran) =
             case b of
-              x ::: ty -> ( pvar (x ++ "_box")
+              x ::: ty -> ( pvar (x .$ "_box")
                           , ty
-                          , Hs.Let (Hs.BDecls [value x (primobj (var (x ++ "_box")))]) t )
+                          , Hs.Let (Hs.BDecls [value x (primobj (var (x .$ "_box")))]) t )
               Hole ty  -> (Hs.PWildCard, ty, t)
         dom = if isVariable ty
               then term ty else primsbox (term ty) primType (code ty)
@@ -172,7 +172,7 @@ primobj t = primitiveVar "obj" [t]
 primtypeOf t = primitiveVar "typeOf" [t]
 
 -- | Build a pattern matching a constant.
-primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String ('X':c))]
+primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String ('X': symbolize c))]
 primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
 primAppsP c = foldl primAppP (primConP c)
 
