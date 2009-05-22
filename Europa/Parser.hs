@@ -4,16 +4,18 @@ import Europa.Core
 import Text.Parsec hiding (ParseError, parse)
 import Text.Parsec.Token
 import Control.Applicative hiding ((<|>), many)
+import Control.Monad.Identity
 import qualified Data.Map as Map
 import qualified Control.Exception as Exception
+import qualified Data.ByteString.Char8 as B
 import Data.Typeable (Typeable)
 
 
 -- The AST type as returned by the Parser.
-type Pa t = t String Unannot
+type Pa t = t B.ByteString Unannot
 
 -- The parsing monad.
-type P = Parsec String [Pa TyRule]
+type P = Parsec B.ByteString [Pa TyRule]
 
 newtype ParseError = ParseError String
     deriving Typeable
@@ -23,7 +25,7 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
-parse :: SourceName -> String -> ([Pa TVar], [Pa TyRule])
+parse :: SourceName -> B.ByteString -> ([Pa TVar], [Pa TyRule])
 parse name input =
     case runParser ((,) <$> toplevel <*> allRules) [] name input of
       Left e -> Exception.throw (ParseError (show e))
@@ -49,7 +51,7 @@ lexDef = LanguageDef
          , caseSensitive = True
          }
 
-lexer :: TokenParser st
+lexer :: GenTokenParser B.ByteString st Identity
 lexer = makeTokenParser lexDef
 
 op = reservedOp lexer
@@ -57,7 +59,7 @@ op = reservedOp lexer
 -- | Qualified or unqualified name.
 --
 -- > qid ::= id.id | id
-variable = ident <?> "qid" where
+qident = ident <?> "qid" where
     ident = do
       c <- identStart lexDef
       cs <- many (identLetter lexDef)
@@ -68,7 +70,10 @@ variable = ident <?> "qid" where
                return (qualifier ++ "." ++ name))
            <|> return (c:cs)
       whiteSpace lexer
-      return (Var x nann)
+      return (Var (B.pack x) nann)
+
+-- | Unqualified name.
+ident = B.pack <$> identifier lexer
 
 -- | Root production rule of the grammar.
 --
@@ -84,7 +89,7 @@ toplevel =
 -- | Binding construct.
 --
 -- > binding ::= id : term
-binding = ((:::) <$> try (identifier lexer <* op ":") <*> term)
+binding = ((:::) <$> try (ident <* op ":") <*> term)
           <?> "binding"
 
 -- | Top-level declarations.
@@ -97,7 +102,7 @@ declaration = (binding <* dot lexer)
 --
 -- > domain ::= id ":" applicative
 -- >          | applicative
-domain = (    ((:::) <$> try (identifier lexer <* op ":") <*> applicative)
+domain = (    ((:::) <$> try (ident <* op ":") <*> applicative)
           <|> (Hole <$> applicative))
          <?> "domain"
 
@@ -127,7 +132,7 @@ term =     pi
 -- > simple ::= sort
 -- >          | qid
 -- >          | "(" term ")"
-simple = sort <|> variable <|> parens lexer term
+simple = sort <|> qident <|> parens lexer term
 
 -- | Expressions that are either a name or an application of a
 -- expression to one or more arguments.
