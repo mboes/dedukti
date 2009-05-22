@@ -68,13 +68,13 @@ qident = ident <?> "qid" where
                c <- try $ do char '.'; identStart lexDef
                cs <- many (identLetter lexDef)
                let name = B.pack (c:cs)
-               return $ Qid (Root :. qualifier) name)
-           <|> return (Qid Root (B.pack (c:cs)))
+               return $ Qid (Root :. qualifier) name Root)
+           <|> return (qid (B.pack (c:cs)))
       whiteSpace lexer
       return (Var x nann)
 
 -- | Unqualified name.
-ident = Qid Root . B.pack <$> identifier lexer
+ident = qid . B.pack <$> identifier lexer
 
 -- | Root production rule of the grammar.
 --
