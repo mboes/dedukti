@@ -7,6 +7,8 @@ module Europa.Module
     , hierarchy, toList
     , pathFromModule, moduleFromPath
     , srcPathFromModule, objPathFromModule, ifacePathFromModule
+    -- * Qualified names.
+    , Qid(..), qid, symbolize, (.$)
     ) where
 
 import System.FilePath
@@ -61,3 +63,24 @@ objPathFromModule = pathFromModule ".euo"
 
 ifacePathFromModule :: Module -> FilePath
 ifacePathFromModule = pathFromModule ".eui"
+
+-- | The datatype of qualified names.
+data Qid = Qid { qid_qualifier :: Hierarchy
+               , qid_stem :: B.ByteString
+               , qid_suffix :: Hierarchy }
+           deriving (Eq, Ord, Show)
+
+-- | Shorthand qid introduction.
+qid :: B.ByteString -> Qid
+qid x = Qid Root x Root
+
+-- | 'Qid' elimination.
+symbolize :: Qid -> String
+symbolize (Qid qual x suff) =
+    concat [join '.' qual, ".", B.unpack x, "_", join '_' suff]
+    where join c Root = ""
+          join c (h :. x) = join c h ++ c : B.unpack x
+
+-- | Append suffix.
+(.$) :: Qid -> B.ByteString -> Qid
+(Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
