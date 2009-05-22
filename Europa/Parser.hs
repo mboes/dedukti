@@ -1,6 +1,7 @@
 module Europa.Parser (Pa, Europa.Parser.parse) where
 
 import Europa.Core
+import Europa.Module
 import Text.Parsec hiding (ParseError, parse)
 import Text.Parsec.Token
 import Control.Applicative hiding ((<|>), many)
@@ -12,7 +13,7 @@ import Data.Typeable (Typeable)
 
 
 -- The AST type as returned by the Parser.
-type Pa t = t B.ByteString Unannot
+type Pa t = t Qid Unannot
 
 -- The parsing monad.
 type P = Parsec B.ByteString [Pa TyRule]
@@ -63,17 +64,17 @@ qident = ident <?> "qid" where
     ident = do
       c <- identStart lexDef
       cs <- many (identLetter lexDef)
-      x <- (do let qualifier = c:cs
+      x <- (do let qualifier = B.pack (c:cs)
                c <- try $ do char '.'; identStart lexDef
                cs <- many (identLetter lexDef)
-               let name = c:cs
-               return (qualifier ++ "." ++ name))
-           <|> return (c:cs)
+               let name = B.pack (c:cs)
+               return $ Qid (Root :. qualifier) name)
+           <|> return (Qid Root (B.pack (c:cs)))
       whiteSpace lexer
-      return (Var (B.pack x) nann)
+      return (Var x nann)
 
 -- | Unqualified name.
-ident = B.pack <$> identifier lexer
+ident = Qid Root . B.pack <$> identifier lexer
 
 -- | Root production rule of the grammar.
 --
