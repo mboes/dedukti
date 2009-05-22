@@ -29,7 +29,7 @@ executable europa
                        hmk >= 0.5
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
-                       FlexibleInstances
+                       FlexibleInstances, OverloadedStrings
 
 library
   exposed-modules:     Europa.Runtime

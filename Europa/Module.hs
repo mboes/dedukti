@@ -12,10 +12,11 @@ module Europa.Module
 import System.FilePath
 import Data.List (intercalate)
 import Data.Char (isAlpha, isAlphaNum)
+import qualified Data.ByteString.Char8 as B
 import Data.Typeable
 import Europa.EuM
 
-data Hierarchy = Hierarchy :. String | Root
+data Hierarchy = !Hierarchy :. !B.ByteString | Root
                  deriving (Eq, Ord, Show)
 
 newtype Module = Module Hierarchy
@@ -29,12 +30,12 @@ instance Show InvalidModuleName where
 
 instance Exception InvalidModuleName
 
-hierarchy :: [String] -> Hierarchy
+hierarchy :: [B.ByteString] -> Hierarchy
 hierarchy =  f . reverse where
     f [] = Root
     f (x:xs) = f xs :. x
 
-toList :: Hierarchy -> [String]
+toList :: Hierarchy -> [B.ByteString]
 toList = reverse . f where
     f Root = []
     f (xs :. x) = x : f xs
@@ -45,10 +46,12 @@ check cmpt@(x:xs) | isAlpha x, and (map isAlphaNum xs) = cmpt
                   | otherwise = throw $ InvalidModuleName cmpt
 
 pathFromModule :: String -> Module -> FilePath
-pathFromModule ext (Module mod) = addExtension (joinPath (toList mod)) ext
+pathFromModule ext (Module mod) =
+    addExtension (joinPath $ map B.unpack $ toList mod) ext
 
 moduleFromPath :: FilePath -> Module
-moduleFromPath = Module . hierarchy . map check . splitDirectories . dropExtension
+moduleFromPath =
+    Module . hierarchy . map (B.pack . check) . splitDirectories . dropExtension
 
 srcPathFromModule :: Module -> FilePath
 srcPathFromModule = pathFromModule ".eu"

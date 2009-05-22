@@ -8,7 +8,7 @@ import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.Map as Map
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 import Data.Char (ord, toUpper)
 import Data.List (intercalate, concatMap)
 
@@ -36,11 +36,11 @@ instance CodeGen Record where
                        [Hs.List $ map (var . (++ "_box") . rec_name) records]
 
     serialize _ (Module mod) decls =
-        packString $ prettyPrint $
+        B.pack $ prettyPrint $
         Hs.Module (!) modname [] Nothing Nothing imports decls
         where imports = [ Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime")
                                         False False Nothing Nothing ]
-              modname = Hs.ModuleName $ intercalate "." $ map upcase (toList mod)
+              modname = Hs.ModuleName $ intercalate "." $ map (upcase . B.unpack) (toList mod)
 
     emit rs@(RS x ty rules) = Rec x ty [function rs, def_ty, def_box]
         where def_ty  = value (x ++ "_ty") (code ty)
@@ -178,9 +178,5 @@ primAppsP c = foldl primAppP (primConP c)
 
 -- | Upcase a word.
 upcase :: String -> String
-upcase "" = ""
+upcase [] = ""
 upcase (x:xs) = toUpper x : xs
-
-packString :: String -> B.ByteString
-packString = B.pack . map c2w where
-    c2w = fromIntegral . ord
