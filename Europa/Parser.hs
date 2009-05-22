@@ -124,7 +124,9 @@ term =     pi
 
 -- | Constituents of an applicative form.
 --
--- > simple ::= sort | qid | "(" term ")"
+-- > simple ::= sort
+-- >          | qid
+-- >          | "(" term ")"
 simple = sort <|> variable <|> parens lexer term
 
 -- | Expressions that are either a name or an application of a
