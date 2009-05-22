@@ -34,7 +34,7 @@ plus2 : nat -> nat -> nat.
 [x : nat] plus2 x 0 --> x.
 [x : nat] plus2 0 x --> x.
 [x : nat, y : nat] plus2 x (S y) --> S (plus2 x y).
-[x : nat, y : nat] (plus2 (S x)) y --> S (plus2 x y).
+[x : nat, y : nat] plus2 (S x) y --> S (plus2 x y).
 
 eq_S : x : nat 
     -> y : nat 

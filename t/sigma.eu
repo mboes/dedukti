@@ -1,0 +1,5 @@
+A : Type.
+B : A -> Type.
+sigma : x : A -> B x -> Type.
+fst : x : A -> y : B x -> sigma x y -> A.
+snd : x : A -> y : B x -> sigma x y -> B x.
