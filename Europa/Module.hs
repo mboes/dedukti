@@ -65,9 +65,9 @@ ifacePathFromModule :: Module -> FilePath
 ifacePathFromModule = pathFromModule ".eui"
 
 -- | The datatype of qualified names.
-data Qid = Qid { qid_qualifier :: Hierarchy
-               , qid_stem :: B.ByteString
-               , qid_suffix :: Hierarchy }
+data Qid = Qid { qid_qualifier :: !Hierarchy
+               , qid_stem      :: !B.ByteString
+               , qid_suffix    :: !Hierarchy }
            deriving (Eq, Ord, Show)
 
 -- | Shorthand qid introduction.
