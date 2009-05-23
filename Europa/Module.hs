@@ -8,7 +8,7 @@ module Europa.Module
     , pathFromModule, moduleFromPath
     , srcPathFromModule, objPathFromModule, ifacePathFromModule
     -- * Qualified names.
-    , Qid(..), qid, symbolize, (.$)
+    , Qid(..), qid, (.$)
     ) where
 
 import System.FilePath
@@ -73,13 +73,6 @@ data Qid = Qid { qid_qualifier :: !Hierarchy
 -- | Shorthand qid introduction.
 qid :: B.ByteString -> Qid
 qid x = Qid Root x Root
-
--- | 'Qid' elimination.
-symbolize :: Qid -> String
-symbolize (Qid qual x suff) =
-    concat [join '.' qual, ".", B.unpack x, "_", join '_' suff]
-    where join c Root = ""
-          join c (h :. x) = join c h ++ c : B.unpack x
 
 -- | Append suffix.
 (.$) :: Qid -> B.ByteString -> Qid
