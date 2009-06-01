@@ -77,7 +77,7 @@ function (RS x _ rs) =
           rhs = foldr primLam
                 (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : variables n))
                 (pvariables n)
-          f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x])
+          f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x n])
             | otherwise = Hs.FunBind (map clause rs)
 
 clause :: Em TyRule -> Hs.Match
@@ -85,9 +85,9 @@ clause rule@(env :@ (lhs :--> rhs)) =
     Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns rule))
           Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
 
-defaultClause :: Id Record -> Hs.Match
-defaultClause x =
-    Hs.Match (!) (Hs.Ident "__") [] Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
+defaultClause :: Id Record -> Int -> Hs.Match
+defaultClause x n =
+    Hs.Match (!) (Hs.Ident "__") (pvariables n) Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
