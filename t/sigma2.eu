@@ -1,0 +1,31 @@
+nat : Type.
+0 : nat.
+S : nat -> nat.
+
+plus:nat -> nat -> nat.
+[x:nat] plus x 0 --> x.
+[x:nat] (plus 0) x --> x.
+[x:nat, y:nat] plus x (S y) --> S (plus x y).
+[x:nat, y:nat] (plus (S x)) y --> S (plus x y).
+
+eqnat : nat -> nat -> Type.
+ax: eqnat 0 0.
+[n:nat, m:nat] eqnat (S n) (S m) --> eqnat n m.
+
+o : Type.
+eps : o -> Type.
+
+_nat : o.
+[] (eps _nat) --> nat. 
+
+_eqnat : nat -> nat -> o.
+[n:nat,m:nat] eps (_eqnat n m) --> eqnat n m.
+
+[x:o] eps x --> (eps x).
+
+sigma : a:o -> (eps a -> o) -> Type.
+
+
+th : Type.
+[] th --> sigma _nat (n:nat => _nat).
+
