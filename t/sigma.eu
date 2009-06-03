@@ -1,13 +1,44 @@
 o : Type.
 eps : o -> Type.
 
-sigma_ : A : o -> P : (x : eps A -> o) -> o.
-exist_ : A : o -> P : (x : eps A -> o) -> x : eps A -> eps (P x) -> eps (sigma_ A P).
+sigma_ : A : o -> (eps A -> o) -> o.
+exist_ : A : o -> P : (eps A -> o) -> x : eps A -> eps (P x) -> eps (sigma_ A P).
 
-fst : A : o -> P : (x : eps A -> o) -> eps (sigma_ A P) -> eps A.
-[A : o, P : x : eps A -> o, w : eps A, pi : P w]
+fst : A : o -> P : (eps A -> o) -> eps (sigma_ A P) -> eps A.
+[A : o, P : eps A -> o, w : eps A, pi : P w]
 fst _ _ (eps (exist_ _ _ w pi)) --> w.
 
-snd : A : o -> P : (x : eps A -> o) -> s : eps (sigma_ A P) -> eps (P (fst A P s)).
-[A : o, P : x : eps A -> o, w : eps A, pi : P w]
+snd : A : o -> P : (eps A -> o) -> s : eps (sigma_ A P) -> eps (P (fst A P s)).
+[A : o, P : eps A -> o, w : eps A, pi : P w]
 snd _ _ (eps (exist_ _ _ w pi)) --> pi.
+
+
+;; test
+
+nat : Type.
+nat_ : o.
+[] eps nat_ --> nat.
+
+O : nat.
+S : nat -> nat.
+
+;; pas pris en compte !
+
+plus : nat -> nat -> nat.
+[n:nat,m:nat] plus (S n) m --> S (plus n m).
+[n:nat,m:nat] plus O m --> m.
+
+eq : nat -> nat -> Type.
+[n:nat,m:nat] eq (S n) (S m) --> eq n m.
+ax: eq O O.
+
+eq_ : nat -> nat -> o.
+[x:nat,y:nat] eps (eq_ x y) --> eq x y.
+
+;;[] eps nat_ --> nat.
+
+thm : n:nat -> eps (sigma_ nat_ (m:nat => eq_ (plus (S O) n) m)).
+[] thm --> n:nat => exist_ nat_ (m:nat => eq_ (plus (S O) n) m) (S n) ax.
+
+verif : eq (fst nat_ (m:nat => eq_ (plus (S O) O) m) (thm O)) (S O).
+[] verif --> ax.
