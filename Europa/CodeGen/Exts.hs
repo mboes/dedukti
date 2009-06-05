@@ -19,7 +19,7 @@ type Em a = a (Id Record) (A Record)
 type Code = Record
 
 data Record = Rec { rec_name    :: Qid
-                  , rec_type    :: Em Expr
+                  , rec_rules   :: Int
                   , rec_code    :: [Hs.Decl] }
 
 instance CodeGen Record where
@@ -32,8 +32,9 @@ instance CodeGen Record where
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
-              checks = primitiveVar "runChecks"
-                       [Hs.List $ map (var . (.$ "box") . rec_name) records]
+              checks = Hs.Do (Hs.Qualifier (primitiveVar "runChecks"
+                               [Hs.List $ map (var . (.$ "box") . rec_name) records]) : concatMap rules records)
+              rules (Rec x nr _) = map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1]
 
     serialize (Module mod) (Bundle decls) =
         B.pack $ prettyPrint $

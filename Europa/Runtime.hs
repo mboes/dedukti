@@ -1,7 +1,8 @@
 module Europa.Runtime
     ( Code(..), Term(..), ap
     , bbox, sbox, obj
-    , runChecks) where
+    , runChecks
+    , checkRule) where
 
 import qualified Data.ByteString.Char8 as B
 import Control.Monad hiding (ap)
@@ -21,8 +22,12 @@ newtype  SortError = SortError Term
 newtype TypeError = TypeError Term
     deriving (Show, Typeable)
 
+data RuleError = RuleError
+    deriving (Show, Typeable)
+
 instance Exception SortError
 instance Exception TypeError
+instance Exception RuleError
 
 -- Convertible and static terms.
 
@@ -67,6 +72,9 @@ convertible n Type Type = True
 convertible n Kind Kind = True
 convertible n _ _ = False
 
+-- | A box in which we didn't put anything.
+emptyBox = Box undefined undefined
+
 bbox, sbox :: Term -> Code -> Code -> Term
 
 -- | A big box holds terms of sort Type or Kind
@@ -93,4 +101,8 @@ typeOf n t = throw (TypeError t)
 
 -- | Check that all items in the list are of sort Type or Kind.
 runChecks :: [Term] -> IO ()
-runChecks ts = mapM_ (\(Box _ _) -> putStrLn "Check.") ts >> putStrLn "Ok."
+runChecks ts = mapM_ (\x -> x `seq` putStrLn "Check.") ts >> putStrLn "Ok."
+
+checkRule :: Code -> Term -> Term -> Term
+checkRule ty lhs rhs | convertible (-1) (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
+                     | otherwise = throw RuleError
