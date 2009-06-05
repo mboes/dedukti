@@ -1,9 +1,13 @@
 module Europa.Pretty (pretty) where
 
 import Europa.Core
+import Europa.Module
 import Text.PrettyPrint.Leijen
 import qualified Data.Map as Map
+import qualified Data.ByteString.Char8 as B
 
+
+textBS = text . B.unpack
 
 instance Pretty id => Pretty (Expr id a) where
     pretty (Lam x t _) = pretty x <+> text "=>" <+> pretty t
@@ -35,3 +39,12 @@ instance Pretty id => Pretty (TyRule id a) where
             <+> pretty rule
 
     prettyList = vcat . map (\x -> pretty x <> dot)
+
+instance Pretty Qid where
+    pretty qid = joinQ (qid_qualifier qid) <>
+                 textBS (qid_stem qid) <>
+                 joinS (qid_suffix qid)
+        where joinQ Root = empty
+              joinQ (h :. x) = joinQ h <> textBS x <> dot
+              joinS Root = empty
+              joinS (h :. x) = joinS h <> char '_' <> textBS x
