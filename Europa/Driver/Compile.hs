@@ -6,7 +6,7 @@ import Europa.EuM
 import Europa.Core
 import qualified Europa.CodeGen.Exts as CG
 import qualified Europa.Rule as Rule
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import Control.Monad (ap)
 

@@ -8,7 +8,7 @@ import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.Map as Map
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (ord, toUpper)
 import Data.List (intercalate, concatMap)
 

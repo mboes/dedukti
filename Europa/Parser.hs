@@ -8,7 +8,7 @@ import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
 import qualified Data.Map as Map
 import qualified Control.Exception as Exception
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Typeable (Typeable)
 
 

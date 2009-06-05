@@ -2,7 +2,7 @@ module Europa.CodeGen (CodeGen(..)) where
 
 import Europa.Core
 import Europa.Module
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy.Char8 as B
 
 
 class CodeGen o where

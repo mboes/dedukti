@@ -4,7 +4,7 @@ import Europa.Core
 import Europa.Module
 import Text.PrettyPrint.Leijen
 import qualified Data.Map as Map
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as B
 
 
 textBS = text . B.unpack
