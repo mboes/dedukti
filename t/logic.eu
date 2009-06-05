@@ -37,7 +37,7 @@ f_equal
     -> x : coc.etype A 
     -> y : coc.etype A 
     -> H : eq A x y
-    -> ((eq B (f x)) (f y)).
+    -> eq B (f x) (f y).
 
 [] f_equal --> 
     A : coc.Utype 
