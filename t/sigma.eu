@@ -17,12 +17,9 @@ snd _ _ (eps (exist_ _ _ w pi)) --> pi.
 
 nat : Type.
 nat_ : o.
-[] eps nat_ --> nat.
 
 O : nat.
 S : nat -> nat.
-
-;; pas pris en compte !
 
 plus : nat -> nat -> nat.
 [n:nat,m:nat] plus (S n) m --> S (plus n m).
@@ -33,9 +30,9 @@ eq : nat -> nat -> Type.
 ax: eq O O.
 
 eq_ : nat -> nat -> o.
-[x:nat,y:nat] eps (eq_ x y) --> eq x y.
 
-;;[] eps nat_ --> nat.
+[x:nat,y:nat] eps (eq_ x y) --> eq x y.
+[] eps nat_ --> nat.
 
 thm : n:nat -> eps (sigma_ nat_ (m:nat => eq_ (plus (S O) n) m)).
 [] thm --> n:nat => exist_ nat_ (m:nat => eq_ (plus (S O) n) m) (S n) ax.
