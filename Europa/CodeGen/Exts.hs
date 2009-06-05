@@ -103,7 +103,7 @@ clause rule@(env :@ (lhs :--> rhs)) =
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
-    Hs.Match (!) (Hs.Ident "__") (pvariables n) Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])
+    Hs.Match (!) (Hs.Ident "__") (pvariables n) Nothing (Hs.UnGuardedRhs (primApps x (variables n))) (Hs.BDecls [])
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
