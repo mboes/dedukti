@@ -33,7 +33,7 @@ instance CodeGen Record where
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
-              checks = Hs.Do (map declaration records ++ concatMap rules records)
+              checks = Hs.Do (concatMap rules records ++ map declaration records)
               declaration rec = Hs.Qualifier (primitiveVar "checkDeclaration"
                                               [ Hs.Lit $ Hs.String $ show $ pretty $ rec_name rec
                                               , var (rec_name rec .$ "box") ])
