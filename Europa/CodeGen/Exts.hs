@@ -4,6 +4,7 @@ module Europa.CodeGen.Exts
 import Europa.CodeGen
 import Europa.Core
 import Europa.Module
+import Europa.Pretty
 import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
@@ -32,8 +33,10 @@ instance CodeGen Record where
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
-              checks = Hs.Do (Hs.Qualifier (primitiveVar "runChecks"
-                               [Hs.List $ map (var . (.$ "box") . rec_name) records]) : concatMap rules records)
+              checks = Hs.Do (map declaration records ++ concatMap rules records)
+              declaration rec = Hs.Qualifier (primitiveVar "checkDeclaration"
+                                              [ Hs.Lit $ Hs.String $ show $ pretty $ rec_name rec
+                                              , var (rec_name rec .$ "box") ])
               rules (Rec x nr _) = map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1]
 
     serialize (Module mod) (Bundle decls) =
@@ -202,8 +205,8 @@ primTApp t1 t2 = primitiveCon "TApp" [t1, t2]
 primTType      = primitiveCon "TType" []
 primTKind      = primitiveCon "TKind" []
 
-primBox ty_code obj_code = primitiveCon "Box" [ty_code, obj_code]
-primUBox ty obj_code     = primitiveCon "UBox" [ty, obj_code]
+primBox  ty_code obj_code    = primitiveCon "Box" [ty_code, obj_code]
+primUBox ty obj_code         = primitiveCon "UBox" [ty, obj_code]
 primbbox ty ty_code obj_code = primitiveVar "bbox" [ty, ty_code, obj_code]
 primsbox ty ty_code obj_code = primitiveVar "sbox" [ty, ty_code, obj_code]
 

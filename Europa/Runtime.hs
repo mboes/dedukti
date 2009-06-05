@@ -1,7 +1,7 @@
 module Europa.Runtime
     ( Code(..), Term(..), ap
     , bbox, sbox, obj
-    , runChecks
+    , checkDeclaration
     , checkRule) where
 
 import qualified Data.ByteString.Char8 as B
@@ -10,16 +10,16 @@ import Control.Exception
 import Text.Show.Functions
 import Data.Typeable hiding (typeOf)
 import Data.Maybe (fromJust)
-import Prelude hiding (pi)
+import Prelude hiding (pi, catch)
 import System.IO
 
 
 -- Exceptions
 
-newtype  SortError = SortError Term
+data SortError = SortError
     deriving (Show, Typeable)
 
-newtype TypeError = TypeError Term
+data TypeError = TypeError
     deriving (Show, Typeable)
 
 data RuleError = RuleError
@@ -85,7 +85,7 @@ sbox = box [Type]
 
 box sorts ty ty_code obj_code
     | typeOf 1000 ty `elem` sorts = Box ty_code obj_code
-    | otherwise = throw (SortError ty)
+    | otherwise = throw SortError
 
 typeOf :: Int -> Term -> Code
 typeOf n (Box ty _) = ty
@@ -97,11 +97,13 @@ typeOf n (TApp t1 bx@(UBox tty2 t2))
     | Pi tya f <- typeOf n t1, ty2 <- typeOf n tty2,
       convertible (-1) tya ty2 = f t2
 typeOf n TType = Kind
-typeOf n t = throw (TypeError t)
+typeOf n t = throw TypeError
 
--- | Check that all items in the list are of sort Type or Kind.
-runChecks :: [Term] -> IO ()
-runChecks ts = mapM_ (\x -> x `seq` putStrLn "Check.") ts >> putStrLn "Ok."
+checkDeclaration :: String -> Term -> IO ()
+checkDeclaration x t = catch (evaluate t >> putStrLn "Check") handler
+    where handler (SomeException e) = do
+            putStrLn $ "Error during checking of " ++ x
+            throw e
 
 checkRule :: Code -> Term -> Term -> Term
 checkRule ty lhs rhs | convertible (-1) (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
