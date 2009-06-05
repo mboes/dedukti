@@ -21,4 +21,4 @@ compile mod = do
   let path = srcPathFromModule mod
   (decls, rules) <- return (parse path) `ap` io (B.readFile path)
   let code = map CG.emit (Rule.ruleSets decls rules) :: [CG.Code]
-  dump mod $ CG.serialize (undefined :: CG.Code) mod $ CG.coalesce code
+  dump mod $ CG.serialize mod $ CG.coalesce code

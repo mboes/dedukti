@@ -8,7 +8,7 @@ import qualified Data.ByteString as B
 class CodeGen o where
     type Id o
     type A o
-    type Bundle o
+    data Bundle o
 
     -- | Emit code corresponding to an individual rule set.
     emit :: RuleSet (Id o) (A o) -> o
@@ -19,7 +19,7 @@ class CodeGen o where
     -- for all the rule sets.
     -- XXX: first argument is a temp hack to get around type families
     -- ambiguities.
-    serialize :: o -> Module -> Bundle o -> B.ByteString
+    serialize :: Module -> Bundle o -> B.ByteString
 
     -- | Produce interface code.
     interface :: Module -> Bundle o -> B.ByteString
