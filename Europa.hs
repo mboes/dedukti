@@ -3,8 +3,6 @@ module Main where
 import System.Environment
 import qualified Europa.Config as Config
 import Europa.EuM
-import Europa.Pretty
-import Europa.Parser
 import Europa.Module
 import Europa.Driver.Batch
 import Europa.Driver.Compile
