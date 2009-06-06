@@ -36,7 +36,25 @@ instance CodeGen Record where
     type A Record      = Unannot
     data Bundle Record = Bundle [Hs.Decl]
 
-    interface = error "Unimplemented."
+    emit rs@(RS x ty rules) =
+        Rec x (length rules) (function rs : def_ty : def_box : zipWith defs_rule [0..] rules)
+        where def_ty  = value (x .$ "ty") (code ty)
+              def_box = value (x .$ "box")
+                                     (primbbox (term ty) (var (x .$ "ty")) (var x))
+              -- Checking rules involves much of the same work as checking all
+              -- declarations at top-level, so let's just call the code
+              -- generation functions recursively.
+              defs_rule n (env :@ lhs :--> rhs) =
+                  let rec x ty rs = (emit (RS x ty []) :: Record) : rs
+                      Bundle decls = coalesce $ Map.foldWithKey rec [ruleCheck] env
+                  in  Hs.FunBind [Hs.Match (!) (varName (x .$ "rule" .$ B.pack (show n)))
+                                  []
+                                  Nothing
+                                  (Hs.UnGuardedRhs (primitiveVar "main" []))
+                                  (Hs.BDecls decls)]
+                      where ruleCheck = Rec (qid "rule") 0
+                                            [value (qid "rule" .$ "box")
+                                             (primitiveVar "checkRule" [var (x .$ "ty"), term lhs, term rhs])]
 
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
@@ -59,25 +77,7 @@ instance CodeGen Record where
               modname = Hs.ModuleName $ B.unpack $ B.intercalate "." $
                         map upcase $ toList mod
 
-    emit rs@(RS x ty rules) =
-        Rec x (length rules) (function rs : def_ty : def_box : zipWith defs_rule [0..] rules)
-        where def_ty  = value (x .$ "ty") (code ty)
-              def_box = value (x .$ "box")
-                                     (primbbox (term ty) (var (x .$ "ty")) (var x))
-              -- Checking rules involves much of the same work as checking all
-              -- declarations at top-level, so let's just call the code
-              -- generation functions recursively.
-              defs_rule n (env :@ lhs :--> rhs) =
-                  let rec x ty rs = (emit (RS x ty []) :: Record) : rs
-                      Bundle decls = coalesce $ Map.foldWithKey rec [ruleCheck] env
-                  in  Hs.FunBind [Hs.Match (!) (varName (x .$ "rule" .$ B.pack (show n)))
-                                  []
-                                  Nothing
-                                  (Hs.UnGuardedRhs (primitiveVar "main" []))
-                                  (Hs.BDecls decls)]
-                      where ruleCheck = Rec (qid "rule") 0
-                                            [value (qid "rule" .$ "box")
-                                             (primitiveVar "checkRule" [var (x .$ "ty"), term lhs, term rhs])]
+    interface = error "Unimplemented."
 
 -- | A similar encoding of names as the z-encoding of GHC. Non-letter
 -- characters are escaped with an x.

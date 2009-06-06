@@ -1,6 +1,10 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- All generated Haskell files import this module. The data type declarations
+-- are given here, along with the conversion relation and type inference
+-- function.
 
 module Europa.Runtime
     ( Code(..), Term(..), ap
