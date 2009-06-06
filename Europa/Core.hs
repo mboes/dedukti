@@ -19,16 +19,22 @@ data Binding id a = id ::: Expr id a
                | Hole (Expr id a)
                  deriving (Eq, Ord, Show)
 
+-- | A rewrite rule.
 data Rule id a = Expr id a :--> Expr id a
                  deriving (Eq, Ord, Show)
 infix 9 :-->
 
 type Env id a = Map.Map id (Expr id a)
 
+-- | A rewrite rule paired with a typing environment.
 data TyRule id a = Env id a :@ Rule id a
                  deriving (Eq, Ord, Show)
 infix 8 :@
 
+-- | A set of rewrite rules sharing a same head constant.
+-- Invariant:
+--
+-- > all ((== rs_name ruleset) . headConstant) (rs_rules ruleset)
 data RuleSet id a = RS { rs_name :: id
                        , rs_type :: Expr id a
                        , rs_rules :: [TyRule id a] }
@@ -59,10 +65,11 @@ isAtomic _         = False
 
 isApplicative x = isAtomic x || isApplication x
 
+-- | Extend an environment with a new binding.
 (&) :: Ord id => Env id a -> Binding id a -> Env id a
 env & (x ::: t) = Map.insert x t env
 
--- Phantom type used to express no annotation.
+-- | Phantom type used to express no annotation.
 data Unannot = Unannot deriving Show
 
 --nann = error "No annotation."
