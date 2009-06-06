@@ -1,6 +1,10 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- The europa monad. This provides various facilities such as accumulating
+-- warning messages or displaying error messages to the screen. Debugging
+-- facilities and an interface to the system are also provided.
 
 module Europa.EuM (EuM, runEuM, warn, warnings, say
                   , Verbosity(..)

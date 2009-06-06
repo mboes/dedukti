@@ -1,7 +1,9 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
-
+--
+-- The batch driver. It compiles all given targets and all their dependencies,
+-- also invoking the Haskell compiler on the generated source code.
 module Europa.Driver.Batch (make) where
 
 import Europa.Driver.Compile

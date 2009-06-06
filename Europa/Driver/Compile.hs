@@ -1,6 +1,8 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- Compile one file to Haskell source code.
 
 module Europa.Driver.Compile (compile) where
 

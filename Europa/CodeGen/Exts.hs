@@ -1,6 +1,8 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- A code generator based on the haskell-src-exts package by Niklas Broberg.
 
 module Europa.CodeGen.Exts
     (module Europa.CodeGen, Code) where
@@ -23,8 +25,10 @@ type Em a = a (Id Record) (A Record)
 -- External view of record.
 type Code = Record
 
+-- Create a record for each declaration in the source.
 data Record = Rec { rec_name    :: Qid
-                  , rec_rules   :: Int
+                  , rec_rules   :: Int -- ^ Number of rules associated with
+                                       -- qid.
                   , rec_code    :: [Hs.Decl] }
 
 instance CodeGen Record where

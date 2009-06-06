@@ -3,6 +3,7 @@
 -- License   : GPL
 --
 -- Global site-specific configuration variables.
+
 module Europa.Config where
 
 

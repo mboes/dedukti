@@ -1,6 +1,11 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- Pretty-printing of various core data types. This is not meant as a
+-- replacement of the |Show| class but rather an alternative. You
+-- should derive Show for all data types, then declare them instances
+-- of |Pretty| where appropriate.
 
 module Europa.Pretty (pretty) where
 

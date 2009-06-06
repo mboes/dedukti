@@ -1,7 +1,11 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
-
+--
+-- This module is the entry point for europa. Based on the command line
+-- arguments the appropriate driver is invoked. Everything is coordinated by
+-- the driver. This module is also the place where global configuration data
+-- is initialized.
 module Main where
 
 import System.Environment

@@ -1,7 +1,8 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
-
+--
+-- Interface for all code generators.
 module Europa.CodeGen (CodeGen(..)) where
 
 import Europa.Core

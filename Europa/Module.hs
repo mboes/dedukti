@@ -1,7 +1,9 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
-
+--
+-- A representation of module names and associated functions to map module
+-- names to source files and vice-versa.
 module Europa.Module
     ( -- * Data types
       Hierarchy(..), Module(..)

@@ -1,6 +1,8 @@
 -- |
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
+--
+-- Various utility functions over rewrite rules and rule sets.
 
 module Europa.Rule where
 

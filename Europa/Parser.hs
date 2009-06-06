@@ -30,8 +30,12 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
+
 parse :: SourceName -> B.ByteString -> ([Pa Binding], [Pa TyRule])
 parse name input =
+    -- At the toplevel, a source file is a list of declarations and rule
+    -- definitions. Here rules are accumulated by side-effect, added to the
+    -- parser state as we encounter them.
     case runParser ((,) <$> toplevel <*> allRules) [] name input of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
@@ -39,6 +43,7 @@ parse name input =
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
 
+-- | Retrieve all rules encountered so far from the parser state.
 allRules :: P [Pa TyRule]
 allRules = getState
 
