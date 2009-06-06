@@ -6,15 +6,16 @@ import Data.Foldable as A
 import qualified Data.Map as Map
 
 
-data Expr id a = Lam (TVar id a) (Expr id a) a
-               | Pi  (TVar id a) (Expr id a) a
+data Expr id a = Lam (Binding id a) (Expr id a) a
+               | Pi  (Binding id a) (Expr id a) a
                | App (Expr id a) (Expr id a) a
                | Var id a
                | Type
                | Kind
                  deriving (Eq, Ord, Show)
 
-data TVar id a = id ::: Expr id a
+-- | A type decorating a variable, or a type on its own.
+data Binding id a = id ::: Expr id a
                | Hole (Expr id a)
                  deriving (Eq, Ord, Show)
 
@@ -58,7 +59,7 @@ isAtomic _         = False
 
 isApplicative x = isAtomic x || isApplication x
 
-(&) :: Ord id => Env id a -> TVar id a -> Env id a
+(&) :: Ord id => Env id a -> Binding id a -> Env id a
 env & (x ::: t) = Map.insert x t env
 
 -- Phantom type used to express no annotation.
@@ -72,7 +73,7 @@ instance Ord Unannot
 --instance Show Unannot
 
 -- | Invariant: in abstract xs t annots, length annots == length xs.
-abstract :: [TVar id a] -> Expr id a -> [a] -> Expr id a
+abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
 abstract (x:xs) t (a:annots) = Lam x (abstract xs t annots) %% a
 abstract _ _ _ = error "Fewer annotations than number of variables."

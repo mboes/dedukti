@@ -26,7 +26,7 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
-parse :: SourceName -> B.ByteString -> ([Pa TVar], [Pa TyRule])
+parse :: SourceName -> B.ByteString -> ([Pa Binding], [Pa TyRule])
 parse name input =
     case runParser ((,) <$> toplevel <*> allRules) [] name input of
       Left e -> Exception.throw (ParseError (show e))

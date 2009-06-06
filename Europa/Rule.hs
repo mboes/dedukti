@@ -25,7 +25,7 @@ arity :: TyRule id a -> Int
 arity (_ :@ (lhs :--> _)) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
-ruleSets :: Eq id => [TVar id a] -> [TyRule id a] -> [RuleSet id a]
+ruleSets :: Eq id => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
 ruleSets ds rs = snd $ foldr aux (group rs, []) ds where
     aux (x ::: ty) ([],       rsets)          = ([], RS x ty [] : rsets)
     aux (x ::: ty) (rs : rss, rsets)

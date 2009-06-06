@@ -21,7 +21,7 @@ instance Pretty id => Pretty (Expr id a) where
     pretty Type = text "Type"
     pretty Kind = text "Kind"
 
-instance Pretty id => Pretty (TVar id a) where
+instance Pretty id => Pretty (Binding id a) where
     pretty (x ::: ty) = pretty x <+> char ':' <+> pretty ty
     pretty (Hole ty) =  pretty ty
 
