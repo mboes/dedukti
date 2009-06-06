@@ -1,3 +1,7 @@
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+
 module Europa.Parser (Pa, Europa.Parser.parse) where
 
 import Europa.Core

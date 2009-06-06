@@ -1,3 +1,7 @@
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+
 module Europa.Runtime
     ( Code(..), Term(..), ap
     , bbox, sbox, obj

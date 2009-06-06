@@ -1,3 +1,7 @@
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+
 module Europa.EuM (EuM, runEuM, warn, warnings, say
                   , Verbosity(..)
                   , configuration, parameter

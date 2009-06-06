@@ -2,6 +2,8 @@ name:           europa
 version:        0.0
 author:         Mathieu Boespflug
 maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
+copyright:
+    (c) 2009 Institut National de Recherche en Informatique et en Automatique.
 homepage:       http://www.lix.polytechnique.fr/~mboes/src/europa.git
 synopsis:       A type-checker for the λΠ-modulo calculus.
 description:

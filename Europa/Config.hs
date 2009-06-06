@@ -1,4 +1,8 @@
--- | Global site-specific configuration variables.
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+--
+-- Global site-specific configuration variables.
 module Europa.Config where
 
 
