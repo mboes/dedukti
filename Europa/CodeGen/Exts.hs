@@ -38,7 +38,10 @@ instance CodeGen Record where
                                               [ Hs.Lit $ Hs.String $ show $ pretty $ rec_name rec
                                               , var (rec_name rec .$ "box") ])
               rules (Rec _ 0 _) = []
-              rules (Rec x nr _) = map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++ [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty x))]]
+              rules (Rec x nr _) =
+                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Starting rule " ++ show (pretty x))]] ++
+                  map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
+                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty x))]]
 
     serialize (Module mod) (Bundle decls) =
         B.pack $ prettyPrint $
