@@ -15,11 +15,12 @@ module Europa.Core
     , Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
     -- * Smart constructors
     , abstract, apply, unapply
+    -- * Transformations
+    , transformM, transform
     ) where
 
-import Control.Applicative as A
-import Data.Traversable as A
-import Data.Foldable as A
+import Control.Applicative
+import Control.Monad.Identity
 import qualified Data.Map as Map
 
 
@@ -130,3 +131,31 @@ unapply :: Expr id a -> [Expr id a]
 unapply = reverse . aux where
     aux (App t1 t2 _) = t2 : aux t1
     aux t = [t]
+
+-- | Effectful bottom-up transformation on terms.
+transformM :: Monad m => (Expr id a -> m (Expr id a)) -> Expr id a -> m (Expr id a)
+transformM f (Lam (x ::: ty) t a) = do
+  ty' <- transformM f ty
+  t' <- transformM f t
+  f $ Lam (x ::: ty') t' a
+transformM f (Lam (Hole ty) t a) = do
+  ty' <- transformM f ty
+  t' <- transformM f t
+  f $ Lam (Hole ty') t' a
+transformM f (Pi (x ::: ty) t a) = do
+  ty' <- transformM f ty
+  t' <- transformM f t
+  f $ Pi (x ::: ty') t' a
+transformM f (Pi (Hole ty) t a) = do
+  ty' <- transformM f ty
+  t' <- transformM f t
+  f $ Pi (Hole ty') t' a
+transformM f (App t1 t2 a) = do
+  t1' <- transformM f t1
+  t2' <- transformM f t2
+  f $ App t1' t2' a
+transformM f t = f t
+
+-- | Pure bottom-up transformation on terms.
+transform :: (Expr id a -> Expr id a) -> Expr id a -> Expr id a
+transform f = runIdentity . transformM (return . f)
