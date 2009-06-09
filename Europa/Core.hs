@@ -2,7 +2,20 @@
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
 
-module Europa.Core where
+module Europa.Core
+    ( -- * Terms
+      Expr(..), Binding(..)
+    -- * Rules
+    , Rule(..), Env, TyRule(..), RuleSet(..)
+    -- * Convenience functions
+    , range, isAbstraction, isApplication, isVariable, isAtomic, isApplicative
+    -- * Environments
+    , (&)
+    -- * Annotations
+    , Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
+    -- * Smart constructors
+    , abstract, apply, unapply
+    ) where
 
 import Control.Applicative as A
 import Data.Traversable as A
@@ -74,26 +87,10 @@ isApplicative x = isAtomic x || isApplication x
 env & (x ::: t) = Map.insert x t env
 
 -- | Phantom type used to express no annotation.
-data Unannot = Unannot deriving Show
+data Unannot = Unannot deriving (Eq, Ord, Show)
 
---nann = error "No annotation."
+-- | Unannot should stay abstract. |nann| constructs a value of type |Unannot|.
 nann = Unannot
-
-instance Eq Unannot
-instance Ord Unannot
---instance Show Unannot
-
--- | Invariant: in abstract xs t annots, length annots == length xs.
-abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
-abstract [] t _ = t
-abstract (x:xs) t (a:annots) = Lam x (abstract xs t annots) %% a
-abstract _ _ _ = error "Fewer annotations than number of variables."
-
--- | Invariant: in apply ts annots, length annots == length ts - 1.
-apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
-apply t [] _ = t
-apply t (x:xs) (a:annots) = apply (App t x %% a) xs annots
-apply _ _ _= error "Fewer annotations than number of applications."
 
 -- | Annotation operator.
 (%%) :: (a -> Expr id a) -> a -> Expr id a
@@ -115,6 +112,18 @@ infixl 1 %%
 infixl 1 %%%
 infixl 1 <%%>
 infixl 1 <%%%>
+
+-- | Invariant: in abstract xs t annots, length annots == length xs.
+abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
+abstract [] t _ = t
+abstract (x:xs) t (a:annots) = Lam x (abstract xs t annots) %% a
+abstract _ _ _ = error "Fewer annotations than number of variables."
+
+-- | Invariant: in apply ts annots, length annots == length ts - 1.
+apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
+apply t [] _ = t
+apply t (x:xs) (a:annots) = apply (App t x %% a) xs annots
+apply _ _ _= error "Fewer annotations than number of applications."
 
 -- | Turn nested applications into a list.
 unapply :: Expr id a -> [Expr id a]
