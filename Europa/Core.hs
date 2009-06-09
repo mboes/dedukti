@@ -32,6 +32,8 @@ data Expr id a = Lam (Binding id a) (Expr id a) a
                | Kind
                  deriving (Eq, Ord, Show)
 
+infix 2 :::
+
 -- | A type decorating a variable, or a type on its own.
 data Binding id a = id ::: Expr id a
                | Hole (Expr id a)
@@ -83,9 +85,11 @@ isAtomic _         = False
 
 isApplicative x = isAtomic x || isApplication x
 
+infix 1 &
+
 -- | Extend an environment with a new binding.
 (&) :: Ord id => Env id a -> Binding id a -> Env id a
-env & (x ::: t) = Map.insert x t env
+env & x ::: t = Map.insert x t env
 
 -- | Phantom type used to express no annotation.
 data Unannot = Unannot deriving (Eq, Ord, Show)
