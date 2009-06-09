@@ -97,8 +97,6 @@ xencode qid =
                   f 'x'  = "xx"
                   f '\'' = "xq"
                   f '_'  = "xu"
-                  f '.'  = "xd" -- illegal character in name components, used
-                                -- for internally generated vars.
                   f x | x >= '0', x <= '9' = 'x' `B.cons` B.singleton x
                       | otherwise = B.singleton x
 
@@ -125,7 +123,7 @@ clause rule =
     where guards constraints =
               map (\(x, x') -> Hs.Qualifier $
                    primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
-          qids = Stream.unfold (\i -> (qid $ B.pack $ ('.':) $ show i, i + 1)) 0
+          qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
