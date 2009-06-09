@@ -17,10 +17,13 @@ module Europa.Core
     , abstract, apply, unapply
     -- * Transformations
     , transformM, transform
+    -- * Query
+    , everyone
     ) where
 
 import Control.Applicative
 import Control.Monad.Identity
+import Control.Monad.State
 import qualified Data.Map as Map
 
 
@@ -163,3 +166,9 @@ transformM f t = f t
 -- | Pure bottom-up transformation on terms.
 transform :: (Expr id a -> Expr id a) -> Expr id a -> Expr id a
 transform f = runIdentity . transformM (return . f)
+
+-- | Produces all substructures of the given term. Often useful as a generator
+-- in a list comprehension.
+everyone :: Expr id a -> [Expr id a]
+everyone t = execState (transformM f t) []
+    where f t = withState (t:) (return t)
