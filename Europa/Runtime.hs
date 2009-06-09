@@ -8,6 +8,7 @@
 
 module Europa.Runtime
     ( Code(..), Term(..), ap
+    , convertible
     , bbox, sbox, obj
     , checkDeclaration
     , checkRule) where
