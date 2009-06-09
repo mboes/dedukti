@@ -8,6 +8,10 @@ module Europa.Rule where
 
 import Europa.Core
 import Data.List (groupBy)
+import qualified Data.Stream as Stream
+import Control.Monad.State
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Prelude hiding (head)
 import qualified Prelude
 
@@ -28,7 +32,7 @@ group = groupBy f where
     f x y = headConstant x == headConstant y
 
 arity :: TyRule id a -> Int
-arity (_ :@ (lhs :--> _)) = length (unapply lhs) - 1
+arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
 ruleSets :: Eq id => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
@@ -37,3 +41,23 @@ ruleSets ds rs = snd $ foldr aux (group rs, []) ds where
     aux (x ::: ty) (rs : rss, rsets)
         | x == headConstant (Prelude.head rs) = (rss, RS x ty rs : rsets)
         | otherwise                           = (rs : rss, RS x ty [] : rsets)
+
+-- | Make the rule left-linear and return collected unification constraints.
+-- This function must be provided with an infinite supply of fresh variable
+-- names.
+linearize :: Ord id => Stream.Stream id -> TyRule id a -> (TyRule id a, [(id, id)])
+linearize xs (env :@ lhs :--> rhs) =
+              let (lhs', (_, _, constraints)) = runState (transformM f lhs) (xs, Set.empty, [])
+                  -- Add new variables to environment, with same type as of
+                  -- the variables they are unified to.
+                  env' = foldr (\(x,x') env -> env & x' ::: env Map.! x) env constraints
+              in (env' :@ lhs' :--> rhs, constraints)
+    where f t@(Var x a) = do
+            (xs, seen, constraints) <- get
+            if x `Set.member` seen then
+                do let Stream.Cons x' xs' = xs
+                   put (xs', Set.insert x seen, (x, x'):constraints)
+                   return $ Var x' a else
+                do put (xs, Set.insert x seen, constraints)
+                   return t
+          f t = return t

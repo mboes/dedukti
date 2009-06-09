@@ -18,6 +18,7 @@ import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (ord, toUpper)
 import Data.List (intercalate, concatMap)
+import qualified Data.Stream as Stream
 
 
 type Em a = a (Id Record) (A Record)
@@ -96,6 +97,8 @@ xencode qid =
                   f 'x'  = "xx"
                   f '\'' = "xq"
                   f '_'  = "xu"
+                  f '.'  = "xd" -- illegal character in name components, used
+                                -- for internally generated vars.
                   f x | x >= '0', x <= '9' = 'x' `B.cons` B.singleton x
                       | otherwise = B.singleton x
 
@@ -106,19 +109,28 @@ function (RS x _ rs) =
     Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
     where n = Rule.arity (head rs)
           rhs = foldr primLam
-                (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : variables n))
-                (pvariables n)
+                (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : Stream.take n variables))
+                (Stream.take n pvariables)
           f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x n])
             | otherwise = Hs.FunBind (map clause rs)
 
 clause :: Em TyRule -> Hs.Match
-clause rule@(env :@ (lhs :--> rhs)) =
-    Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns rule))
-          Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
+clause rule =
+    let (lrule@(env :@ lhs :--> rhs), constraints) = Rule.linearize qids rule
+    in if null constraints
+       then Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
+            Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
+       else Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
+            Nothing (Hs.GuardedRhss [Hs.GuardedRhs (!) (guards constraints) (code rhs)]) (Hs.BDecls [])
+    where guards constraints =
+              map (\(x, x') -> Hs.Qualifier $
+                   primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
+          qids = Stream.unfold (\i -> (qid $ B.pack $ ('.':) $ show i, i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
-    Hs.Match (!) (Hs.Ident "__") (pvariables n) Nothing (Hs.UnGuardedRhs (primApps x (variables n))) (Hs.BDecls [])
+    Hs.Match (!) (Hs.Ident "__") (Stream.take n pvariables) Nothing
+          (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) (Hs.BDecls [])
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
@@ -126,7 +138,7 @@ value x rhs =
 
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
-pattern env (Var x _) | Map.member x env = pvar x
+pattern env (Var x _) | x `Map.member` env = pvar x
 pattern env expr = case unapply expr of
                      Var x _ : xs -> primAppsP x (map (pattern env) xs)
 
@@ -165,10 +177,12 @@ var = Hs.Var . Hs.UnQual . varName
 pvar :: Id Record -> Hs.Pat
 pvar = Hs.PVar . varName
 
--- | Produce a set of variables x1, ..., xn
-variables n = map (var . qid . B.pack . show) [1..n]
+-- | Produce a set of variables y1, ..., yn
+variables =
+    Stream.unfold (\i -> (Hs.Var $ Hs.UnQual $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
-pvariables n = map (pvar . qid . B.pack . show) [1..n]
+pvariables =
+    Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
 -- | Smart constructor constructor.
 con :: Id Record -> Hs.Exp
