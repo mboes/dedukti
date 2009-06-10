@@ -32,7 +32,9 @@ executable europa
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
                        FlexibleInstances, OverloadedStrings
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 library
   exposed-modules:     Europa.Runtime
   extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports

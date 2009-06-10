@@ -8,6 +8,7 @@ module Europa.Core
     -- * Rules
     , Rule(..), Env, TyRule(..), RuleSet(..)
     -- * Convenience functions
+    , (.->)
     , range, isAbstraction, isApplication, isVariable, isAtomic, isApplicative
     -- * Environments
     , (&)

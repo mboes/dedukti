@@ -16,8 +16,8 @@ import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Char (ord, toUpper)
-import Data.List (intercalate, concatMap)
+import Data.Char (toUpper)
+import Data.List (concatMap)
 import qualified Data.Stream as Stream
 
 
@@ -114,7 +114,7 @@ function (RS x _ rs) =
 
 clause :: Em TyRule -> Hs.Match
 clause rule =
-    let (lrule@(env :@ lhs :--> rhs), constraints) = Rule.linearize qids rule
+    let (lrule@(env :@ _ :--> rhs), constraints) = Rule.linearize qids rule
     in if null constraints
        then Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
             Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
@@ -165,9 +165,6 @@ term Kind          = primTKind
 varName :: Id Record -> Hs.Name
 varName x = Hs.Ident $ xencode x
 
-conName :: Id Record -> Hs.Name
-conName x = Hs.Ident $ xencode x
-
 -- | Smart variable constructor.
 var :: Id Record -> Hs.Exp
 var = Hs.Var . Hs.UnQual . varName
@@ -197,7 +194,6 @@ primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
 primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String (show (pretty c)))]
 primType      = primitiveCon "Type" []
-primKind      = primitiveCon "Kind" []
 
 primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (!) [pat] t)]
 primPi  dom pat range = primitiveCon "Pi" [dom, Hs.Paren (Hs.Lambda (!) [pat] range)]
@@ -221,14 +217,11 @@ primTApp t1 t2 = primitiveCon "TApp" [t1, t2]
 primTType      = primitiveCon "TType" []
 primTKind      = primitiveCon "TKind" []
 
-primBox  ty_code obj_code    = primitiveCon "Box" [ty_code, obj_code]
 primUBox ty obj_code         = primitiveCon "UBox" [ty, obj_code]
 primbbox ty ty_code obj_code = primitiveVar "bbox" [ty, ty_code, obj_code]
 primsbox ty ty_code obj_code = primitiveVar "sbox" [ty, ty_code, obj_code]
 
 primobj t = primitiveVar "obj" [t]
-
-primtypeOf t = primitiveVar "typeOf" [t]
 
 -- | Build a pattern matching a constant.
 primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String (show (pretty c)))]

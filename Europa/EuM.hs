@@ -14,7 +14,6 @@ module Europa.EuM (EuM, runEuM, warn, warnings, say
                   , Exception(..), throw, io) where
 
 import Europa.Config as Config
-import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Exception
 import Control.Applicative

@@ -18,7 +18,6 @@ module Europa.Module
     ) where
 
 import System.FilePath
-import Data.List (intercalate)
 import Data.Char (isAlpha, isAlphaNum)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Typeable

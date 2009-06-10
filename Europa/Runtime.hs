@@ -14,11 +14,9 @@ module Europa.Runtime
     , checkRule) where
 
 import qualified Data.ByteString.Char8 as B
-import Control.Monad hiding (ap)
 import Control.Exception
-import Text.Show.Functions
+import Text.Show.Functions ()
 import Data.Typeable hiding (typeOf)
-import Data.Maybe (fromJust)
 import Prelude hiding (pi, catch)
 import System.IO
 
