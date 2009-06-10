@@ -14,7 +14,7 @@ module Europa.Module
     , pathFromModule, moduleFromPath
     , srcPathFromModule, objPathFromModule, ifacePathFromModule
     -- * Qualified names.
-    , Qid(..), qid, (.$)
+    , Qid(..), qid, (.$), provenance
     ) where
 
 import System.FilePath
@@ -83,3 +83,8 @@ qid x = Qid Root x Root
 -- | Append suffix.
 (.$) :: Qid -> B.ByteString -> Qid
 (Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
+
+-- | Get the module where the qid is defined, based on its qualifier.
+provenance :: Qid -> Maybe Module
+provenance (Qid Root _ _) = Nothing
+provenance (Qid qual _ _) = Just (Module qual)
