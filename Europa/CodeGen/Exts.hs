@@ -203,7 +203,7 @@ primitiveCon s xs = Hs.Paren $ application $ (Hs.Con $ Hs.UnQual $ Hs.Ident s) :
 
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
-primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String (xencode c))]
+primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String (show (pretty c)))]
 primType      = primitiveCon "Type" []
 primKind      = primitiveCon "Kind" []
 
@@ -239,7 +239,7 @@ primobj t = primitiveVar "obj" [t]
 primtypeOf t = primitiveVar "typeOf" [t]
 
 -- | Build a pattern matching a constant.
-primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String (xencode c))]
+primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String (show (pretty c)))]
 primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
 primAppsP c = foldl primAppP (primConP c)
 
