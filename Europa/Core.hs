@@ -65,11 +65,8 @@ data RuleSet id a = RS { rs_name :: id
 x .-> y = Pi (Hole x) y
 infixr .->
 
-range (Pi (Hole ty) _ _) = ty
-range (Pi (x ::: ty) _ _) = ty
-range (Lam (Hole ty) _ _) = ty
-range (Lam (x ::: ty) _ _) = ty
-range _ = error "'range' only applicable to arrow types."
+range (Hole ty) = ty
+range (x ::: ty) = ty
 
 isAbstraction (Lam _ _ _) = True
 isAbstraction (Pi _ _ _)  = True
