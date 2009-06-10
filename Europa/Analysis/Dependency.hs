@@ -1,3 +1,9 @@
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+--
+-- Find all direct dependencies of the current module.
+
 module Europa.Analysis.Dependency where
 
 import Europa.Core
