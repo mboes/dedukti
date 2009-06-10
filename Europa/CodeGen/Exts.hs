@@ -182,16 +182,8 @@ variables =
 pvariables =
     Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
--- | Smart constructor constructor.
-con :: Id Record -> Hs.Exp
-con = Hs.Con . Hs.UnQual . conName
-
 application :: [Hs.Exp] -> Hs.Exp
 application = foldl1 Hs.App
-
--- | Build a constructor pattern.
-papplication :: Id Record -> [Hs.Pat] -> Hs.Pat
-papplication c xs = Hs.PApp (Hs.UnQual (conName c)) xs
 
 -- Primitives
 
