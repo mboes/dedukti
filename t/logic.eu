@@ -18,7 +18,7 @@ refl_equal : t : coc.Utype -> x : coc.etype t -> eq t x x.
 
 eq_rec : t : coc.Utype 
      -> x : coc.etype t
-     -> (p : coc.etype t -> coc.Utype)
+     -> p : (coc.etype t -> coc.Utype)
      -> g : coc.etype (p x)
      -> y : coc.etype t
      -> h : eq t x y
@@ -33,7 +33,7 @@ eq_rec t x p  f x (refl_equal t x) --> f.
 f_equal 
      : A : coc.Utype 
     -> B : coc.Utype 
-    -> (f : coc.etype A -> coc.etype B)
+    -> f : (coc.etype A -> coc.etype B)
     -> x : coc.etype A 
     -> y : coc.etype A 
     -> H : eq A x y
@@ -42,7 +42,7 @@ f_equal
 [] f_equal --> 
     A : coc.Utype 
  => B : coc.Utype 
- => (f : coc.etype A -> coc.etype B)
+ => f : (coc.etype A -> coc.etype B)
  => x : coc.etype A 
  => y : coc.etype A 
  => H : eq A x y
