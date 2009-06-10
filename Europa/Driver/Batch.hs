@@ -7,48 +7,62 @@
 module Europa.Driver.Batch (make) where
 
 import Europa.Driver.Compile
+import Europa.Analysis.Dependency
 import Europa.Module
+import Europa.Parser
 import Europa.EuM
 import qualified Europa.Config as Config
-import Control.Hmk
 import qualified Control.Hmk.IO as IO
+import Control.Hmk
+import qualified Data.ByteString.Lazy.Char8 as B
 import Control.Monad
-import System.FilePath
-import System.Directory
-import System.IO.Error
+import Control.Applicative
 import Data.Typeable (Typeable)
 import Control.Exception
 
-
--- | Return a list of all files in the given directory.
-getDirectoryFiles :: FilePath -> EuM [FilePath]
-getDirectoryFiles dir =
-    io $ getDirectoryContents dir >>= filterM (doesFileExist . (dir </>))
 
 cmp x y = do
   s <- io $ IO.isStale x y
   say Debug $ text "Compared" <+> text x <+> text y <> text ":" <+> text (show s)
   return s
 
--- | Generate a ruleset from the files in the given directory.
-rules :: String -> [FilePath] -> [Rule EuM FilePath]
-rules hscomp = concatMap f . filter ((== ".eu") . takeExtension) where
-    f file = let stem = dropExtension file
-                 euo  = stem <.> ".euo"
-                 hi   = stem <.> ".hi"
-                 o    = stem <.> ".o"
-             in [ Rule file [] Nothing cmp
-                , Rule euo  [file] (Just $ cmd_compile file) cmp
-                , Rule hi   [euo] (Just $ cmd_hscomp euo) cmp
-                , Rule o    [euo] (Just $ cmd_hscomp euo) cmp ]
-             -- + main.
-        where cmd_compile file _ = do
-                compile (moduleFromPath file)
-                return TaskSuccess
-              cmd_hscomp euo _ =
-                  command hscomp [ "-c", "-x", "hs", euo
-                                 , "-XOverloadedStrings" ]
-                  >>= io . IO.testExitCode
+-- | Trace a dependency graph in the form of a set of rules, starting from the
+-- given root modules. Finding the dependencies of a module requires parsing
+-- the corresponding source file. To avoid parsing each file twice, the AST is
+-- kept in-memory in case it is needed later during compilation.
+rules :: [Module] -> EuM [Rule EuM FilePath]
+rules targets = concat <$> mapM f targets where
+    -- Collect dependencies.
+    f mod = do
+      say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
+      let path = srcPathFromModule mod
+      src <- parse path <$> io (B.readFile path)
+      let dependencies = collectDependencies src
+          rs = g mod dependencies (task_compile mod src)
+      -- Recursively construct rules for dependent modules.
+      rsdeps <- rules dependencies
+      say Verbose $ text "Dependencies of" <+> text (show mod) <+> text ":"
+              <+> text (show dependencies)
+      return $ rs ++ rsdeps
+    -- Now that we have the dependencies of the module, we can enounce a few
+    -- build rules concerning the module.
+    g mod ds compile = let eu  = srcPathFromModule mod
+                           euo = objPathFromModule mod
+                           hi  = pathFromModule ".hi" mod
+                           o   = pathFromModule ".o" mod
+                           dephis  = map (pathFromModule ".hi") ds
+                       in [ Rule eu [] Nothing cmp
+                          , Rule euo [eu] (Just compile) cmp
+                          , Rule hi (euo:dephis) (Just $ task_hscomp euo) cmp
+                          , Rule o (euo:dephis) (Just $ task_hscomp euo) cmp ]
+    task_hscomp euo _ = do
+      hscomp <- parameter Config.hsCompiler
+      io . IO.testExitCode =<< command hscomp [ "-c", "-x", "hs", euo
+                                              , "-XOverloadedStrings" ]
+    task_compile mod src _ = do
+      -- xxx: should catch any errors here.
+      compileAST mod src
+      return TaskSuccess
 
 data CommandError = CommandError
     deriving Typeable
@@ -72,14 +86,7 @@ abortOnError = mapM_ f where
 make :: [Module] -> EuM ()
 make modules = do
   let targets = map (pathFromModule ".o") modules
-  files <- getDirectoryFiles "."
-  -- Check that source files for targets exist.
-  mapM_ (exists files) (map (pathFromModule ".eu") modules)
-  config <- parameter Config.hsCompiler
-  schedule <- mk (process cmp (rules config files)) targets
+  rs <- process cmp <$> rules modules
+  schedule <- mk rs targets
   say Debug $ text "Tasks to execute:" <+> int (length schedule)
   abortOnError schedule
-    where exists files src
-              | src `elem` files = return undefined
-              | otherwise = throw $ mkIOError doesNotExistErrorType
-                            "" Nothing (Just src)

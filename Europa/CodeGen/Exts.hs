@@ -70,13 +70,13 @@ instance CodeGen Record where
                   map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
                   [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty x))]]
 
-    serialize (Module mod) (Bundle decls) =
+    serialize mod deps (Bundle decls) =
         B.pack $ prettyPrint $
-        Hs.Module (!) modname [] Nothing Nothing imports decls
-        where imports = [ Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime")
-                                        False False Nothing Nothing ]
-              modname = Hs.ModuleName $ B.unpack $ B.intercalate "." $
-                        map upcase $ toList mod
+        Hs.Module (!) (modname mod) [] Nothing Nothing imports decls
+        where imports = runtime : map (\m -> Hs.ImportDecl (!) (modname m) True False Nothing Nothing) deps
+              runtime = Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
+              modname (Module m) = Hs.ModuleName $ B.unpack $ B.intercalate "." $
+                                   map upcase $ toList m
 
     interface = error "Unimplemented."
 
