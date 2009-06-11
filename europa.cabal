@@ -31,7 +31,8 @@ executable europa
                        hmk >= 0.5
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
-                       FlexibleInstances, OverloadedStrings, RecordWildCards
+                       FlexibleInstances, FlexibleContexts, OverloadedStrings,
+                       RecordWildCards
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 library
