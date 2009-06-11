@@ -2,12 +2,15 @@
 -- Copyright : (c) 2009 INRIA
 -- License   : GPL
 
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 module Europa.Parser (Pa, Europa.Parser.parse) where
 
 import Europa.Core
 import Europa.Module
 import Text.Parsec hiding (ParseError, parse)
-import Text.Parsec.Token
+-- import Text.Parsec.Token hiding
+--     (whiteSpace, identifier, reservedOp, dot, brackets, parens, comma, reserved)
+import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
 import qualified Data.Map as Map
@@ -47,43 +50,41 @@ addRule rule = modifyState (rule:)
 allRules :: P [Pa TyRule]
 allRules = getState
 
-lexDef = LanguageDef
-         { commentStart = "(;"
-         , commentEnd = ";)"
-         , commentLine = ";"
-         , nestedComments = False
-         , identStart = alphaNum <|> char '_' <|> char '\''
-         , identLetter = alphaNum <|> char '_' <|> char '\''
-         , opStart = parserFail "No user defined operators yet."
-         , opLetter = parserFail "No user defined operators yet."
-         , reservedNames = ["Type", "Kind"]
-         , reservedOpNames = [":", "=>", "->", "-->"]
-         , caseSensitive = True
+lexDef = Token.LanguageDef
+         { Token.commentStart = "(;"
+         , Token.commentEnd = ";)"
+         , Token.commentLine = ";"
+         , Token.nestedComments = False
+         , Token.identStart = alphaNum <|> char '_' <|> char '\''
+         , Token.identLetter = alphaNum <|> char '_' <|> char '\''
+         , Token.opStart = parserFail "No user defined operators yet."
+         , Token.opLetter = parserFail "No user defined operators yet."
+         , Token.reservedNames = ["Type", "Kind"]
+         , Token.reservedOpNames = [":", "=>", "->", "-->"]
+         , Token.caseSensitive = True
          }
 
-lexer :: GenTokenParser B.ByteString st Identity
-lexer = makeTokenParser lexDef
-
-op = reservedOp lexer
+Token.LanguageDef{..} = lexDef
+Token.TokenParser{..} = Token.makeTokenParser lexDef
 
 -- | Qualified or unqualified name.
 --
 -- > qid ::= id.id | id
 qident = ident <?> "qid" where
     ident = do
-      c <- identStart lexDef
-      cs <- many (identLetter lexDef)
+      c <- identStart
+      cs <- many identLetter
       x <- (do let qualifier = B.pack (c:cs)
-               c <- try $ do char '.'; identStart lexDef
-               cs <- many (identLetter lexDef)
+               c <- try $ do char '.'; identStart
+               cs <- many identLetter
                let name = B.pack (c:cs)
                return $ Qid (Root :. qualifier) name Root)
            <|> return (qid (B.pack (c:cs)))
-      whiteSpace lexer
+      whiteSpace
       return (Var x nann)
 
 -- | Unqualified name.
-ident = qid . B.pack <$> identifier lexer
+ident = qid . B.pack <$> identifier
 
 -- | Root production rule of the grammar.
 --
@@ -91,7 +92,7 @@ ident = qid . B.pack <$> identifier lexer
 -- >            | rule toplevel
 -- >            | eof
 toplevel =
-    whiteSpace lexer *>
+    whiteSpace *>
     (    (rule *> toplevel) -- Rules are accumulated by side-effect.
      <|> ((:) <$> declaration <*> toplevel)
      <|> (eof *> return []))
@@ -99,26 +100,26 @@ toplevel =
 -- | Binding construct.
 --
 -- > binding ::= id : term
-binding = ((:::) <$> try (ident <* op ":") <*> term)
+binding = ((:::) <$> try (ident <* reservedOp ":") <*> term)
           <?> "binding"
 
 -- | Top-level declarations.
 --
 -- > declaration ::= id ":" term "."
-declaration = (binding <* dot lexer)
+declaration = (binding <* dot)
               <?> "declaration"
 
 -- | Left hand side of an abstraction or a product.
 --
 -- > domain ::= id ":" applicative
 -- >          | applicative
-domain = (    ((:::) <$> try (ident <* op ":") <*> applicative)
+domain = (    ((:::) <$> try (ident <* reservedOp ":") <*> applicative)
           <|> (Hole <$> applicative))
          <?> "domain"
 
 -- |
 -- > sort ::= Type
-sort = Type <$ reserved lexer "Type"
+sort = Type <$ reserved "Type"
 
 -- | Terms and types.
 --
@@ -132,9 +133,9 @@ sort = Type <$ reserved lexer "Type"
 term =     pi
        <|> lambda
        <|> applicative
-    where pi = try (Pi <$> domain <* op "->" <*> term <%%> nann)
+    where pi = try (Pi <$> domain <* reservedOp "->" <*> term <%%> nann)
                <?> "pi"
-          lambda = try (Lam <$> domain <* op "=>" <*> term <%%> nann)
+          lambda = try (Lam <$> domain <* reservedOp "=>" <*> term <%%> nann)
                    <?> "lambda"
 
 -- | Constituents of an applicative form.
@@ -142,7 +143,7 @@ term =     pi
 -- > simple ::= sort
 -- >          | qid
 -- >          | "(" term ")"
-simple = sort <|> qident <|> parens lexer term
+simple = sort <|> qident <|> parens term
 
 -- | Expressions that are either a name or an application of a
 -- expression to one or more arguments.
@@ -164,9 +165,9 @@ applicative = (\xs -> case xs of
 -- > env2 ::= binding
 -- >        | binding "," env2
 rule = ((\env lhs rhs -> foldl (&) Map.empty env :@ lhs :--> rhs)
-        <$> brackets lexer (sepBy binding (comma lexer))
+        <$> brackets (sepBy binding comma)
         <*> term
-        <*  op "-->"
+        <*  reservedOp "-->"
         <*> term
-        <*  dot lexer) >>= addRule
+        <*  dot) >>= addRule
        <?> "rule"

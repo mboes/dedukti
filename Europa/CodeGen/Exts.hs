@@ -28,8 +28,7 @@ type Code = Record
 
 -- Create a record for each declaration in the source.
 data Record = Rec { rec_name    :: Qid
-                  , rec_rules   :: Int -- ^ Number of rules associated with
-                                       -- qid.
+                  , rec_rules   :: Int -- ^ Number of rules associated with qid.
                   , rec_code    :: [Hs.Decl] }
 
 instance CodeGen Record where
