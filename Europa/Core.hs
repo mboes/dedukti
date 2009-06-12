@@ -201,5 +201,5 @@ transform f = runIdentity . transformM (return . f)
 -- | Produces all substructures of the given term. Often useful as a generator
 -- in a list comprehension.
 everyone :: (Transform t, Ord (Id t)) => t -> [Expr (Id t) (A t)]
-everyone t = execState (transformM f t) []
-    where f t = withState (t:) (return t)
+everyone t = execState (transformM f t) [] where
+    f t = withState (t:) (return t)
