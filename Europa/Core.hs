@@ -152,26 +152,26 @@ unapply = reverse . aux where
     aux (App t1 t2 _) = t2 : aux t1
     aux t = [t]
 
-class Transform t where
+class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms.
     transformM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
-instance Transform ([Binding id a], [TyRule id a]) where
+instance Ord id => Transform ([Binding id a], [TyRule id a]) where
     transformM f (decls, rules) =
         return (,) `ap` mapM (transformM f) decls `ap` mapM (transformM f) rules
 
-instance Transform (Binding id a) where
+instance Ord id => Transform (Binding id a) where
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
     transformM f (Hole ty) = return Hole `ap` transformM f ty
 
-instance Transform (TyRule id a) where
+instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ lhs :--> rhs) = do
       env' <- mapM (\(x, ty) -> transformM f ty >>= return . ((,) x)) $ Map.toList env
       lhs' <- transformM f lhs
       rhs' <- transformM f rhs
       return (Map.fromList env' :@ lhs' :--> rhs')
 
-instance Transform (Expr id a) where
+instance Ord id => Transform (Expr id a) where
     transformM f (Lam (x ::: ty) t a) = do
       ty' <- transformM f ty
       t' <- transformM f t
@@ -195,11 +195,11 @@ instance Transform (Expr id a) where
     transformM f t = f t
 
 -- | Pure bottom-up transformation on terms.
-transform :: (Transform t, Ord (Id t)) => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t
+transform :: Transform t => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t
 transform f = runIdentity . transformM (return . f)
 
 -- | Produces all substructures of the given term. Often useful as a generator
 -- in a list comprehension.
-everyone :: (Transform t, Ord (Id t)) => t -> [Expr (Id t) (A t)]
+everyone :: Transform t => t -> [Expr (Id t) (A t)]
 everyone t = execState (transformM f t) [] where
     f t = withState (t:) (return t)
