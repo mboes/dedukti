@@ -7,6 +7,8 @@ module Europa.Core
       Expr(..), Binding(..)
     -- * Rules
     , Rule(..), Env, TyRule(..), RuleSet(..)
+    -- * Type functions
+    , Id, A
     -- * Convenience functions
     , (.->)
     , range, isAbstraction, isApplication, isVariable, isAtomic, isApplicative
@@ -62,6 +64,19 @@ infix 8 :@
 data RuleSet id a = RS { rs_name :: id
                        , rs_type :: Expr id a
                        , rs_rules :: [TyRule id a] }
+
+type family Id t
+type family A t
+
+type instance Id ([Binding id a], [TyRule id a]) = id
+type instance Id (Binding id a) = id
+type instance Id (TyRule id a) = id
+type instance Id (Expr id a) = id
+
+type instance A  ([Binding id a], [TyRule id a]) = a
+type instance A  (Binding id a) = a
+type instance A  (TyRule id a) = a
+type instance A  (Expr id a) = a
 
 x .-> y = Pi (Hole x) y
 infixr .->
@@ -138,26 +153,18 @@ unapply = reverse . aux where
     aux t = [t]
 
 class Transform t where
-    type Id t
-    type A t
     -- | Effectful bottom-up transformation on terms.
     transformM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
 instance Transform ([Binding id a], [TyRule id a]) where
-    type Id ([Binding id a], [TyRule id a]) = id
-    type A ([Binding id a], [TyRule id a]) = a
     transformM f (decls, rules) =
         return (,) `ap` mapM (transformM f) decls `ap` mapM (transformM f) rules
 
 instance Transform (Binding id a) where
-    type Id (Binding id a) = id
-    type A (Binding id a) = a
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
     transformM f (Hole ty) = return Hole `ap` transformM f ty
 
 instance Transform (TyRule id a) where
-    type Id (TyRule id a) = id
-    type A (TyRule id a) = a
     transformM f (env :@ lhs :--> rhs) = do
       env' <- mapM (\(x, ty) -> transformM f ty >>= return . ((,) x)) $ Map.toList env
       lhs' <- transformM f lhs
@@ -165,8 +172,6 @@ instance Transform (TyRule id a) where
       return (Map.fromList env' :@ lhs' :--> rhs')
 
 instance Transform (Expr id a) where
-    type Id (Expr id a) = id
-    type A (Expr id a) = a
     transformM f (Lam (x ::: ty) t a) = do
       ty' <- transformM f ty
       t' <- transformM f t

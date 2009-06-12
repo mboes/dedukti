@@ -11,8 +11,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 
 class CodeGen o where
-    type Id o
-    type A o
     data Bundle o
 
     -- | Emit code corresponding to an individual rule set.

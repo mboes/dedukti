@@ -23,6 +23,9 @@ import qualified Data.Stream as Stream
 
 type Em a = a (Id Record) (A Record)
 
+type instance Id Record = Qid
+type instance A  Record = Unannot
+
 -- External view of record.
 type Code = Record
 
@@ -32,8 +35,6 @@ data Record = Rec { rec_name    :: Qid
                   , rec_code    :: [Hs.Decl] }
 
 instance CodeGen Record where
-    type Id Record     = Qid
-    type A Record      = Unannot
     data Bundle Record = Bundle [Hs.Decl]
 
     emit rs@(RS x ty rules) =
