@@ -62,13 +62,13 @@ instance CodeGen Record where
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
               checks = Hs.Do (concatMap rules records ++ map declaration records)
               declaration rec = Hs.Qualifier (primitiveVar "checkDeclaration"
-                                              [ Hs.Lit $ Hs.String $ show $ pretty $ rec_name rec
+                                              [ Hs.Lit $ Hs.String $ show $ pretty $ unqualify $ rec_name rec
                                               , var (rec_name rec .$ "box") ])
               rules (Rec _ 0 _) = []
               rules (Rec x nr _) =
-                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Starting rule " ++ show (pretty x))]] ++
+                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Starting rule " ++ show (pretty (unqualify x)))]] ++
                   map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
-                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty x))]]
+                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty (unqualify x)))]]
 
     serialize mod deps (Bundle decls) =
         B.pack $ prettyPrint $
@@ -163,11 +163,11 @@ term Kind          = primTKind
 (!) = Hs.SrcLoc "" 0 0
 
 varName :: Id Record -> Hs.Name
-varName x = Hs.Ident $ xencode x
+varName = Hs.Ident . xencode . unqualify
 
 -- | Smart variable constructor.
 var :: Id Record -> Hs.Exp
-var = Hs.Var . Hs.UnQual . varName
+var = Hs.Var . Hs.UnQual . Hs.Ident . xencode
 
 pvar :: Id Record -> Hs.Pat
 pvar = Hs.PVar . varName
