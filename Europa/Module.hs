@@ -14,7 +14,7 @@ module Europa.Module
     , pathFromModule, moduleFromPath
     , srcPathFromModule, objPathFromModule, ifacePathFromModule
     -- * Qualified names.
-    , Qid(..), qid, (.$), provenance
+    , Qid(..), qid, (.$), provenance, unqualify
     ) where
 
 import System.FilePath
@@ -87,3 +87,7 @@ qid x = Qid Root x Root
 provenance :: Qid -> Maybe Module
 provenance (Qid Root _ _) = Nothing
 provenance (Qid qual _ _) = Just (Module qual)
+
+-- | Remove any qualifier.
+unqualify :: Qid -> Qid
+unqualify qid = qid{qid_qualifier = Root}
