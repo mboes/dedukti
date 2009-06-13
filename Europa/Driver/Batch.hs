@@ -15,7 +15,8 @@ import qualified Europa.Config as Config
 import qualified Control.Hmk.IO as IO
 import Control.Hmk
 import qualified Data.ByteString.Lazy.Char8 as B
-import Control.Monad
+import qualified Data.Map as Map
+import Control.Monad.State
 import Control.Applicative
 import Data.Typeable (Typeable)
 import Control.Exception
@@ -31,19 +32,28 @@ cmp x y = do
 -- the corresponding source file. To avoid parsing each file twice, the AST is
 -- kept in-memory in case it is needed later during compilation.
 rules :: [MName] -> EuM [Rule EuM FilePath]
-rules targets = concat <$> mapM f targets where
+rules targets = evalStateT (rules' targets) Map.empty
+
+-- Maintain a list of already seen modules to avoid parsing same modules twice
+-- when the dependency graph is not a tree.
+rules' targets = concat <$> mapM f targets where
     -- Collect dependencies.
     f mod = do
-      say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
-      let path = srcPathFromModule mod
-      src <- parse path <$> io (B.readFile path)
-      let dependencies = collectDependencies src
-          rs = g mod dependencies (task_compile mod src)
-      -- Recursively construct rules for dependent modules.
-      rsdeps <- rules dependencies
-      say Verbose $ text "Dependencies of" <+> text (show mod) <+> text ":"
-              <+> text (show dependencies)
-      return $ rs ++ rsdeps
+      seen <- get
+      case Map.lookup mod seen of
+        Just deps -> return deps
+        Nothing -> do
+          lift $ say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
+          let path = srcPathFromModule mod
+          src <- lift (parse path <$> io (B.readFile path))
+          let dependencies = collectDependencies src
+              rs = g mod dependencies (task_compile mod src)
+          -- Recursively construct rules for dependent modules.
+          rsdeps <- rules' dependencies
+          lift $ say Verbose $ text "Dependencies of" <+> text (show mod) <+> text ":"
+                   <+> text (show dependencies)
+          put (Map.insert mod (rs ++ rsdeps) seen)
+          return $ rs ++ rsdeps
     -- Now that we have the dependencies of the module, we can enounce a few
     -- build rules concerning the module.
     g mod ds compile = let eu  = srcPathFromModule mod
