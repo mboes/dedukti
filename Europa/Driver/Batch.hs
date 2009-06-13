@@ -68,7 +68,8 @@ rules' targets = concat <$> mapM f targets where
     task_hscomp euo _ = do
       hscomp <- parameter Config.hsCompiler
       io . IO.testExitCode =<< command hscomp [ "-c", "-x", "hs", euo
-                                              , "-XOverloadedStrings" ]
+                                              , "-XOverloadedStrings"
+                                              , "-fno-warn-overlapping-patterns" ]
     task_compile mod src _ = do
       -- xxx: should catch any errors here.
       compileAST mod src
