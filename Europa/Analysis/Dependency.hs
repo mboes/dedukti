@@ -11,7 +11,7 @@ import Europa.Module
 import qualified Data.Set as Set
 
 
-collectDependencies :: ([Binding Qid a], [TyRule Qid a]) -> [MName]
+collectDependencies :: Module Qid a -> [MName]
 collectDependencies drs =
     Set.toList $ Set.fromList [ m | Var x _ <- everyone drs
                                   , Just m <- return (provenance x) ]

@@ -34,7 +34,7 @@ instance Show ParseError where
 instance Exception.Exception ParseError
 
 
-parse :: SourceName -> B.ByteString -> ([Pa Binding], [Pa TyRule])
+parse :: SourceName -> B.ByteString -> Pa Module
 parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
     -- definitions. Here rules are accumulated by side-effect, added to the

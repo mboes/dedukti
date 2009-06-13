@@ -41,7 +41,7 @@ compile mod = do
   let path = srcPathFromModule mod
   compileAST mod =<< return (parse path) `ap` io (B.readFile path)
 
-compileAST :: MName -> ([Pa Binding], [Pa TyRule]) -> EuM ()
+compileAST :: MName -> Pa Module -> EuM ()
 compileAST mod src@(decls, rules) = do
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]

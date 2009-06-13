@@ -7,6 +7,8 @@ module Europa.Core
       Expr(..), Binding(..)
     -- * Rules
     , Rule(..), Env, TyRule(..), RuleSet(..)
+    -- * Type Synonyms
+    , Module
     -- * Type functions
     , Id, A
     -- * Convenience functions
@@ -65,16 +67,18 @@ data RuleSet id a = RS { rs_name :: id
                        , rs_type :: Expr id a
                        , rs_rules :: [TyRule id a] }
 
+type Module id a = ([Binding id a], [TyRule id a])
+
 type family Id t
 type family A t
 
-type instance Id ([Binding id a], [TyRule id a]) = id
+type instance Id (Module id a) = id
 type instance Id (Binding id a) = id
 type instance Id (TyRule id a) = id
 type instance Id (RuleSet id a) = id
 type instance Id (Expr id a) = id
 
-type instance A  ([Binding id a], [TyRule id a]) = a
+type instance A  (Module id a) = a
 type instance A  (Binding id a) = a
 type instance A  (TyRule id a) = a
 type instance A  (RuleSet id a) = a
@@ -161,7 +165,7 @@ class Ord (Id t) => Transform t where
     -- | Helper function for top-down transformations.
     descendM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
-instance Ord id => Transform ([Binding id a], [TyRule id a]) where
+instance Ord id => Transform (Module id a) where
     transformM f (decls, rules) =
         return (,) `ap` mapM (transformM f) decls `ap` mapM (transformM f) rules
 
