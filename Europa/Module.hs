@@ -3,10 +3,11 @@
 -- License   : GPL
 --
 -- A representation of module names and associated functions to map module
--- names to source files and vice-versa.
+-- names to source files and vice-versa. Qualified names, as required in the
+-- presence of modules, are also defined here.
 module Europa.Module
     ( -- * Data types
-      Hierarchy(..), Module(..)
+      Hierarchy(..), MName
     -- * Exceptions
     , InvalidModuleName(..)
     -- * Functions
@@ -26,8 +27,7 @@ import Europa.EuM
 data Hierarchy = !Hierarchy :. !B.ByteString | Root
                  deriving (Eq, Ord, Show)
 
-newtype Module = Module Hierarchy
-    deriving (Eq, Ord, Show)
+type MName = Hierarchy
 
 newtype InvalidModuleName = InvalidModuleName String
     deriving (Eq, Ord, Typeable)
@@ -52,21 +52,21 @@ check :: String -> String
 check cmpt@(x:xs) | isAlpha x, and (map isAlphaNum xs) = cmpt
                   | otherwise = throw $ InvalidModuleName cmpt
 
-pathFromModule :: String -> Module -> FilePath
-pathFromModule ext (Module mod) =
+pathFromModule :: String -> MName -> FilePath
+pathFromModule ext mod =
     addExtension (joinPath $ map B.unpack $ toList mod) ext
 
-moduleFromPath :: FilePath -> Module
+moduleFromPath :: FilePath -> MName
 moduleFromPath =
-    Module . hierarchy . map (B.pack . check) . splitDirectories . dropExtension
+    hierarchy . map (B.pack . check) . splitDirectories . dropExtension
 
-srcPathFromModule :: Module -> FilePath
+srcPathFromModule :: MName -> FilePath
 srcPathFromModule = pathFromModule ".eu"
 
-objPathFromModule :: Module -> FilePath
+objPathFromModule :: MName -> FilePath
 objPathFromModule = pathFromModule ".euo"
 
-ifacePathFromModule :: Module -> FilePath
+ifacePathFromModule :: MName -> FilePath
 ifacePathFromModule = pathFromModule ".eui"
 
 -- | The datatype of qualified names.
@@ -84,9 +84,9 @@ qid x = Qid Root x Root
 (Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
 
 -- | Get the module where the qid is defined, based on its qualifier.
-provenance :: Qid -> Maybe Module
+provenance :: Qid -> Maybe MName
 provenance (Qid Root _ _) = Nothing
-provenance (Qid qual _ _) = Just (Module qual)
+provenance (Qid qual _ _) = Just qual
 
 -- | Remove any qualifier.
 unqualify :: Qid -> Qid

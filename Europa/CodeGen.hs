@@ -20,10 +20,10 @@ class CodeGen o where
 
     -- | Produce the byte sequence to write to a file, given the code
     -- for all the rule sets.
-    serialize :: Module   -- ^ The module name
-              -> [Module] -- ^ Dependencies
+    serialize :: MName   -- ^ The module name
+              -> [MName] -- ^ Dependencies
               -> Bundle o -- ^ Code
               -> B.ByteString
 
     -- | Produce interface code.
-    interface :: Module -> Bundle o -> B.ByteString
+    interface :: MName -> Bundle o -> B.ByteString

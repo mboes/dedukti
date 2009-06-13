@@ -18,28 +18,30 @@ import qualified Data.Set as Set
 import Control.Monad (ap)
 
 
-dump :: Module -> B.ByteString -> EuM ()
+dump :: MName -> B.ByteString -> EuM ()
 dump mod = io . B.writeFile (objPathFromModule mod)
 
 -- | Qualify all occurrences of identifiers defined in current module.
-selfQualify :: Module -> [RuleSet Qid a] -> [RuleSet Qid a]
-selfQualify (Module mod) rsets = let defs = Set.fromList (map rs_name rsets)
-                                 in map (descend (f defs))
-                                        (map (\RS{..} -> RS{rs_name = rs_name{qid_qualifier = mod}, ..}) rsets)
+selfQualify :: MName -> [RuleSet Qid a] -> [RuleSet Qid a]
+selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
+                        in map (descend (f defs))
+                               (map (\RS{..} -> RS{rs_name = rs_name{qid_qualifier = mod}, ..}) rsets)
     where f defs (Var x a) | Nothing <- provenance x
                            , x `Set.member` defs = Var x{qid_qualifier = mod} a
-          f defs (Lam (x ::: ty) t a) = Lam (x ::: f defs ty) (f (Set.delete x defs) t) a
-          f defs (Pi (x ::: ty) t a)  = Pi (x ::: f defs ty) (f (Set.delete x defs) t) a
+          f defs (Lam (x ::: ty) t a) =
+              Lam (x ::: f defs ty) (f (Set.delete x defs) t) a
+          f defs (Pi (x ::: ty) t a) =
+              Pi (x ::: f defs ty) (f (Set.delete x defs) t) a
           f defs t = descend (f defs) (t :: Expr Qid a)
 
 -- | Emit Haskell code for one module.
-compile :: Module -> EuM ()
+compile :: MName -> EuM ()
 compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
   compileAST mod =<< return (parse path) `ap` io (B.readFile path)
 
-compileAST :: Module -> ([Pa Binding], [Pa TyRule]) -> EuM ()
+compileAST :: MName -> ([Pa Binding], [Pa TyRule]) -> EuM ()
 compileAST mod src@(decls, rules) = do
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]

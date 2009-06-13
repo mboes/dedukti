@@ -75,8 +75,7 @@ instance CodeGen Record where
         Hs.Module (!) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (!) (modname m) True False Nothing Nothing) deps
               runtime = Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
-              modname (Module m) = Hs.ModuleName $ B.unpack $ B.intercalate "." $
-                                   map upcase $ toList m
+              modname m = Hs.ModuleName $ B.unpack $ B.intercalate "." $ map upcase $ toList m
 
     interface = error "Unimplemented."
 

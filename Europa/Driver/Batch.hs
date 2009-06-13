@@ -30,7 +30,7 @@ cmp x y = do
 -- given root modules. Finding the dependencies of a module requires parsing
 -- the corresponding source file. To avoid parsing each file twice, the AST is
 -- kept in-memory in case it is needed later during compilation.
-rules :: [Module] -> EuM [Rule EuM FilePath]
+rules :: [MName] -> EuM [Rule EuM FilePath]
 rules targets = concat <$> mapM f targets where
     -- Collect dependencies.
     f mod = do
@@ -83,7 +83,7 @@ abortOnError = mapM_ f where
 
 -- | Compile each of the modules given as input and all of their
 -- dependencies, if necessary.
-make :: [Module] -> EuM ()
+make :: [MName] -> EuM ()
 make modules = do
   let targets = map (pathFromModule ".o") modules
   rs <- process cmp <$> rules modules
