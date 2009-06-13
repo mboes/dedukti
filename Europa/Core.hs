@@ -19,7 +19,7 @@ module Europa.Core
     -- * Smart constructors
     , abstract, apply, unapply
     -- * Transformations
-    , transformM, transform
+    , Transform(..), transform, descend
     -- * Query
     , everyone
     ) where
@@ -71,11 +71,13 @@ type family A t
 type instance Id ([Binding id a], [TyRule id a]) = id
 type instance Id (Binding id a) = id
 type instance Id (TyRule id a) = id
+type instance Id (RuleSet id a) = id
 type instance Id (Expr id a) = id
 
 type instance A  ([Binding id a], [TyRule id a]) = a
 type instance A  (Binding id a) = a
 type instance A  (TyRule id a) = a
+type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
 
 x .-> y = Pi (Hole x) y
@@ -156,13 +158,22 @@ class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms.
     transformM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
+    -- | Helper function for top-down transformations.
+    descendM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
+
 instance Ord id => Transform ([Binding id a], [TyRule id a]) where
     transformM f (decls, rules) =
         return (,) `ap` mapM (transformM f) decls `ap` mapM (transformM f) rules
 
+    descendM f (decls, rules) =
+        return (,) `ap` mapM (descendM f) decls `ap` mapM (descendM f) rules
+
 instance Ord id => Transform (Binding id a) where
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
     transformM f (Hole ty) = return Hole `ap` transformM f ty
+
+    descendM f (x ::: ty) = return (x :::) `ap` descendM f ty
+    descendM f (Hole ty) = return Hole `ap` descendM f ty
 
 instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ lhs :--> rhs) = do
@@ -170,6 +181,19 @@ instance Ord id => Transform (TyRule id a) where
       lhs' <- transformM f lhs
       rhs' <- transformM f rhs
       return (Map.fromList env' :@ lhs' :--> rhs')
+
+    descendM f (env :@ lhs :--> rhs) = do
+      env' <- mapM (\(x, ty) -> f ty >>= return . ((,) x)) $ Map.toList env
+      lhs' <- f lhs
+      rhs' <- f rhs
+      return (Map.fromList env' :@ lhs' :--> rhs')
+
+instance Ord id => Transform (RuleSet id a) where
+    transformM f RS{..} =
+        return RS `ap` return rs_name `ap` transformM f rs_type `ap` mapM (transformM f) rs_rules
+
+    descendM f RS{..} =
+        return RS `ap` return rs_name `ap` descendM f rs_type `ap` mapM (descendM f) rs_rules
 
 instance Ord id => Transform (Expr id a) where
     transformM f (Lam (x ::: ty) t a) = do
@@ -189,14 +213,35 @@ instance Ord id => Transform (Expr id a) where
       t' <- transformM f t
       f $ Pi (Hole ty') t' a
     transformM f (App t1 t2 a) = do
-      t1' <- transformM f t1
-      t2' <- transformM f t2
-      f $ App t1' t2' a
+      f =<< return App `ap` transformM f t1 `ap` transformM f t2 `ap` return a
     transformM f t = f t
+
+    descendM f (Lam (x ::: ty) t a) = do
+      ty' <- f ty
+      t' <- f t
+      return $ Lam (x ::: ty') t' a
+    descendM f (Lam (Hole ty) t a) = do
+      ty' <- f ty
+      t' <-  f t
+      return $ Lam (Hole ty') t' a
+    descendM f (Pi (x ::: ty) t a) = do
+      ty' <- f ty
+      t' <- f t
+      return $ Pi (x ::: ty') t' a
+    descendM f (Pi (Hole ty) t a) = do
+      ty' <- f ty
+      t' <- f t
+      return $ Pi (Hole ty') t' a
+    descendM f (App t1 t2 a) = do
+      return App `ap` f t1 `ap` f t2 `ap` return a
+    descendM f t = return t
 
 -- | Pure bottom-up transformation on terms.
 transform :: Transform t => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t
 transform f = runIdentity . transformM (return . f)
+
+descend :: Transform t => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t
+descend f = runIdentity . descendM (return . f)
 
 -- | Produces all substructures of the given term. Often useful as a generator
 -- in a list comprehension.
