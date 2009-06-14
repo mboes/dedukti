@@ -13,7 +13,6 @@ import Text.Parsec hiding (ParseError, parse)
 import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
-import qualified Data.Map as Map
 import qualified Control.Exception as Exception
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Typeable (Typeable)
@@ -164,7 +163,7 @@ applicative = (\xs -> case xs of
 -- >       | "[" env2 "]"
 -- > env2 ::= binding
 -- >        | binding "," env2
-rule = ((\env lhs rhs -> foldl (&) Map.empty env :@ lhs :--> rhs)
+rule = ((\env lhs rhs -> foldl (&) emptyEnv env :@ lhs :--> rhs)
         <$> brackets (sepBy binding comma)
         <*> term
         <*  reservedOp "-->"

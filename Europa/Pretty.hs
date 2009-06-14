@@ -12,7 +12,6 @@ module Europa.Pretty (pretty) where
 import Europa.Core
 import Europa.Module
 import Text.PrettyPrint.Leijen
-import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
@@ -39,12 +38,12 @@ instance Pretty id => Pretty (Binding id a) where
 instance Pretty id => Pretty (Rule id a) where
     pretty (lhs :--> rhs) = pretty lhs <+> text "-->" <+> pretty rhs
 
-instance Pretty id => Pretty (TyRule id a) where
+instance (Eq a, Ord id, Pretty id) => Pretty (TyRule id a) where
     pretty (env :@ rule)
-        | Map.null env = text "[]" <+> pretty rule
+        | env == emptyEnv = text "[]" <+> pretty rule
         | otherwise =
             encloseSep (text "[ ") (text " ]") (text ", ")
-                       (map (\(x, y) -> pretty (x ::: y)) (Map.toList env))
+                           (map pretty (env_bindings env))
             <+> pretty rule
 
     prettyList = vcat . map (\x -> pretty x <> dot)

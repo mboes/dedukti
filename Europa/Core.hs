@@ -15,7 +15,7 @@ module Europa.Core
     , (.->)
     , range, isAbstraction, isApplication, isVariable, isAtomic, isApplicative
     -- * Environments
-    , (&)
+    , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!), isin
     -- * Annotations
     , Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
     -- * Smart constructors
@@ -52,7 +52,11 @@ data Rule id a = Expr id a :--> Expr id a
                  deriving (Eq, Ord, Show)
 infix 9 :-->
 
-type Env id a = Map.Map id (Expr id a)
+-- | An environment is and *ordered* list of bindings, since types can depend
+-- on items defined earlier in environment. We opt for a hybrid
+-- representation, for both fast membership tests and conservation of order.
+data Env id a = Env [Binding id a] (Map.Map id (Expr id a))
+                deriving (Eq, Ord, Show)
 
 -- | A rewrite rule paired with a typing environment.
 data TyRule id a = Env id a :@ Rule id a
@@ -109,11 +113,26 @@ isAtomic _         = False
 
 isApplicative x = isAtomic x || isApplication x
 
+env_bindings (Env bs _) = bs
+env_domain (Env bs map) = Map.keys map
+env_codomain (Env bs map) = Map.elems map
+
 infix 1 &
+
+emptyEnv = Env [] Map.empty
 
 -- | Extend an environment with a new binding.
 (&) :: Ord id => Env id a -> Binding id a -> Env id a
-env & x ::: t = Map.insert x t env
+Env bs map & x ::: ty = Env ((x ::: ty) : bs) (Map.insert x ty map)
+
+(!) :: Ord id => Env id a -> id -> Expr id a
+Env _ map ! x = map Map.! x
+
+isin :: Ord id => id -> Env id a -> Bool
+isin x (Env _ map) = Map.member x map
+
+fromBindings :: Ord id => [Binding id a] -> Env id a
+fromBindings = foldl (&) (Env [] Map.empty)
 
 -- | Phantom type used to express no annotation.
 data Unannot = Unannot deriving (Eq, Ord, Show)
@@ -183,18 +202,12 @@ instance Ord id => Transform (Binding id a) where
 
 instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ rule) =
-        return (:@) `ap`
-                   (return Map.fromList `ap`
-                           mapM (\(x, ty) -> transformM f ty >>= return . ((,) x))
-                                    (Map.toList env)) `ap`
-                   transformM f rule
+        return (:@) `ap` (return fromBindings `ap` mapM (transformM f) (env_bindings env)) `ap`
+               transformM f rule
 
     descendM f (env :@ rule) =
-        return (:@) `ap`
-                   (return Map.fromList `ap`
-                           mapM (\(x, ty) -> f ty >>= return . ((,) x))
-                                    (Map.toList env)) `ap`
-                   descendM f rule
+        return (:@) `ap` (return fromBindings `ap` mapM (descendM f) (env_bindings env)) `ap`
+               descendM f rule
 
 instance Ord id => Transform (Rule id a) where
     transformM f (lhs :--> rhs) =

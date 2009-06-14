@@ -14,11 +14,10 @@ import Europa.Pretty
 import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
-import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toUpper)
-import Data.List (concatMap)
 import qualified Data.Stream as Stream
+import Prelude hiding ((*))
 
 
 type Em a = a (Id Record) (A Record)
@@ -46,9 +45,9 @@ instance CodeGen Record where
               -- declarations at top-level, so let's just call the code
               -- generation functions recursively.
               defs_rule n (env :@ lhs :--> rhs) =
-                  let rec x ty rs = (emit (RS x ty []) :: Record) : rs
-                      Bundle decls = coalesce $ Map.foldWithKey rec [ruleCheck] env
-                  in  Hs.FunBind [Hs.Match (!) (varName (x .$ "rule" .$ B.pack (show n)))
+                  let rec (x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
+                      Bundle decls = coalesce $ foldr rec [ruleCheck] (env_bindings env)
+                  in  Hs.FunBind [Hs.Match (*) (varName (x .$ "rule" .$ B.pack (show n)))
                                   []
                                   Nothing
                                   (Hs.UnGuardedRhs (primitiveVar "main" []))
@@ -58,7 +57,7 @@ instance CodeGen Record where
                                              (primitiveVar "checkRule" [var (x .$ "ty"), term lhs, term rhs])]
 
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
-        where main = Hs.FunBind [Hs.Match (!) (Hs.Ident "main") []
+        where main = Hs.FunBind [Hs.Match (*) (Hs.Ident "main") []
                                        Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
               checks = Hs.Do (concatMap rules records ++ map declaration records)
               declaration rec = Hs.Qualifier (primitiveVar "checkDeclaration"
@@ -72,9 +71,9 @@ instance CodeGen Record where
 
     serialize mod deps (Bundle decls) =
         B.pack $ prettyPrint $
-        Hs.Module (!) (modname mod) [] Nothing Nothing imports decls
-        where imports = runtime : map (\m -> Hs.ImportDecl (!) (modname m) True False Nothing Nothing) deps
-              runtime = Hs.ImportDecl (!) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
+        Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
+        where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing) deps
+              runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
               modname m = Hs.ModuleName $ B.unpack $ B.intercalate "." $ map upcase $ toList m
 
     interface = error "Unimplemented."
@@ -101,9 +100,9 @@ xencode qid =
 
 function :: Em RuleSet -> Hs.Decl
 function (RS x _ []) =
-    Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])]
+    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])]
 function (RS x _ rs) =
-    Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
+    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
     where n = Rule.arity (head rs)
           rhs = foldr primLam
                 (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : Stream.take n variables))
@@ -115,10 +114,10 @@ clause :: Em TyRule -> Hs.Match
 clause rule =
     let (lrule@(env :@ _ :--> rhs), constraints) = Rule.linearize qids rule
     in if null constraints
-       then Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
+       then Hs.Match (*) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
             Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
-       else Hs.Match (!) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
-            Nothing (Hs.GuardedRhss [Hs.GuardedRhs (!) (guards constraints) (code rhs)]) (Hs.BDecls [])
+       else Hs.Match (*) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
+            Nothing (Hs.GuardedRhss [Hs.GuardedRhs (*) (guards constraints) (code rhs)]) (Hs.BDecls [])
     where guards constraints =
               map (\(x, x') -> Hs.Qualifier $
                    primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
@@ -126,16 +125,16 @@ clause rule =
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
-    Hs.Match (!) (Hs.Ident "__") (Stream.take n pvariables) Nothing
+    Hs.Match (*) (Hs.Ident "__") (Stream.take n pvariables) Nothing
           (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) (Hs.BDecls [])
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
-    Hs.FunBind [Hs.Match (!) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
+    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
 
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
-pattern env (Var x _) | x `Map.member` env = pvar x
+pattern env (Var x _) | x `isin` env = pvar x
 pattern env expr = case unapply expr of
                      Var x _ : xs -> primAppsP x (map (pattern env) xs)
 
@@ -158,8 +157,8 @@ term (App t1 t2 _) = primTApp (term t1) (primUBox (term t2) (code t2))
 term Type          = primTType
 term Kind          = primTKind
 
-(!) :: Hs.SrcLoc
-(!) = Hs.SrcLoc "" 0 0
+(*) :: Hs.SrcLoc
+(*) = Hs.SrcLoc "" 0 0
 
 varName :: Id Record -> Hs.Name
 varName = Hs.Ident . xencode . unqualify
@@ -194,8 +193,8 @@ primApp t1 t2 = primitiveCon "App" [t1, t2]
 primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String (show (pretty c)))]
 primType      = primitiveCon "Type" []
 
-primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (!) [pat] t)]
-primPi  dom pat range = primitiveCon "Pi" [dom, Hs.Paren (Hs.Lambda (!) [pat] range)]
+primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (*) [pat] t)]
+primPi  dom pat range = primitiveCon "Pi" [dom, Hs.Paren (Hs.Lambda (*) [pat] range)]
 
 primApps c = foldl primApp (primCon c)
 
@@ -208,7 +207,7 @@ typedAbstraction c b t =
               Hole ty  -> (Hs.PWildCard, ty, t)
         dom = if isVariable ty
               then term ty else primsbox (term ty) primType (code ty)
-    in primitiveCon c [dom, Hs.Paren (Hs.Lambda (!) [pat] ran)]
+    in primitiveCon c [dom, Hs.Paren (Hs.Lambda (*) [pat] ran)]
 
 primTLam       = typedAbstraction "TLam"
 primTPi        = typedAbstraction "TPi"

@@ -11,7 +11,6 @@ import Data.List (groupBy)
 import qualified Data.Stream as Stream
 import Control.Monad.State
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Prelude hiding (head)
 import qualified Prelude
 
@@ -50,7 +49,7 @@ linearize xs (env :@ lhs :--> rhs) =
               let (lhs', (_, _, constraints)) = runState (transformM f lhs) (xs, Set.empty, [])
                   -- Add new variables to environment, with same type as of
                   -- the variables they are unified to.
-                  env' = foldr (\(x,x') env -> env & x' ::: env Map.! x) env constraints
+                  env' = foldr (\(x,x') env -> env & x' ::: env ! x) env constraints
               in (env' :@ lhs' :--> rhs, constraints)
     where f t@(Var x a) = do
             (xs, seen, constraints) <- get
