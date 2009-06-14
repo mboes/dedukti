@@ -11,6 +11,7 @@ import Europa.Parser
 import Europa.EuM
 import Europa.Core
 import Europa.Analysis.Dependency
+import Europa.Analysis.Scope
 import qualified Europa.CodeGen.Exts as CG
 import qualified Europa.Rule as Rule
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -43,6 +44,10 @@ compile mod = do
 
 compileAST :: MName -> Pa Module -> EuM ()
 compileAST mod src@(decls, rules) = do
+  say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
+  checkUniqueness decls
+  checkRuleOrdering rules
+  checkScopes src
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
       deps = collectDependencies src

@@ -32,7 +32,7 @@ executable europa
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
                        FlexibleInstances, FlexibleContexts, OverloadedStrings,
-                       RecordWildCards, TypeSynonymInstances
+                       RecordWildCards, TypeSynonymInstances, ScopedTypeVariables
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 library
