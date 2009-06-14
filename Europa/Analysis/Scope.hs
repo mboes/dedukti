@@ -35,10 +35,13 @@ instance Show ScopeError where
 
 instance Exception ScopeError
 
-checkUniqueness :: [Binding Qid a] -> EuM ()
-checkUniqueness decls = do
-  mapM_ (\x -> when (length x > 1) (throw $ DuplicateDefinition (head x))) $
-        group $ sort $ map (\(x ::: _) -> x) decls
+checkUniqueness :: Module Qid a -> EuM ()
+checkUniqueness (decls, rules) = do
+  chk decls
+  mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
+    where chk bs = mapM_ (\x -> when (length x > 1)
+                                (throw $ DuplicateDefinition (head x))) $
+                   group $ sort $ map (\(x ::: _) -> x) bs
 
 checkRuleOrdering :: [TyRule Qid a] -> EuM ()
 checkRuleOrdering rules = do

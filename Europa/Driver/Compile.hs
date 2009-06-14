@@ -45,9 +45,9 @@ compile mod = do
 compileAST :: MName -> Pa Module -> EuM ()
 compileAST mod src@(decls, rules) = do
   say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
-  checkUniqueness decls
-  checkRuleOrdering rules
+  checkUniqueness src
   checkScopes src
+  checkRuleOrdering rules
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
       deps = collectDependencies src
