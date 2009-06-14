@@ -6,17 +6,20 @@
 -- warning messages or displaying error messages to the screen. Debugging
 -- facilities and an interface to the system are also provided.
 
-module Europa.EuM (EuM, runEuM, warn, warnings, say
+module Europa.EuM ( module Control.Monad
+                  , EuM, runEuM, warn, warnings, say
                   , Verbosity(..)
                   , configuration, parameter
                   , command
-                  , text, (<+>), (<>), int -- pretty-printing combinators.
-                  , Exception(..), throw, io) where
+                  , pretty, text, (<+>), (<>), int -- pretty-printing combinators.
+                  , Exception(..), Typeable, throw, io) where
 
 import Europa.Config as Config
+import Control.Monad
 import Control.Monad.Reader
 import Control.Exception
 import Control.Applicative
+import Data.Typeable (Typeable) -- for exceptions
 import System.IO
 import System.Cmd
 import System.Exit
