@@ -122,8 +122,8 @@ infix 1 &
 emptyEnv = Env [] Map.empty
 
 -- | Extend an environment with a new binding.
-(&) :: Ord id => Env id a -> Binding id a -> Env id a
-Env bs map & x ::: ty = Env ((x ::: ty) : bs) (Map.insert x ty map)
+(&) :: Ord id => Binding id a -> Env id a -> Env id a
+x ::: ty & Env bs map = Env ((x ::: ty) : bs) (Map.insert x ty map)
 
 (!) :: Ord id => Env id a -> id -> Expr id a
 Env _ map ! x = map Map.! x
@@ -132,7 +132,7 @@ isin :: Ord id => id -> Env id a -> Bool
 isin x (Env _ map) = Map.member x map
 
 fromBindings :: Ord id => [Binding id a] -> Env id a
-fromBindings = foldl (&) (Env [] Map.empty)
+fromBindings = foldr (&) (Env [] Map.empty)
 
 -- | Phantom type used to express no annotation.
 data Unannot = Unannot deriving (Eq, Ord, Show)

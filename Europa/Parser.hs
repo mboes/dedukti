@@ -163,7 +163,7 @@ applicative = (\xs -> case xs of
 -- >       | "[" env2 "]"
 -- > env2 ::= binding
 -- >        | binding "," env2
-rule = ((\env lhs rhs -> foldl (&) emptyEnv env :@ lhs :--> rhs)
+rule = ((\env lhs rhs -> foldr (&) emptyEnv env :@ lhs :--> rhs)
         <$> brackets (sepBy binding comma)
         <*> term
         <*  reservedOp "-->"
