@@ -176,8 +176,8 @@ instance Ord id => Transform (Binding id a) where
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
     transformM f (Hole ty) = return Hole `ap` transformM f ty
 
-    descendM f (x ::: ty) = return (x :::) `ap` descendM f ty
-    descendM f (Hole ty) = return Hole `ap` descendM f ty
+    descendM f (x ::: ty) = return (x :::) `ap` f ty
+    descendM f (Hole ty) = return Hole `ap` f ty
 
 instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ lhs :--> rhs) = do
