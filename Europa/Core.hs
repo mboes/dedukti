@@ -74,12 +74,14 @@ type family A t
 
 type instance Id (Module id a) = id
 type instance Id (Binding id a) = id
+type instance Id (Rule id a) = id
 type instance Id (TyRule id a) = id
 type instance Id (RuleSet id a) = id
 type instance Id (Expr id a) = id
 
 type instance A  (Module id a) = a
 type instance A  (Binding id a) = a
+type instance A  (Rule id a) = a
 type instance A  (TyRule id a) = a
 type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
@@ -180,17 +182,24 @@ instance Ord id => Transform (Binding id a) where
     descendM f (Hole ty) = return Hole `ap` f ty
 
 instance Ord id => Transform (TyRule id a) where
-    transformM f (env :@ lhs :--> rhs) = do
-      env' <- mapM (\(x, ty) -> transformM f ty >>= return . ((,) x)) $ Map.toList env
-      lhs' <- transformM f lhs
-      rhs' <- transformM f rhs
-      return (Map.fromList env' :@ lhs' :--> rhs')
+    transformM f (env :@ rule) =
+        return (:@) `ap`
+                   (return Map.fromList `ap`
+                           mapM (\(x, ty) -> transformM f ty >>= return . ((,) x))
+                                    (Map.toList env)) `ap`
+                   transformM f rule
 
-    descendM f (env :@ lhs :--> rhs) = do
-      env' <- mapM (\(x, ty) -> f ty >>= return . ((,) x)) $ Map.toList env
-      lhs' <- f lhs
-      rhs' <- f rhs
-      return (Map.fromList env' :@ lhs' :--> rhs')
+    descendM f (env :@ rule) =
+        return (:@) `ap`
+                   (return Map.fromList `ap`
+                           mapM (\(x, ty) -> f ty >>= return . ((,) x))
+                                    (Map.toList env)) `ap`
+                   descendM f rule
+
+instance Ord id => Transform (Rule id a) where
+    transformM f (lhs :--> rhs) =
+        return (:-->) `ap` transformM f lhs `ap` transformM f rhs
+    descendM f (lhs :--> rhs) = return (:-->) `ap` f lhs `ap` f rhs
 
 instance Ord id => Transform (RuleSet id a) where
     transformM f RS{..} =
