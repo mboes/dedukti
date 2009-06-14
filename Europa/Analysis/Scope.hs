@@ -7,7 +7,6 @@ import Europa.Pretty ()
 import Europa.EuM
 import Data.List (sort, group)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 
 newtype DuplicateDefinition = DuplicateDefinition Qid
@@ -48,18 +47,21 @@ checkRuleOrdering rules = do
 
 checkScopes :: forall a. Show a => Module Qid a -> EuM ()
 checkScopes (decls, rules) = do
-  mapM_ (descendM (f topenv)) decls
-  mapM_ g rules
-    where topenv = Set.fromList $ map (\(x ::: _) -> x) decls
-          -- check declarations.
-          f env t@(Var x _) = do
+  topenv <- foldM chkBinding Set.empty decls
+  mapM_ (chkRule topenv) rules
+    where chkBinding env (x ::: ty) = do
+            chkExpr env ty
+            return $ Set.insert x env
+          chkRule topenv (env :@ rule) = do
+            ruleenv <- foldM chkBinding topenv $ env_bindings env
+            descendM (chkExpr (topenv `Set.union` ruleenv)) rule
+          chkExpr env t@(Var x _) = do
             when (x `Set.notMember` env) (throw $ ScopeError x)
             return (t :: Expr Qid a)
-          f env (Lam (x ::: ty) t _) = f env ty >> f (Set.insert x env) t
-          f env (Pi (x ::: ty) t _)  = f env ty >> f (Set.insert x env) t
-          f env t = descendM (f env) t
-          -- check rules.
-          g (env :@ rule) = do
-            let ruleenv = topenv `Set.union` Set.fromList (Map.keys env)
-            descendM (f ruleenv) rule
-            mapM_ (f ruleenv) (Map.elems env)
+          chkExpr env (Lam (x ::: ty) t _) = do
+            chkExpr env ty
+            chkExpr (Set.insert x env) t
+          chkExpr env (Pi (x ::: ty) t _)  = do
+            chkExpr env ty
+            chkExpr (Set.insert x env) t
+          chkExpr env t = descendM (chkExpr env) t
