@@ -1,3 +1,12 @@
+-- |
+-- Copyright : (c) 2009 INRIA
+-- License   : GPL
+--
+-- Check that all occurrences of variables are in scope of their definitions.
+-- Other well-formedness checks can also be found here, such as rejecting
+-- duplicate top-level definitions and enforcing contiguity of rule
+-- defnitions.
+
 module Europa.Analysis.Scope where
 
 import Europa.Core
