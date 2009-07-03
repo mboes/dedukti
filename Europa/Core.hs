@@ -70,6 +70,7 @@ infix 8 :@
 data RuleSet id a = RS { rs_name :: id
                        , rs_type :: Expr id a
                        , rs_rules :: [TyRule id a] }
+                    deriving (Eq, Ord, Show)
 
 type Module id a = ([Binding id a], [TyRule id a])
 
