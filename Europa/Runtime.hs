@@ -120,6 +120,6 @@ checkDeclaration x t = catch (evaluate t >> putStrLn "Check") handler
             putStrLn $ "Error during checking of " ++ x
             throw e
 
-checkRule :: Code -> Term -> Term -> Term
-checkRule ty lhs rhs | convertible (-1) (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
-                     | otherwise = throw RuleError
+checkRule :: Term -> Term -> Term
+checkRule lhs rhs | convertible 0 (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
+                  | otherwise = throw RuleError
