@@ -7,10 +7,11 @@
 module Europa.Rule where
 
 import Europa.Core
-import Data.List (groupBy)
+import Data.List (groupBy, sortBy)
 import qualified Data.Stream as Stream
 import Control.Monad.State
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Prelude hiding (head)
 import qualified Prelude
 
@@ -34,12 +35,16 @@ arity :: TyRule id a -> Int
 arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
-ruleSets :: Eq id => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
-ruleSets ds rs = snd $ foldr aux (group rs, []) ds where
+ruleSets :: Ord id => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
+ruleSets ds rs = snd $ foldr aux (sortBy cmp (group rs), []) ds where
     aux (x ::: ty) ([],       rsets)          = ([], RS x ty [] : rsets)
     aux (x ::: ty) (rs : rss, rsets)
         | x == headConstant (Prelude.head rs) = (rss, RS x ty rs : rsets)
         | otherwise                           = (rs : rss, RS x ty [] : rsets)
+    ordering = Map.fromList (zip (map (\(x ::: ty) -> x) ds) [0..])
+    cmp x y = let xi = ordering Map.! headConstant (Prelude.head x)
+                  yi = ordering Map.! headConstant (Prelude.head y)
+              in compare xi yi
 
 -- | Make the rule left-linear and return collected unification constraints.
 -- This function must be provided with an infinite supply of fresh variable
