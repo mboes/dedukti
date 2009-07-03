@@ -74,15 +74,13 @@ ap t1 t2 = App t1 t2
 obj :: Term -> Code
 obj (Box _ obj) = obj
 
-incr x = if x >= 0 then x + 1 else x - 1
-
 convertible :: Int -> Code -> Code -> Bool
 convertible n (Var x) (Var x') = x == x'
 convertible n (Con c) (Con c') = c == c'
 convertible n (Lam t) (Lam t') =
-    convertible (incr n) (t (Var n)) (t' (Var n))
+    convertible (n + 1) (t (Var n)) (t' (Var n))
 convertible n (Pi ty1 ty2) (Pi ty3 ty4) =
-    convertible n ty1 ty3 && convertible (incr n) (ty2 (Var n)) (ty4 (Var n))
+    convertible n ty1 ty3 && convertible (n + 1) (ty2 (Var n)) (ty4 (Var n))
 convertible n (App t1 t2) (App t3 t4) =
     convertible n t1 t3 && convertible n t2 t4
 convertible n Type Type = True
@@ -107,12 +105,12 @@ box sorts ty ty_code obj_code
 typeOf :: Int -> Term -> Code
 typeOf n (Box ty _) = ty
 typeOf n (TLam bx@(Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
-typeOf n (TPi bx@(Box Type a) f) = typeOf (incr n) (f (Box a (Var n)))
+typeOf n (TPi bx@(Box Type a) f) = typeOf (n + 1) (f (Box a (Var n)))
 typeOf n (TApp t1 bx@(Box ty2 t2))
-    | Pi tya f <- typeOf n t1, convertible (-1) tya ty2 = f t2
+    | Pi tya f <- typeOf n t1, convertible n tya ty2 = f t2
 typeOf n (TApp t1 bx@(UBox tty2 t2))
     | Pi tya f <- typeOf n t1, ty2 <- typeOf n tty2,
-      convertible (-1) tya ty2 = f t2
+      convertible n tya ty2 = f t2
 typeOf n TType = Kind
 typeOf n t = throw TypeError
 
