@@ -43,7 +43,7 @@ ruleSets ds rs = snd $ foldl aux (sortBy cmp (group rs), []) ds where
         | otherwise                           = (rs : rss, RS x ty [] : rsets)
     -- We cannot change the order of the declarations, but we need rules to be
     -- in the same order as the declarations.
-    ordering = Map.fromList (zip (map (\(x ::: ty) -> x) ds) [0..])
+    ordering = Map.fromList (zip (map bind_name ds) [0..])
     cmp x y = let xi = ordering Map.! headConstant (Prelude.head x)
                   yi = ordering Map.! headConstant (Prelude.head y)
               in compare xi yi

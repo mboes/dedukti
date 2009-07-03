@@ -58,7 +58,7 @@ checkUniqueness (decls, rules) = do
   mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
     where chk bs = mapM_ (\x -> when (length x > 1)
                                 (throw $ DuplicateDefinition (head x))) $
-                   group $ sort $ map (\(x ::: _) -> x) bs
+                   group $ sort $ map bind_name bs
 
 checkRuleOrdering :: [TyRule Qid a] -> EuM ()
 checkRuleOrdering rules = do
@@ -75,7 +75,7 @@ checkScopes (decls, rules) = do
           chkRule topenv r@(env :@ rule) = do
             let lhsvars = Set.fromList [ x | Var x _ <- everyone (Rule.head r) ]
             mapM_ (\x -> when (x `Set.notMember` lhsvars) $
-                         throw (IllegalEnvironment x)) (map (\(x ::: _) -> x) $ env_bindings env)
+                         throw (IllegalEnvironment x)) (map bind_name $ env_bindings env)
             ruleenv <- foldM chkBinding topenv $ env_bindings env
             descendM (chkExpr (topenv `Set.union` ruleenv)) rule
           chkExpr env t@(Var x _) = do

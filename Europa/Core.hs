@@ -13,7 +13,8 @@ module Europa.Core
     , Id, A
     -- * Convenience functions
     , (.->)
-    , range, isAbstraction, isApplication, isVariable, isAtomic, isApplicative
+    , bind_name, bind_type
+    , isAbstraction, isApplication, isVariable, isAtomic, isApplicative
     -- * Environments
     , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!), isin
     -- * Annotations
@@ -94,8 +95,11 @@ type instance A  (Expr id a) = a
 x .-> y = Pi (Hole x) y
 infixr .->
 
-range (Hole ty) = ty
-range (x ::: ty) = ty
+bind_type (x ::: ty) = ty
+bind_type (Hole ty) = ty
+
+bind_name (x ::: _) = x
+bind_name (Hole _) = error "Binding has no name."
 
 isAbstraction (Lam _ _ _) = True
 isAbstraction (Pi _ _ _)  = True

@@ -19,7 +19,7 @@ textBS = text . B.unpack
 
 instance Pretty id => Pretty (Expr id a) where
     pretty (Lam x t _) = pretty x <+> text "=>" <+> pretty t
-    pretty (Pi x t _) | Pi _ _ _ <- range x = parens (pretty x) <+> text "->" <+> pretty t
+    pretty (Pi x t _) | Pi _ _ _ <- bind_type x = parens (pretty x) <+> text "->" <+> pretty t
                       | otherwise = pretty x <+> text "->" <+> pretty t
     pretty (App t1 t2 _) =
         let f = if isApplicative t1 then id else parens
