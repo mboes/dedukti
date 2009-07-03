@@ -35,12 +35,14 @@ arity :: TyRule id a -> Int
 arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
-ruleSets :: Ord id => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
-ruleSets ds rs = snd $ foldr aux (sortBy cmp (group rs), []) ds where
-    aux (x ::: ty) ([],       rsets)          = ([], RS x ty [] : rsets)
-    aux (x ::: ty) (rs : rss, rsets)
+ruleSets :: (Show id, Show a, Ord id) => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
+ruleSets ds rs = snd $ foldl aux (traceShow (map (headConstant . Prelude.head) $ sortBy cmp (group rs)) $ sortBy cmp (group rs), []) ds where
+    aux ([],       rsets) (x ::: ty)          = ([], RS x ty [] : rsets)
+    aux (rs : rss, rsets) (x ::: ty)
         | x == headConstant (Prelude.head rs) = (rss, RS x ty rs : rsets)
         | otherwise                           = (rs : rss, RS x ty [] : rsets)
+    -- We cannot change the order of the declarations, but we need rules to be
+    -- in the same order as the declarations.
     ordering = Map.fromList (zip (map (\(x ::: ty) -> x) ds) [0..])
     cmp x y = let xi = ordering Map.! headConstant (Prelude.head x)
                   yi = ordering Map.! headConstant (Prelude.head y)
