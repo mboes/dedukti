@@ -1,11 +1,10 @@
 prop : Type.
 eps : prop -> Type.
 
+implies : prop -> prop -> prop.
+
 nat : Type.
 nat_ : prop.
-
-nat' : Type.
-nat'_ : prop.
 
 bool : Type.
 bool_ : prop.
@@ -13,33 +12,38 @@ bool_ : prop.
 true : bool.
 false : bool.
 
-[] eps nat_ --> nat. 
-[] eps nat'_ --> nat'. 
-[] eps bool_ --> bool.
+isTrue : bool -> Type.
+trueisTrue : isTrue true.
 
-[p:prop] nat --> eps prop -> (nat' -> eps p -> eps p) -> eps p.
-ax  : nat -> nat'.
-ax' : nat' -> nat.
+
+[] eps nat_ --> nat. 
+[] eps bool_ --> bool.
+[a:prop,b:prop] eps (implies a b) --> eps a -> eps b.
+
+unfold : nat -> p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p.
+fold   : (p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p) -> nat.
+
+[pi:p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p] unfold (fold pi) --> pi.
 
 0 : nat.
 S : nat -> nat.
 
-[]      0   --> p:prop => u:eps p => v:(nat' => eps p => eps p) => u.
-[n:nat] S n --> p:prop => u:eps p => v:(nat' => eps p => eps p) => v (ax n) (n p u v). 
+[]      0   --> fold (p:prop => u:eps p => v:(nat -> eps p -> eps p) => u).
+[n:nat] S n --> fold (p:prop => u:eps p => v:(nat -> eps p -> eps p) => v n (unfold n p u v)). 
 
 pred : nat -> nat.
-[n:nat] pred n --> n nat_ 0 (m:nat' => _:nat => ax' m).
+[n:nat] pred n --> unfold n nat_ 0 (m:nat => _:nat => m).
 
 iszero : nat -> bool.
-[n:nat] iszero n --> n bool_ true (_:nat' => _:bool => false).
+[n:nat] iszero n --> unfold n bool_ true (_:nat => _:bool => false).
 
 eq : nat -> nat -> bool.
-[n:nat] eq n --> n bool_ (m:nat => iszero m) (_:nat' => f:(nat -> bool) => m:nat => f (pred Type m)).
+[n:nat] eq n --> unfold n (implies nat_ bool_) iszero (_:nat => f:(nat -> bool) => m:nat => unfold m bool_ false (p:nat => _:bool => f p)).
 
 
 test1 : nat.
 [] test1 --> S (S (S (S (S 0)))). 
 
-test2 : nat.
-[] test2 --> pred test1.
+test2 : isTrue (eq test1 test1).
+[] test2 --> trueisTrue.
 
