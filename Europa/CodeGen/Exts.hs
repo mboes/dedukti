@@ -54,7 +54,7 @@ instance CodeGen Record where
                                   (Hs.BDecls decls)]
                       where ruleCheck = Rec (qid "rule") 0
                                             [value (qid "rule" .$ "box")
-                                             (primitiveVar "checkRule" [var (x .$ "ty"), term lhs, term rhs])]
+                                             (primitiveVar "checkRule" [term lhs, term rhs])]
 
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
         where main = Hs.FunBind [Hs.Match (*) (Hs.Ident "main") []
