@@ -44,6 +44,14 @@ instance Show ScopeError where
 
 instance Exception ScopeError
 
+newtype IllegalEnvironment = IllegalEnvironment Qid
+    deriving (Eq, Ord, Typeable)
+
+instance Show IllegalEnvironment where
+    show (IllegalEnvironment id) = show (pretty id <+> text "appears in environment but not in head of rule.")
+
+instance Exception IllegalEnvironment
+
 checkUniqueness :: Module Qid a -> EuM ()
 checkUniqueness (decls, rules) = do
   chk decls
@@ -64,7 +72,10 @@ checkScopes (decls, rules) = do
     where chkBinding env (x ::: ty) = do
             chkExpr env ty
             return $ Set.insert x env
-          chkRule topenv (env :@ rule) = do
+          chkRule topenv r@(env :@ rule) = do
+            let lhsvars = Set.fromList [ x | Var x _ <- everyone (Rule.head r) ]
+            mapM_ (\x -> when (x `Set.notMember` lhsvars) $
+                         throw (IllegalEnvironment x)) (map (\(x ::: _) -> x) $ env_bindings env)
             ruleenv <- foldM chkBinding topenv $ env_bindings env
             descendM (chkExpr (topenv `Set.union` ruleenv)) rule
           chkExpr env t@(Var x _) = do
