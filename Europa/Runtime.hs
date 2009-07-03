@@ -99,7 +99,7 @@ bbox = box [Type, Kind]
 sbox = box [Type]
 
 box sorts ty ty_code obj_code
-    | typeOf 1000 ty `elem` sorts = Box ty_code obj_code
+    | typeOf 0 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw SortError
 
 typeOf :: Int -> Term -> Code
