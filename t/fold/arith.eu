@@ -1,0 +1,45 @@
+prop : Type.
+eps : prop -> Type.
+
+nat : Type.
+nat_ : prop.
+
+nat' : Type.
+nat'_ : prop.
+
+bool : Type.
+bool_ : prop.
+
+true : bool.
+false : bool.
+
+[] eps nat_ --> nat. 
+[] eps nat'_ --> nat'. 
+[] eps bool_ --> bool.
+
+[p:prop] nat --> eps prop -> (nat' -> eps p -> eps p) -> eps p.
+ax  : nat -> nat'.
+ax' : nat' -> nat.
+
+0 : nat.
+S : nat -> nat.
+
+[]      0   --> p:prop => u:eps p => v:(nat' => eps p => eps p) => u.
+[n:nat] S n --> p:prop => u:eps p => v:(nat' => eps p => eps p) => v (ax n) (n p u v). 
+
+pred : nat -> nat.
+[n:nat] pred n --> n nat_ 0 (m:nat' => _:nat => ax' m).
+
+iszero : nat -> bool.
+[n:nat] iszero n --> n bool_ true (_:nat' => _:bool => false).
+
+eq : nat -> nat -> bool.
+[n:nat] eq n --> n bool_ (m:nat => iszero m) (_:nat' => f:(nat -> bool) => m:nat => f (pred Type m)).
+
+
+test1 : nat.
+[] test1 --> S (S (S (S (S 0)))). 
+
+test2 : nat.
+[] test2 --> pred test1.
+
