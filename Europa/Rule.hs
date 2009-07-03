@@ -36,7 +36,7 @@ arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
 ruleSets :: (Show id, Show a, Ord id) => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
-ruleSets ds rs = snd $ foldl aux (traceShow (map (headConstant . Prelude.head) $ sortBy cmp (group rs)) $ sortBy cmp (group rs), []) ds where
+ruleSets ds rs = snd $ foldl aux (sortBy cmp (group rs), []) ds where
     aux ([],       rsets) (x ::: ty)          = ([], RS x ty [] : rsets)
     aux (rs : rss, rsets) (x ::: ty)
         | x == headConstant (Prelude.head rs) = (rss, RS x ty rs : rsets)
