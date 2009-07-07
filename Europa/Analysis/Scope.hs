@@ -1,5 +1,5 @@
 -- |
--- Copyright : (c) 2009 INRIA
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
 -- Check that all occurrences of variables are in scope of their definitions.

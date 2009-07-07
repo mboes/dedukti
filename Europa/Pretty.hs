@@ -1,5 +1,5 @@
 -- |
--- Copyright : (c) 2009 INRIA
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
 -- Pretty-printing of various core data types. This is not meant as a

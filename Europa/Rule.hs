@@ -1,5 +1,5 @@
 -- |
--- Copyright : (c) 2009 INRIA
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
 -- Various utility functions over rewrite rules and rule sets.

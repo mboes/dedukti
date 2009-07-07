@@ -1,4 +1,4 @@
--- Copyright (c) 2009 INRIA
+-- Copyright © 2009 CNRS - École Polytechnique - INRIA
 --
 -- Permission to use, copy, modify, and distribute this file for any
 -- purpose with or without fee is hereby granted, provided that the above

@@ -1,5 +1,5 @@
 -- |
--- Copyright : (c) 2009 INRIA
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
 -- The batch driver. It compiles all given targets and all their dependencies,

@@ -1,5 +1,5 @@
 -- |
--- Copyright : (c) 2009 INRIA
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 
 module Europa.Core
