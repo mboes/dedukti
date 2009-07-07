@@ -66,4 +66,3 @@ main = do
              | otherwise -> do
                      unless (length files == 1) bailout
                      compile (moduleFromPath (head files))
-

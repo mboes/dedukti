@@ -14,13 +14,15 @@ import Europa.Analysis.Dependency
 import Europa.Analysis.Scope
 import qualified Europa.CodeGen.Exts as CG
 import qualified Europa.Rule as Rule
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as T
+import qualified Data.ByteString.Lazy as B
 import qualified Data.Set as Set
 import Control.Monad (ap)
 
 
-dump :: MName -> B.ByteString -> EuM ()
-dump mod = io . B.writeFile (objPathFromModule mod)
+dump :: MName -> T.Text -> EuM ()
+dump mod = io . B.writeFile (objPathFromModule mod) . T.encodeUtf8
 
 -- | Qualify all occurrences of identifiers defined in current module.
 selfQualify :: MName -> [RuleSet Qid a] -> [RuleSet Qid a]
@@ -40,7 +42,7 @@ compile :: MName -> EuM ()
 compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
-  compileAST mod =<< return (parse path) `ap` io (B.readFile path)
+  compileAST mod =<< return (parse path) `ap` io (liftM T.decodeUtf8 (B.readFile path))
 
 compileAST :: MName -> Pa Module -> EuM ()
 compileAST mod src@(decls, rules) = do

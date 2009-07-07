@@ -12,10 +12,10 @@ module Europa.Pretty (pretty) where
 import Europa.Core
 import Europa.Module
 import Text.PrettyPrint.Leijen
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
 
 
-textBS = text . B.unpack
+textT = text . T.unpack
 
 instance Pretty id => Pretty (Expr id a) where
     pretty (Lam x t _) = pretty x <+> text "=>" <+> pretty t
@@ -50,9 +50,9 @@ instance (Eq a, Ord id, Pretty id) => Pretty (TyRule id a) where
 
 instance Pretty Qid where
     pretty qid = joinQ (qid_qualifier qid) <>
-                 textBS (qid_stem qid) <>
+                 textT (qid_stem qid) <>
                  joinS (qid_suffix qid)
         where joinQ Root = empty
-              joinQ (h :. x) = joinQ h <> textBS x <> dot
+              joinQ (h :. x) = joinQ h <> textT x <> dot
               joinS Root = empty
-              joinS (h :. x) = joinS h <> char '_' <> textBS x
+              joinS (h :. x) = joinS h <> char '_' <> textT x

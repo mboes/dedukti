@@ -7,7 +7,7 @@ module Europa.CodeGen (CodeGen(..)) where
 
 import Europa.Core
 import Europa.Module
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
 
 
 class CodeGen o where
@@ -23,7 +23,7 @@ class CodeGen o where
     serialize :: MName   -- ^ The module name
               -> [MName] -- ^ Dependencies
               -> Bundle o -- ^ Code
-              -> B.ByteString
+              -> T.Text
 
     -- | Produce interface code.
-    interface :: MName -> Bundle o -> B.ByteString
+    interface :: MName -> Bundle o -> T.Text

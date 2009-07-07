@@ -14,7 +14,7 @@ import Europa.Pretty
 import qualified Europa.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
 import Data.Char (toUpper)
 import qualified Data.Stream as Stream
 import Prelude hiding ((*))
@@ -47,7 +47,7 @@ instance CodeGen Record where
               defs_rule n (env :@ lhs :--> rhs) =
                   let rec (x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
                       Bundle decls = coalesce $ foldr rec [ruleCheck] (env_bindings env)
-                  in  Hs.FunBind [Hs.Match (*) (varName (x .$ "rule" .$ B.pack (show n)))
+                  in  Hs.FunBind [Hs.Match (*) (varName (x .$ "rule" .$ T.pack (show n)))
                                   []
                                   Nothing
                                   (Hs.UnGuardedRhs (primitiveVar "main" []))
@@ -66,15 +66,15 @@ instance CodeGen Record where
               rules (Rec _ 0 _) = []
               rules (Rec x nr _) =
                   [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Starting rule " ++ show (pretty (unqualify x)))]] ++
-                  map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
+                  map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ T.pack (show n))) [0..nr-1] ++
                   [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty (unqualify x)))]]
 
     serialize mod deps (Bundle decls) =
-        B.pack $ prettyPrint $
+        T.pack $ prettyPrint $
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing) deps
               runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
-              modname m = Hs.ModuleName $ B.unpack $ B.intercalate "." $ map upcase $ toList m
+              modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map upcase $ toList m
 
     interface = error "Unimplemented."
 
@@ -82,21 +82,21 @@ instance CodeGen Record where
 -- characters are escaped with an x.
 xencode :: Qid -> String
 xencode qid =
-    B.unpack $
-     joinQ (qid_qualifier qid) `B.append`
+    T.unpack $
+     joinQ (qid_qualifier qid) `T.append`
      -- Prepend all idents with an x to avoid clash with runtime functions.
-     B.cons 'x' (enc (qid_stem qid)) `B.append`
+     T.cons 'x' (enc (qid_stem qid)) `T.append`
      joinS (qid_suffix qid)
         where joinQ Root = ""
-              joinQ (h :. x) = joinQ h `B.append` upcase x `B.append` "."
+              joinQ (h :. x) = joinQ h `T.append` upcase x `T.append` "."
               joinS Root = ""
-              joinS (h :. x) = joinS h `B.append` "_" `B.append` x
-              enc = B.concatMap f where
+              joinS (h :. x) = joinS h `T.append` "_" `T.append` x
+              enc = T.concatMap f where
                   f 'x'  = "xx"
                   f '\'' = "xq"
                   f '_'  = "xu"
-                  f x | x >= '0', x <= '9' = 'x' `B.cons` B.singleton x
-                      | otherwise = B.singleton x
+                  f x | x >= '0', x <= '9' = 'x' `T.cons` T.singleton x
+                      | otherwise = T.singleton x
 
 function :: Em RuleSet -> Hs.Decl
 function (RS x _ []) =
@@ -121,7 +121,7 @@ clause rule =
     where guards constraints =
               map (\(x, x') -> Hs.Qualifier $
                    primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
-          qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
+          qids = Stream.unfold (\i -> ((qid $ T.pack $ show i) .$ "fresh", i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
@@ -227,7 +227,7 @@ primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
 primAppsP c = foldl primAppP (primConP c)
 
 -- | Upcase a word.
-upcase :: B.ByteString -> B.ByteString
-upcase s = case B.uncons s of
+upcase :: T.Text -> T.Text
+upcase s = case T.uncons s of
              Nothing -> ""
-             Just (x, xs) -> toUpper x `B.cons` xs
+             Just (x, xs) -> toUpper x `T.cons` xs

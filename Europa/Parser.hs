@@ -14,7 +14,7 @@ import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
 import qualified Control.Exception as Exception
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
 import Data.Typeable (Typeable)
 
 
@@ -22,7 +22,7 @@ import Data.Typeable (Typeable)
 type Pa t = t Qid Unannot
 
 -- The parsing monad.
-type P = Parsec B.ByteString [Pa TyRule]
+type P = Parsec T.Text [Pa TyRule]
 
 newtype ParseError = ParseError String
     deriving Typeable
@@ -32,8 +32,10 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
+instance (Monad m) => Stream T.Text m Char where
+    uncons = return . T.uncons
 
-parse :: SourceName -> B.ByteString -> Pa Module
+parse :: SourceName -> T.Text -> Pa Module
 parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
     -- definitions. Here rules are accumulated by side-effect, added to the
@@ -73,17 +75,17 @@ qident = ident <?> "qid" where
     ident = do
       c <- identStart
       cs <- many identLetter
-      x <- (do let qualifier = B.pack (c:cs)
+      x <- (do let qualifier = T.pack (c:cs)
                c <- try $ do char '.'; identStart
                cs <- many identLetter
-               let name = B.pack (c:cs)
+               let name = T.pack (c:cs)
                return $ Qid (Root :. qualifier) name Root)
-           <|> return (qid (B.pack (c:cs)))
+           <|> return (qid (T.pack (c:cs)))
       whiteSpace
       return (Var x nann)
 
 -- | Unqualified name.
-ident = qid . B.pack <$> identifier
+ident = qid . T.pack <$> identifier
 
 -- | Root production rule of the grammar.
 --

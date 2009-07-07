@@ -20,10 +20,10 @@ module Europa.Module
 
 import System.FilePath
 import Data.Char (isAlpha, isAlphaNum)
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text.Lazy as T
 import Europa.EuM
 
-data Hierarchy = !Hierarchy :. !B.ByteString | Root
+data Hierarchy = !Hierarchy :. !T.Text | Root
                  deriving (Eq, Ord, Show)
 
 type MName = Hierarchy
@@ -36,12 +36,12 @@ instance Show InvalidModuleName where
 
 instance Exception InvalidModuleName
 
-hierarchy :: [B.ByteString] -> Hierarchy
+hierarchy :: [T.Text] -> Hierarchy
 hierarchy =  f . reverse where
     f [] = Root
     f (x:xs) = f xs :. x
 
-toList :: Hierarchy -> [B.ByteString]
+toList :: Hierarchy -> [T.Text]
 toList = reverse . f where
     f Root = []
     f (xs :. x) = x : f xs
@@ -53,11 +53,11 @@ check cmpt@(x:xs) | isAlpha x, and (map isAlphaNum xs) = cmpt
 
 pathFromModule :: String -> MName -> FilePath
 pathFromModule ext mod =
-    addExtension (joinPath $ map B.unpack $ toList mod) ext
+    addExtension (joinPath $ map T.unpack $ toList mod) ext
 
 moduleFromPath :: FilePath -> MName
 moduleFromPath =
-    hierarchy . map (B.pack . check) . splitDirectories . dropExtension
+    hierarchy . map (T.pack . check) . splitDirectories . dropExtension
 
 srcPathFromModule :: MName -> FilePath
 srcPathFromModule = pathFromModule ".eu"
@@ -70,16 +70,16 @@ ifacePathFromModule = pathFromModule ".eui"
 
 -- | The datatype of qualified names.
 data Qid = Qid { qid_qualifier :: !Hierarchy
-               , qid_stem      :: !B.ByteString
+               , qid_stem      :: !T.Text
                , qid_suffix    :: !Hierarchy }
            deriving (Eq, Ord, Show)
 
 -- | Shorthand qid introduction.
-qid :: B.ByteString -> Qid
+qid :: T.Text -> Qid
 qid x = Qid Root x Root
 
 -- | Append suffix.
-(.$) :: Qid -> B.ByteString -> Qid
+(.$) :: Qid -> T.Text -> Qid
 (Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
 
 -- | Get the module where the qid is defined, based on its qualifier.

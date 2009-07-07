@@ -8,7 +8,7 @@ import Europa.Module
 import Europa.Parser
 import qualified Europa.CodeGen.Exts as CG
 import qualified Europa.Rule as Rule
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy (ByteString)
 
 
 -- | Emit Haskell code for one module.
