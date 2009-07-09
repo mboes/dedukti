@@ -34,7 +34,7 @@ executable europa
                        FlexibleInstances, FlexibleContexts, OverloadedStrings,
                        RecordWildCards, TypeSynonymInstances, ScopedTypeVariables
                        MultiParamTypeClasses
-  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports -O0
 
 library
   exposed-modules:     Europa.Runtime
