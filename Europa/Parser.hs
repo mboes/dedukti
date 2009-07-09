@@ -8,8 +8,6 @@ module Europa.Parser (Pa, Europa.Parser.parse) where
 import Europa.Core
 import Europa.Module
 import Text.Parsec hiding (ParseError, parse)
--- import Text.Parsec.Token hiding
---     (whiteSpace, identifier, reservedOp, dot, brackets, parens, comma, reserved)
 import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
@@ -49,7 +47,7 @@ addRule rule = modifyState (rule:)
 
 -- | Retrieve all rules encountered so far from the parser state.
 allRules :: P [Pa TyRule]
-allRules = getState
+allRules = liftM reverse getState
 
 lexDef = Token.LanguageDef
          { Token.commentStart = "(;"
