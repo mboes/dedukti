@@ -99,7 +99,7 @@ toplevel =
 -- | Binding construct.
 --
 -- > binding ::= id : term
-binding = ((:::) <$> try (ident <* reservedOp ":") <*> term)
+binding = ((:::) <$> ident <* reservedOp ":" <*> term)
           <?> "binding"
 
 -- | Top-level declarations.
@@ -134,8 +134,8 @@ term = do
   choice [ pi d <?> "pi"
          , lambda d <?> "lambda"
          , return (bind_type d)]
-      where pi d = Pi <$> pure d <* reservedOp "->" <*> term <%%> nann
-            lambda d = Lam <$> pure d <* reservedOp "=>" <*> term <%%> nann
+    where pi d = Pi <$> pure d <* reservedOp "->" <*> term <%%> nann
+          lambda d = Lam <$> pure d <* reservedOp "=>" <*> term <%%> nann
 
 -- | Constituents of an applicative form.
 --
