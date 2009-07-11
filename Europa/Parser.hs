@@ -30,7 +30,7 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
-instance (Monad m) => Stream T.Text m Char where
+instance Stream T.Text Identity Char where
     uncons = return . T.uncons
 
 parse :: SourceName -> T.Text -> Pa Module
