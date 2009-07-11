@@ -129,13 +129,13 @@ sort = Type <$ reserved "Type"
 -- > term ::= domain "->" term
 -- >        | domain "=>" term
 -- >        | applicative
-term =     pi
-       <|> lambda
-       <|> applicative
-    where pi = try (Pi <$> domain <* reservedOp "->" <*> term <%%> nann)
-               <?> "pi"
-          lambda = try (Lam <$> domain <* reservedOp "=>" <*> term <%%> nann)
-                   <?> "lambda"
+term = do
+  d <- domain
+  choice [ pi d <?> "pi"
+         , lambda d <?> "lambda"
+         , return (bind_type d)]
+      where pi d = Pi <$> pure d <* reservedOp "->" <*> term <%%> nann
+            lambda d = Lam <$> pure d <* reservedOp "=>" <*> term <%%> nann
 
 -- | Constituents of an applicative form.
 --
