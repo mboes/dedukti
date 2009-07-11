@@ -20,7 +20,7 @@ import Data.Typeable (Typeable)
 type Pa t = t Qid Unannot
 
 -- The parsing monad.
-type P = Parsec T.Text [Pa TyRule]
+type P = Parsec String [Pa TyRule]
 
 newtype ParseError = ParseError String
     deriving Typeable
@@ -30,15 +30,12 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
-instance Stream T.Text Identity Char where
-    uncons = return . T.uncons
-
 parse :: SourceName -> T.Text -> Pa Module
 parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
     -- definitions. Here rules are accumulated by side-effect, added to the
     -- parser state as we encounter them.
-    case runParser ((,) <$> toplevel <*> allRules) [] name input of
+    case runParser ((,) <$> toplevel <*> allRules) [] name (T.unpack input) of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
 
