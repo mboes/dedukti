@@ -50,7 +50,7 @@ compileAST mod src@(decls, rules) = do
   checkUniqueness src
   checkScopes src
   checkRuleOrdering rules
-  say Verbose $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
+  say Debug $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
       deps = collectDependencies src
