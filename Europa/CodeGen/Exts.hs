@@ -74,7 +74,7 @@ instance CodeGen Record where
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing) deps
               runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
-              modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map upcase $ toList m
+              modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map capitalize $ toList m
 
     interface = error "Unimplemented."
 
@@ -88,7 +88,7 @@ xencode qid =
      T.cons 'x' (enc (qid_stem qid)) `T.append`
      joinS (qid_suffix qid)
         where joinQ Root = ""
-              joinQ (h :. x) = joinQ h `T.append` upcase x `T.append` "."
+              joinQ (h :. x) = joinQ h `T.append` capitalize x `T.append` "."
               joinS Root = ""
               joinS (h :. x) = joinS h `T.append` "_" `T.append` x
               enc = T.concatMap f where
@@ -226,8 +226,8 @@ primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.Strin
 primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
 primAppsP c = foldl primAppP (primConP c)
 
--- | Upcase a word.
-upcase :: T.Text -> T.Text
-upcase s = case T.uncons s of
-             Nothing -> ""
+-- | Capitalize a word.
+capitalize :: T.Text -> T.Text
+capitalize s = case T.uncons s of
+             Nothing -> T.empty
              Just (x, xs) -> toUpper x `T.cons` xs
