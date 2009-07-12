@@ -76,8 +76,6 @@ instance CodeGen Record where
               runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
               modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map capitalize $ toList m
 
-    interface = error "Unimplemented."
-
 -- | A similar encoding of names as the z-encoding of GHC. Non-letter
 -- characters are escaped with an x.
 xencode :: Qid -> String

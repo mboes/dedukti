@@ -24,6 +24,3 @@ class CodeGen o where
               -> [MName] -- ^ Dependencies
               -> Bundle o -- ^ Code
               -> T.Text
-
-    -- | Produce interface code.
-    interface :: MName -> Bundle o -> T.Text
