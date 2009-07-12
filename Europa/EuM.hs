@@ -11,13 +11,15 @@ module Europa.EuM ( module Control.Monad
                   , Verbosity(..)
                   , configuration, parameter
                   , command
-                  , pretty, text, (<+>), (<>), int -- pretty-printing combinators.
-                  , Exception(..), Typeable, throw, io) where
+                  -- pretty-printing combinators.
+                  , Pretty(..), text, (<+>), (<>), int
+                  , E.Exception(..), Typeable, E.throw, io
+                  , onException) where
 
 import Europa.Config as Config
 import Control.Monad
 import Control.Monad.Reader
-import Control.Exception
+import qualified Control.Exception as E
 import Control.Applicative
 import Data.Typeable (Typeable) -- for exceptions
 import System.IO
@@ -66,3 +68,8 @@ say v msg = do v' <- parameter Config.verbosity
 -- | Shorter name for the oft used 'liftIO'.
 io :: IO a -> EuM a
 io = liftIO
+
+onException :: EuM a -> EuM b -> EuM a
+onException x y = do
+  conf <- configuration
+  io $ runEuM conf x `E.onException` runEuM conf y
