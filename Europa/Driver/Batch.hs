@@ -85,8 +85,8 @@ rules' targets = concat <$> mapM f targets where
       io $ copyFile hi chi
       return TaskSuccess
     task_compile mod src _ = do
-      -- xxx: should catch any errors here.
-      compileAST mod src
+      compileAST mod src `onException`
+          (say Quiet $ text "In module" <+> pretty mod <> text ":")
       return TaskSuccess
 
 data CommandError = CommandError
