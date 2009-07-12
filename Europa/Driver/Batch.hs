@@ -79,6 +79,8 @@ rules' targets = concat <$> mapM f targets where
                                               , "-XOverloadedStrings"
                                               , "-XPatternGuards"
                                               , "-fno-warn-overlapping-patterns" ]
+    -- GHC won't find the interface files if their names don't start with a
+    -- capital letter. So alias the interface file with a capitalized name.
     task_himv hi chi _ = do
       io $ copyFile hi chi
       return TaskSuccess

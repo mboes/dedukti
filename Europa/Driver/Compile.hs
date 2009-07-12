@@ -37,6 +37,8 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
               Pi (x ::: f defs ty) (f (Set.delete x defs) t) a
           f defs t = descend (f defs) (t :: Pa Expr)
 
+-- | Read the interface file of each module name to collect the declarations
+-- exported by the module.
 collectExternalDeclarations :: [MName] -> EuM (Set.Set Qid)
 collectExternalDeclarations =
     liftM Set.unions .
@@ -45,6 +47,7 @@ collectExternalDeclarations =
                      readT path)
         where qual mod qid = qid{qid_qualifier = mod}
 
+-- | Generate the content of an interface file.
 interface :: Pa Module -> T.Text
 interface (decls, _) = T.unlines (map (qid_stem . bind_name) decls)
 
@@ -55,9 +58,14 @@ compile mod = do
   let path = srcPathFromModule mod
   compileAST mod =<< return (parse path) `ap` readT path
 
+-- | Emit Haskell code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> EuM ()
 compileAST mod src@(decls, rules) = do
   let deps = collectDependencies src
+  -- For the purposes of scope checking it is necessary to load in the
+  -- environment all those declarations from immediate dependencies. For this
+  -- we read an interface file, much faster to parse than the actual
+  -- dependencies themselves.
   say Verbose $ text "Populating environment for" <+> text (show mod) <+> text "..."
   extdecls <- collectExternalDeclarations deps
   say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
