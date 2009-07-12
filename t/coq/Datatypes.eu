@@ -1,0 +1,171 @@
+Set : Type.
+eps : Set -> Type.
+
+Prop : Type.
+eps' : Prop -> Type.
+
+;; logic
+
+True : Prop.
+I : eps' True.
+True_rec : P : Set -> eps P -> eps' True -> eps P.
+True_ind : P : Prop -> eps' P -> eps' True -> eps' P.
+
+[P:Set,x:eps P] True_rec P x I --> x. 
+[P:Prop,x:eps' P] True_ind P x I --> x. 
+
+False : Prop.
+False_rec : P : Set -> eps' False -> eps P.
+False_ind : P : Prop -> eps' False -> eps' P.
+
+not : Prop -> Prop.
+[A:Prop] not A --> implies A False. 
+
+and : Prop -> Prop -> Prop.
+conj : A:Prop -> B:Prop -> x:eps' A -> y:eps' B -> eps' (and A B).
+conj_rec : A:Prop -> B:Prop -> P : Set -> (eps' A -> eps' B -> eps P) -> eps' (and A B) -> eps P.
+conj_ind : A:Prop -> B:Prop -> P : Prop -> (eps' A -> eps' B -> eps' P) -> eps' (and A B) -> eps' P.
+
+[A:Prop, B:Prop, P : Set, f: eps' A -> eps' B -> eps P, x:eps' A, y:eps' B] 
+  conj_rec A B P f (conj A B x y) --> f x y.
+
+[A:Prop, B:Prop, P : Prop, f: eps' A -> eps' B -> eps' P, x:eps' A, y:eps' B] 
+  conj_ind A B P f (conj A B x y) --> f x y.
+
+proj1 : A:Prop -> B:Prop -> eps' (and A B) -> eps' A.
+[A:Prop, B:Prop, x:eps' A, y:eps' B] proj1 A B (conj A B x y) --> x.
+
+proj2 : A:Prop -> B:Prop -> eps' (and A B) -> eps' B.
+[A:Prop, B:Prop, x:eps' A, y:eps' B] proj2 A B (conj A B x y) --> y.
+
+or : Prop -> Prop -> Prop.
+or_introl : A:Prop -> B:Prop -> eps' A -> eps' (or A B).
+or_intror : A:Prop -> B:Prop -> eps' B -> eps' (or A B).
+
+or_ind : A:Prop -> B:Prop -> P:Prop -> (eps' A -> eps' P) -> (eps' B -> eps' P) -> eps' (or A B) -> eps' P.
+[A:Prop, B:Prop, P:Prop, f:(eps' A -> eps' P), g:(eps' B -> eps' P), x: eps' A] or_ind A B P f g (or_introl A B x) --> f x.
+[A:Prop, B:Prop, P:Prop, f:(eps' A -> eps' P), g:(eps' B -> eps' P), x: eps' B] or_ind A B P f g (or_intror A B x) --> g x.
+
+;; --- not in Coq ---
+
+pi_spp : A:Set -> (eps A -> Prop) -> Prop.
+pi_ppp : A:Prop -> (eps' A -> Prop) -> Prop.
+implies : A:Prop -> B:Prop -> Prop.
+
+[A:Set, f:eps A -> Prop] eps' (pi_spp A f) --> x:eps A -> eps' (f x).
+[A:Prop, f:eps' A -> Prop] eps' (pi_ppp A f) --> x:eps' A -> eps' (f x).
+[A:Prop, B:Prop] implies A B --> pi_ppp A (eps' A => B).
+
+;; ------------------
+
+iff : Prop -> Prop -> Prop.
+[A:Prop,B:Prop] iff A B --> and (implies A B) (implies B A).
+
+iff_refl : A:Prop -> eps' (iff A A).
+;;[A:Prop] iff_refl A --> conj A A (H:eps' A => H) (H:eps' A => H).
+
+iff_trans : A:Prop -> B:Prop -> C:Prop -> eps' (iff A B) -> eps' (iff B C) -> eps' (iff A C).
+;;[A:Prop, B:Prop, C:Prop, H1:implies A B, H2:implies B A, H3:implies B C, H4:implies C D] 
+;;  iff_trans (conj H1 H2) (conj H3 H4) --> conj (H5:eps' A => H3 (H1 H5)) (H5:eps' C => H2 (H1 (H2 (H4 H5)))).
+
+iff_sym : A:Prop -> B:Prop -> eps' (iff A B) -> eps' (iff B A).
+[A:Prop, B:Prop, H1:eps' (implies A B), H2:eps' (implies B A)]
+  iff_sym A B (conj (implies A B) (implies B A) H1 H2) --> conj (implies B A) (implies A B) H2 H1.
+
+neg_false : A : Prop -> eps' (iff (not A) (iff A False)).
+;;[A:Prop] neg_false A --> 
+;;  conj 
+;;  (H : (eps' A -> eps' False) => conj H (H1 : eps' False => False_ind A H1)) 
+;;  (H : eps' (iff A False) => match1 A H).
+
+;;match1 : A:Prop -> H:eps' (iff A False) -> eps' (implies A False).
+;;[A:Prop, H0:eps' (implies A False), _:eps' (implies False A)] match1 A (conj (implies A False) (implies False A) H0 _) --> H0.
+
+and_cancel_l : A:Prop -> B:Prop -> C:Prop -> eps' (implies (implies B A) (implies (implies C A) (iff (iff (and A B) (and A C)) (iff B C)))).
+; TODO PROOF
+and_cancel_r : A:Prop -> B:Prop -> C:Prop -> eps' (implies (implies B A) (implies (implies C A) (iff (iff (and B A) (and C A)) (iff B C)))).
+; TODO PROOF
+or_cancel_l : A:Prop -> B:Prop -> C:Prop -> eps' (implies (implies B (not A)) (implies (implies C (not A)) (iff (iff (or A B) (or A C)) (iff B C)))).
+; TODO PROOF
+or_cancel_r : A:Prop -> B:Prop -> C:Prop -> eps' (implies (implies B (not A)) (implies (implies C (not A)) (iff (iff (or B A) (or C A)) (iff B C)))).
+; TODO PROOF
+
+and_iff_compat_l : A:Prop -> B:Prop -> C:Prop -> eps' (implies (iff B C) (iff (and A B) (and A C))).
+; TODO PROOF
+and_iff_compat_r : A:Prop -> B:Prop -> C:Prop -> eps' (implies (iff B C) (iff (and B A) (and C A))).
+; TODO PROOF
+or_iff_compat_l : A:Prop -> B:Prop -> C:Prop -> eps' (implies (iff B C) (iff (or A B) (or A C))).
+; TODO PROOF
+or_iff_compat_r : A:Prop -> B:Prop -> C:Prop -> eps' (implies (iff B C) (iff (or B A) (or C A))).
+; TODO PROOF
+
+iff_and : A:Prop -> B:Prop -> eps' (implies (iff A B) (and (implies A B) (implies B A))).
+; TODO PROOF
+iff_to_and : A:Prop -> B:Prop -> eps' (iff (iff A B) (and (implies A B) (implies B A))).
+; TODO PROOF
+
+ex : A:Set -> (eps A -> Prop) -> Prop.
+ex_intro : A:Set -> P:(eps A -> Prop) -> x:(eps A) -> eps' (P x) -> eps' (ex A P).
+ex_ind : A:Set -> P:(eps A -> Prop) -> P0:Prop -> (x:eps A -> eps' (P x) -> eps' P0) -> eps' (ex A P) -> eps' P0.
+
+[A:Set, P:eps A -> Prop, P0:Prop, f:(x:(eps A) -> eps' (P x) -> eps' P0), x:(eps A), x0:eps' (P x)]
+  ex_ind A P P0 f (ex_intro A P x x0) --> f x x0.
+
+ex2 : A:Set -> P:(eps A -> Prop) -> Q:(eps A -> Prop) -> Prop.
+ex2_intro : A:Set -> P:(eps A -> Prop) -> Q:(eps A -> Prop) -> x:(eps A) -> eps' (P x) -> eps' (Q x) -> eps' (ex2 A P Q).
+ex2_ind : A:Set -> P:(eps A -> Prop) -> Q:(eps A -> Prop) -> P0:Prop -> (x:eps A -> eps' (P x) -> eps' (Q x) -> eps' P0) -> eps' (ex2 A P Q) -> eps' P0.
+[A:Set, P:(eps A -> Prop), Q:(eps A -> Prop), P0:Prop, f:(x:eps A -> eps' (P x) -> eps' (Q x) -> eps' P0),x:(eps A), x0:eps' (P x), x1:eps' (Q x)]
+  ex2_ind A P Q P0 f (ex2_intro A P Q x x0 x1) --> f x x0 x1.
+
+; all == pi_Xpp
+
+;;inst_spp : A:Set -> P:(eps A -> Prop) -> x:(eps A) -> eps' (pi_spp (x0:(eps A) => P x0)) -> eps' (P x).
+
+;; datatypes
+
+unit : Set.
+tt : eps unit.
+unit_rec : P : (eps unit -> Set) -> eps (P tt) -> u : eps unit ->  eps (P u).
+unit_ind : P : (eps unit -> Prop) -> eps' (P tt) -> u : eps unit ->  eps' (P u).
+
+[f:eps unit -> Set,  a: eps  (f tt)] unit_rec f a tt --> a.
+[P:eps unit -> Prop, a: eps' (P tt)] unit_ind P a tt --> a.
+
+bool : Set.
+true : eps bool.
+false : eps bool.
+
+bool_rec : P : (eps bool -> Set) -> eps (P true) -> eps (P false) -> b : eps bool -> eps (P b).
+bool_ind : P : (eps bool -> Prop) -> eps' (P true) -> eps' (P false) -> b : eps bool -> eps' (P b).
+
+[P:eps bool -> Set, a:eps (P true), b:eps (P false)] bool_rec P a b true --> a. 
+[P:eps bool -> Set, a:eps (P true), b:eps (P false)] bool_rec P a b false --> b. 
+[P:eps bool -> Prop, a:eps' (P true), b:eps' (P false)] bool_ind P a b true --> a. 
+[P:eps bool -> Prop, a:eps' (P true), b:eps' (P false)] bool_ind P a b false --> b. 
+
+andb : eps bool -> eps bool -> eps bool.
+[]           andb true  true  --> true. 
+[_:eps bool] andb _     false --> false. 
+[_:eps bool] andb false _     --> false. 
+
+orb : eps bool -> eps bool -> eps bool.
+[_:eps bool] orb true  _     --> true. 
+[_:eps bool] orb _     true  --> true. 
+[]           orb false false --> false. 
+
+implb : eps bool -> eps bool -> eps bool.
+[]           implb true false --> false. 
+[]           implb true true  --> true. 
+[_:eps bool] implb false _    --> true. 
+
+xorb : eps bool -> eps bool -> eps bool.
+[] xorb true  true  --> false. 
+[] xorb false false --> false. 
+[] xorb true  false --> true. 
+[] xorb false true  --> true. 
+
+negb : eps bool -> eps bool.
+[] negb true  --> false.
+[] negb false --> true. 
+
+
