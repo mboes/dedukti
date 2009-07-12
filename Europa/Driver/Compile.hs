@@ -39,8 +39,8 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
 
 -- | Read the interface file of each module name to collect the declarations
 -- exported by the module.
-collectExternalDeclarations :: [MName] -> EuM (Set.Set Qid)
-collectExternalDeclarations =
+populateInitialEnvironment :: [MName] -> EuM (Set.Set Qid)
+populateInitialEnvironment =
     liftM Set.unions .
     mapM (\dep -> let path = ifacePathFromModule dep
                   in liftM (Set.fromList . map (qual dep) . parseIface path) $
@@ -67,7 +67,7 @@ compileAST mod src@(decls, rules) = do
   -- we read an interface file, much faster to parse than the actual
   -- dependencies themselves.
   say Verbose $ text "Populating environment for" <+> text (show mod) <+> text "..."
-  extdecls <- collectExternalDeclarations deps
+  extdecls <- populateInitialEnvironment deps
   say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
   checkUniqueness src
   checkScopes extdecls src
