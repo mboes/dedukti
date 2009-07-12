@@ -18,7 +18,6 @@ import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Set as Set
-import Control.Monad (ap)
 
 
 readT = io . liftM T.decodeUtf8 . B.readFile
