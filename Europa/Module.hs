@@ -18,10 +18,12 @@ module Europa.Module
     , Qid(..), qid, (.$), provenance, unqualify
     ) where
 
+import Europa.EuM
 import System.FilePath
 import Data.Char (isAlpha, isAlphaNum)
 import qualified Data.Text.Lazy as T
-import Europa.EuM
+import Text.PrettyPrint.Leijen
+
 
 data Hierarchy = !Hierarchy :. !T.Text | Root
                  deriving (Eq, Ord, Show)
@@ -35,6 +37,10 @@ instance Show InvalidModuleName where
     show (InvalidModuleName name) = "invalid character in " ++ name
 
 instance Exception InvalidModuleName
+
+instance Pretty MName where
+    pretty (Root :. x) = text (T.unpack x)
+    pretty (xs :. x) = pretty xs <> char '.' <> text (T.unpack x)
 
 hierarchy :: [T.Text] -> Hierarchy
 hierarchy =  f . reverse where
