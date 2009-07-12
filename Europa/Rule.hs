@@ -58,7 +58,7 @@ linearize xs (env :@ lhs :--> rhs) =
                   -- the variables they are unified to.
                   env' = foldr (\(x,x') env -> x' ::: (env ! x) & env) env constraints
               in (env' :@ lhs' :--> rhs, constraints)
-    where f t@(Var x a) = do
+    where f t@(Var x a) | x `isin` env = do
             (xs, seen, constraints) <- get
             if x `Set.member` seen then
                 do let Stream.Cons x' xs' = xs
