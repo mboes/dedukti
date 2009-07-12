@@ -3,7 +3,7 @@
 -- License   : GPL
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
-module Europa.Parser (Pa, Europa.Parser.parse) where
+module Europa.Parser (Pa, Europa.Parser.parse, parseIface) where
 
 import Europa.Core
 import Europa.Module
@@ -30,6 +30,14 @@ instance Show ParseError where
 
 instance Exception.Exception ParseError
 
+newtype IfaceError = IfaceError String
+    deriving Typeable
+
+instance Show IfaceError where
+    show (IfaceError f) = "Broken interface file " ++ f ++ "."
+
+instance Exception.Exception IfaceError
+
 parse :: SourceName -> T.Text -> Pa Module
 parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
@@ -38,6 +46,10 @@ parse name input =
     case runParser ((,) <$> toplevel <*> allRules) [] name (T.unpack input) of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
+
+-- | Parser for interface files.
+parseIface :: SourceName -> T.Text -> [Qid]
+parseIface _ = map qid . T.lines
 
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
