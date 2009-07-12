@@ -27,7 +27,7 @@ nat_rec : t : coc.Utype
 
 plus : nat -> nat -> nat.
 
-[] plus --> nat => nat => nat_rec nat_ 0 (x : nat => y : nat => y) x.
+[] plus --> x : nat => y : nat => nat_rec nat_ 0 (x : nat => y : nat => y) x.
 
 plus2 : nat -> nat -> nat.
 
