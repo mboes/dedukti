@@ -21,6 +21,8 @@ import Control.Monad.State
 import Control.Applicative
 import Data.Typeable (Typeable)
 import Control.Exception
+import System.Directory (copyFile)
+import Data.Char (toUpper)
 
 
 cmp x y = do
@@ -57,21 +59,29 @@ rules' targets = concat <$> mapM f targets where
           return $ rs ++ rsdeps
     -- Now that we have the dependencies of the module, we can enounce a few
     -- build rules concerning the module.
-    g mod ds compile = let eu  = srcPathFromModule mod
+    g mod ds compile = let capitalize x = toUpper (head x) : tail x
+                           eu  = srcPathFromModule mod
                            euo = objPathFromModule mod
+                           eui = ifacePathFromModule mod
                            hi  = pathFromModule ".hi" mod
+                           chi = capitalize hi
                            o   = pathFromModule ".o" mod
-                           dephis  = map (pathFromModule ".hi") ds
+                           dephis = map (capitalize . pathFromModule ".hi") ds
                        in [ Rule eu [] Nothing cmp
                           , Rule euo [eu] (Just compile) cmp
-                          , Rule hi (euo:dephis) (Just $ task_hscomp euo) cmp
-                          , Rule o (euo:dephis) (Just $ task_hscomp euo) cmp ]
+                          , Rule eui [eu] (Just compile) cmp
+                          , Rule hi (euo:eui:dephis) (Just $ task_hscomp euo) cmp
+                          , Rule o (euo:eui:dephis) (Just $ task_hscomp euo) cmp
+                          , Rule chi [hi] (Just $ task_himv hi chi) cmp ]
     task_hscomp euo _ = do
       hscomp <- parameter Config.hsCompiler
       io . IO.testExitCode =<< command hscomp [ "-c", "-x", "hs", euo
                                               , "-XOverloadedStrings"
                                               , "-XPatternGuards"
                                               , "-fno-warn-overlapping-patterns" ]
+    task_himv hi chi _ = do
+      io $ copyFile hi chi
+      return TaskSuccess
     task_compile mod src _ = do
       -- xxx: should catch any errors here.
       compileAST mod src

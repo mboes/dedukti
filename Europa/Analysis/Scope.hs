@@ -65,9 +65,9 @@ checkRuleOrdering rules = do
   mapM_ (\x -> when (length x > 1) (throw $ NonContiguousRules (head x))) $
         group $ sort $ map head $ group $ map Rule.headConstant rules
 
-checkScopes :: forall a. Show a => Module Qid a -> EuM ()
-checkScopes (decls, rules) = do
-  topenv <- foldM chkBinding Set.empty decls
+checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> EuM ()
+checkScopes env (decls, rules) = do
+  topenv <- foldM chkBinding env decls
   mapM_ (chkRule topenv) rules
     where chkBinding env (x ::: ty) = do
             chkExpr env ty
