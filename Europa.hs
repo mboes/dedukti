@@ -19,6 +19,9 @@ import Control.Monad (unless, when)
 import System.Console.GetOpt
 import System.Exit
 import System.IO
+import qualified Data.Text.Lazy.Encoding as T
+import qualified Data.Text.Lazy as T
+import qualified Data.ByteString.Lazy as B
 
 
 data Flag = FlagMake | FlagHelp | FlagVersion | FlagVerbose | FlagVeryVerbose
@@ -50,7 +53,7 @@ bailout = printUsage Short >> io exitFailure
 printVersion = do
   self <- parameter Config.imageName
   version <- parameter Config.version
-  io $ putStrLn $ flip displayS "" $ renderPretty 0.70 100 $
+  io $ B.putStrLn $ T.encodeUtf8 $ T.pack $ flip displayS "" $ renderPretty 0.70 100 $
      text "Europa" <+> text version <> line <> line <>
      text "Copyright (c) 2009 CNRS - École Polytechnique - INRIA." <> line <> line <>
      fillText "You may redistribute copies of Europa under the terms of \
