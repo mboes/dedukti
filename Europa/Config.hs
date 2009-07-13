@@ -13,6 +13,7 @@ data Verbosity = Quiet | Verbose | Debug
 data Config = Config
     { homeDir :: FilePath
     , imageName :: FilePath
+    , version :: String
     , hsCompiler :: FilePath
     , verbosity :: Verbosity
     }
@@ -21,5 +22,6 @@ defaultConfig =
     Config { homeDir = "."
            , imageName = "europa"
            , hsCompiler = "ghc"
+           , version = "0.1"
            , verbosity = Quiet }
 
