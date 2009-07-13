@@ -13,6 +13,7 @@ module Europa.EuM ( module Control.Monad
                   , command
                   -- pretty-printing combinators.
                   , Pretty(..), text, (<+>), (<>), int
+                  , fillText
                   , E.Exception(..), Typeable, E.throw, io
                   , onException) where
 
@@ -51,6 +52,11 @@ command :: String -> [String] -> EuM ExitCode
 command exe args = do
   say Verbose $ text "**" <+> text exe <+> hsep (map (squotes . text) args)
   io $ rawSystem exe args
+
+-- | A pretty-printing combinator that outputs filled text with wrapping on
+-- word boundaries.
+fillText :: String -> Doc
+fillText = fillSep . map text . words
 
 -- | Register a new warning.
 warn :: String -> EuM ()
