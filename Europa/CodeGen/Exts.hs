@@ -70,10 +70,10 @@ instance CodeGen Record where
                   [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty (unqualify x)))]]
 
     serialize mod deps (Bundle decls) =
-        T.pack $ prettyPrint $
+        T.pack $ prettyPrintWithMode defaultMode {layout = PPInLine} $
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
-        where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing) deps
-              runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing
+        where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing Nothing) deps
+              runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing Nothing
               modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map capitalize $ toList m
 
 -- | A similar encoding of names as the z-encoding of GHC. Non-letter
