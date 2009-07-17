@@ -11,4 +11,4 @@ fi
 main=$1
 shift 1
 
-echo main | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main
+echo "do t <- start; main; stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main

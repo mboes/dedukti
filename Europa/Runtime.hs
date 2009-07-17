@@ -20,6 +20,7 @@ module Europa.Runtime
     ( Code(..), Term(..), ap
     , convertible
     , bbox, sbox, obj
+    , start, stop
     , checkDeclaration
     , checkRule) where
 
@@ -29,6 +30,7 @@ import Text.Show.Functions ()
 import Data.Typeable hiding (typeOf)
 import Prelude hiding (pi, catch)
 import System.IO
+import Data.Time.Clock
 
 
 -- Exceptions
@@ -123,3 +125,15 @@ checkDeclaration x t = catch (evaluate t >> putStrLn "Check") handler
 checkRule :: Term -> Term -> Term
 checkRule lhs rhs | convertible 0 (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
                   | otherwise = throw RuleError
+
+start :: IO UTCTime
+start = do
+  putStrLn "Start."
+  getCurrentTime
+
+
+stop :: UTCTime -> IO ()
+stop t = do
+  t' <- getCurrentTime
+  let total = diffUTCTime t' t
+  putStrLn $ "Stop. Runtime: " ++ show total
