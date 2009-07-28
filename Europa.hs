@@ -37,18 +37,20 @@ options = [ Option [] ["make"] (NoArg FlagMake)
           verb (Just "v") = FlagVeryVerbose
           verb _ = error "Unrecognized verbosity level."
 
-data Usage = Long | Short
+printUsage = do
+  self <- parameter Config.imageName
+  let header = show $ text "Usage:" <+>
+               (text self <+> text "[OPTION]..." <+> text "MODULE")
+  io $ hPutStrLn stderr header
 
-printUsage format = do
+printHelp = do
   self <- parameter Config.imageName
   let header = show $ text "Usage:" <+>
                (text self <+> text "[OPTION]..." <+> text "MODULE")
                <$> text "Options:"
-  case format of
-    Long -> io $ putStrLn (usageInfo header options)
-    Short -> io $ hPutStrLn stderr header
+  io $ putStrLn (usageInfo header options)
 
-bailout = printUsage Short >> io exitFailure
+bailout = printUsage >> io exitFailure
 
 printVersion = do
   self <- parameter Config.imageName
@@ -73,7 +75,7 @@ main = do
          exitFailure
   runEuM (initializeConfiguration opts) $
          case undefined of
-           _ | FlagHelp `elem` opts -> printUsage Long
+           _ | FlagHelp `elem` opts -> printHelp
              | FlagVersion `elem` opts -> printVersion
            _ | FlagMake `elem` opts -> do
                      unless (length files == 1) bailout
