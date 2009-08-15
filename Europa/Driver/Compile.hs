@@ -14,6 +14,7 @@ import Europa.Analysis.Dependency
 import Europa.Analysis.Scope
 import qualified Europa.CodeGen.Exts as CG
 import qualified Europa.Rule as Rule
+import qualified Europa.Analysis.Rule as Rule
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 import qualified Data.ByteString.Lazy as B
@@ -70,7 +71,8 @@ compileAST mod src@(decls, rules) = do
   say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
   checkUniqueness src
   checkScopes extdecls src
-  checkRuleOrdering rules
+  Rule.checkOrdering rules
+  mapM_ Rule.checkHead rules
   say Debug $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]

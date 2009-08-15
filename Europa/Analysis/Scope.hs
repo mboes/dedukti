@@ -27,15 +27,6 @@ instance Show DuplicateDefinition where
 
 instance Exception DuplicateDefinition
 
-newtype NonContiguousRules = NonContiguousRules Qid
-    deriving (Eq, Ord, Typeable)
-
-instance Show NonContiguousRules where
-    show (NonContiguousRules id) =
-        show (text "Rules for" <+> pretty id <+> text "should be given contiguously.")
-
-instance Exception NonContiguousRules
-
 newtype ScopeError = ScopeError Qid
     deriving (Eq, Ord, Typeable)
 
@@ -59,11 +50,6 @@ checkUniqueness (decls, rules) = do
     where chk bs = mapM_ (\x -> when (length x > 1)
                                 (throw $ DuplicateDefinition (head x))) $
                    group $ sort $ map bind_name bs
-
-checkRuleOrdering :: [TyRule Qid a] -> EuM ()
-checkRuleOrdering rules = do
-  mapM_ (\x -> when (length x > 1) (throw $ NonContiguousRules (head x))) $
-        group $ sort $ map head $ group $ map Rule.headConstant rules
 
 checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> EuM ()
 checkScopes env (decls, rules) = do
