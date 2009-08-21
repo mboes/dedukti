@@ -54,7 +54,7 @@ implies : A:Prop -> B:Prop -> Prop.
 
 [A:Set, f:eps A -> Prop] eps' (pi_spp A f) --> x:eps A -> eps' (f x).
 [A:Prop, f:eps' A -> Prop] eps' (pi_ppp A f) --> x:eps' A -> eps' (f x).
-[A:Prop, B:Prop] implies A B --> pi_ppp A (eps' A => B).
+[A:Prop, B:Prop] implies A B --> pi_ppp A (_:eps' A => B).
 
 ;; ------------------
 
@@ -62,24 +62,33 @@ iff : Prop -> Prop -> Prop.
 [A:Prop,B:Prop] iff A B --> and (implies A B) (implies B A).
 
 iff_refl : A:Prop -> eps' (iff A A).
-;;[A:Prop] iff_refl A --> conj A A (H:eps' A => H) (H:eps' A => H).
+[A:Prop] iff_refl A --> conj (implies A A) (implies A A) (H:eps' A => H) (H:eps' A => H).
 
 iff_trans : A:Prop -> B:Prop -> C:Prop -> eps' (iff A B) -> eps' (iff B C) -> eps' (iff A C).
-;;[A:Prop, B:Prop, C:Prop, H1:implies A B, H2:implies B A, H3:implies B C, H4:implies C D] 
-;;  iff_trans (conj H1 H2) (conj H3 H4) --> conj (H5:eps' A => H3 (H1 H5)) (H5:eps' C => H2 (H1 (H2 (H4 H5)))).
+[A: Prop,
+ B: Prop,
+ C: Prop,
+ H1: eps' (implies A B),
+ H2: eps' (implies B A),
+ H3: eps' (implies B C),
+ H4: eps' (implies C B)
+] iff_trans A B C (conj (implies A B) (implies B A) H1 H2) (conj (implies B C) (implies C B) H3 H4) 
+  --> conj (implies A C) (implies C A) (H5:eps' A => H3 (H1 H5)) (H5:eps' C => (H2 (H4 H5))).
 
 iff_sym : A:Prop -> B:Prop -> eps' (iff A B) -> eps' (iff B A).
 [A:Prop, B:Prop, H1:eps' (implies A B), H2:eps' (implies B A)]
   iff_sym A B (conj (implies A B) (implies B A) H1 H2) --> conj (implies B A) (implies A B) H2 H1.
 
 neg_false : A : Prop -> eps' (iff (not A) (iff A False)).
-;;[A:Prop] neg_false A --> 
-;;  conj 
-;;  (H : (eps' A -> eps' False) => conj H (H1 : eps' False => False_ind A H1)) 
-;;  (H : eps' (iff A False) => match1 A H).
+[A:Prop] neg_false A --> 
+  conj (implies (not A) (iff A False)) 
+       (implies (iff A False) (not A))
+       (H : eps' (not A) => conj (implies A False) (implies False A) H (H1 : eps' False => False_ind A H1)) 
+       (H : eps' (iff A False) => match1 A H).
 
-;;match1 : A:Prop -> H:eps' (iff A False) -> eps' (implies A False).
-;;[A:Prop, H0:eps' (implies A False), _:eps' (implies False A)] match1 A (conj (implies A False) (implies False A) H0 _) --> H0.
+match1 : A:Prop -> H:eps' (iff A False) -> eps' (implies A False).
+[A:Prop, H0:eps' (implies A False), _:eps' (implies False A)] 
+  match1 A (conj (implies A False) (implies False A) H0 _) --> H0.
 
 and_cancel_l : A:Prop -> B:Prop -> C:Prop -> eps' (implies (implies B A) (implies (implies C A) (iff (iff (and A B) (and A C)) (iff B C)))).
 ; TODO PROOF
