@@ -53,11 +53,11 @@ ruleSets ds rs = snd $ foldl aux (sortBy cmp (group rs), []) ds where
 -- names.
 linearize :: Ord id => Stream.Stream id -> TyRule id a -> (TyRule id a, [(id, id)])
 linearize xs (env :@ lhs :--> rhs) =
-              let (lhs', (_, _, constraints)) = runState (transformM f lhs) (xs, Set.empty, [])
-                  -- Add new variables to environment, with same type as of
-                  -- the variables they are unified to.
-                  env' = foldr (\(x,x') env -> x' ::: (env ! x) & env) env constraints
-              in (env' :@ lhs' :--> rhs, constraints)
+    let (lhs', (_, _, constraints)) = runState (transformM f lhs) (xs, Set.empty, [])
+        -- Add new variables to the environment, with same type as
+        -- that of the variables they are unified to.
+        env' = foldr (\(x,x') env -> x' ::: (env ! x) & env) env constraints
+    in (env' :@ lhs' :--> rhs, constraints)
     where f t@(Var x a) | x `isin` env = do
             (xs, seen, constraints) <- get
             if x `Set.member` seen then
