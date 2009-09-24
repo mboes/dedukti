@@ -6,8 +6,8 @@
 -- warning messages or displaying error messages to the screen. Debugging
 -- facilities and an interface to the system are also provided.
 
-module Europa.EuM ( module Control.Monad
-                  , EuM, runEuM, warn, warnings, say
+module Dedukti.DkM ( module Control.Monad
+                  , DkM, runDkM, warn, warnings, say
                   , Verbosity(..)
                   , configuration, parameter
                   , command
@@ -17,7 +17,7 @@ module Europa.EuM ( module Control.Monad
                   , E.Exception(..), Typeable, E.throw, io
                   , onException) where
 
-import Europa.Config as Config
+import Dedukti.Config as Config
 import Control.Monad
 import Control.Monad.Reader
 import qualified Control.Exception as E
@@ -33,22 +33,22 @@ instance Applicative (ReaderT Config IO) where
     pure = return
     (<*>) = ap
 
-newtype EuM a = EuM (ReaderT Config IO a)
+newtype DkM a = DkM (ReaderT Config IO a)
     deriving (Monad, MonadIO, Functor, Applicative, MonadReader Config)
 
-runEuM :: Config -> EuM a -> IO a
-runEuM conf (EuM m) = runReaderT m conf
+runDkM :: Config -> DkM a -> IO a
+runDkM conf (DkM m) = runReaderT m conf
 
 -- | Get all global parameters.
-configuration :: EuM Config
+configuration :: DkM Config
 configuration = ask
 
 -- | Select one parameter.
-parameter :: (Config -> a) -> EuM a
+parameter :: (Config -> a) -> DkM a
 parameter sel = sel <$> ask
 
 -- | Wrapper around 'rawSystem'.
-command :: String -> [String] -> EuM ExitCode
+command :: String -> [String] -> DkM ExitCode
 command exe args = do
   say Verbose $ text "**" <+> text exe <+> hsep (map (squotes . text) args)
   io $ rawSystem exe args
@@ -59,23 +59,23 @@ fillText :: String -> Doc
 fillText = fillSep . map text . words
 
 -- | Register a new warning.
-warn :: String -> EuM ()
+warn :: String -> DkM ()
 warn = undefined
 
 -- | Get the list of warnings so far.
-warnings :: EuM [Doc]
+warnings :: DkM [Doc]
 warnings = undefined
 
 -- | Write message only if verbosity level is at least the given level.
-say :: Verbosity -> Doc -> EuM ()
+say :: Verbosity -> Doc -> DkM ()
 say v msg = do v' <- parameter Config.verbosity
                when (v <= v') $ io $ hPutDoc stderr (msg <> line)
 
 -- | Shorter name for the oft used 'liftIO'.
-io :: IO a -> EuM a
+io :: IO a -> DkM a
 io = liftIO
 
-onException :: EuM a -> EuM b -> EuM a
+onException :: DkM a -> DkM b -> DkM a
 onException x y = do
   conf <- configuration
-  io $ runEuM conf x `E.onException` runEuM conf y
+  io $ runDkM conf x `E.onException` runDkM conf y

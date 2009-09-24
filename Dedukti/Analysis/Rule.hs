@@ -1,10 +1,10 @@
-module Europa.Analysis.Rule where
+module Dedukti.Analysis.Rule where
 
-import Europa.Core
-import Europa.Module
-import Europa.EuM
-import qualified Europa.Rule as Rule
-import Europa.Pretty ()
+import Dedukti.Core
+import Dedukti.Module
+import Dedukti.DkM
+import qualified Dedukti.Rule as Rule
+import Dedukti.Pretty ()
 import Text.PrettyPrint.Leijen hiding (group)
 import Data.List (group, sort)
 
@@ -18,7 +18,7 @@ instance Show NonContiguousRules where
 
 instance Exception NonContiguousRules
 
-checkOrdering :: [TyRule Qid a] -> EuM ()
+checkOrdering :: [TyRule Qid a] -> DkM ()
 checkOrdering rules = do
   mapM_ (\x -> when (length x > 1) (throw $ NonContiguousRules (head x))) $
         group $ sort $ map head $ group $ map Rule.headConstant rules
@@ -33,7 +33,7 @@ instance Show BadPattern where
 
 instance Exception BadPattern
 
-checkHead :: TyRule Qid a -> EuM ()
+checkHead :: TyRule Qid a -> DkM ()
 checkHead (env :@ lhs :--> rhs) =
     let bad = [ x | App (Var x _) _ _ <- everyone lhs, x `isin` env ]
     in when (not (null bad)) $ throw (BadPattern bad)

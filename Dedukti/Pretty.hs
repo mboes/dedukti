@@ -7,10 +7,10 @@
 -- should derive Show for all data types, then declare them instances
 -- of |Pretty| where appropriate.
 
-module Europa.Pretty (pretty) where
+module Dedukti.Pretty (pretty) where
 
-import Europa.Core
-import Europa.Module
+import Dedukti.Core
+import Dedukti.Module
 import Text.PrettyPrint.Leijen
 import qualified Data.Text.Lazy as T
 

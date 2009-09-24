@@ -4,7 +4,7 @@
 --
 -- Global site-specific configuration variables.
 
-module Europa.Config where
+module Dedukti.Config where
 
 
 data Verbosity = Quiet | Verbose | Debug
@@ -20,7 +20,7 @@ data Config = Config
 
 defaultConfig =
     Config { homeDir = "."
-           , imageName = "europa"
+           , imageName = "dedukti"
            , hsCompiler = "ghc"
            , version = "0.1"
            , verbosity = Quiet }

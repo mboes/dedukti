@@ -16,7 +16,7 @@
 -- declarations are given here, along with the conversion relation and type
 -- inference function.
 
-module Europa.Runtime
+module Dedukti.Runtime
     ( Code(..), Term(..), ap
     , convertible
     , bbox, sbox, obj

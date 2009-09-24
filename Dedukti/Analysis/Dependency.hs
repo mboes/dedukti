@@ -4,10 +4,10 @@
 --
 -- Find all direct dependencies of the current module.
 
-module Europa.Analysis.Dependency where
+module Dedukti.Analysis.Dependency where
 
-import Europa.Core
-import Europa.Module
+import Dedukti.Core
+import Dedukti.Module
 import qualified Data.Set as Set
 
 

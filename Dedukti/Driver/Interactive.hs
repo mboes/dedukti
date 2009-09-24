@@ -2,12 +2,12 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 
-module Europa.Driver.Interactive (eval) where
+module Dedukti.Driver.Interactive (eval) where
 
-import Europa.Module
-import Europa.Parser
-import qualified Europa.CodeGen.Exts as CG
-import qualified Europa.Rule as Rule
+import Dedukti.Module
+import Dedukti.Parser
+import qualified Dedukti.CodeGen.Exts as CG
+import qualified Dedukti.Rule as Rule
 import Data.ByteString.Lazy (ByteString)
 
 

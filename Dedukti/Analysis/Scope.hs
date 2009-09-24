@@ -7,13 +7,13 @@
 -- duplicate top-level definitions and enforcing contiguity of rule
 -- defnitions.
 
-module Europa.Analysis.Scope where
+module Dedukti.Analysis.Scope where
 
-import Europa.Core
-import Europa.Module
-import qualified Europa.Rule as Rule
-import Europa.Pretty ()
-import Europa.EuM
+import Dedukti.Core
+import Dedukti.Module
+import qualified Dedukti.Rule as Rule
+import Dedukti.Pretty ()
+import Dedukti.DkM
 import Data.List (sort, group)
 import qualified Data.Set as Set
 
@@ -43,7 +43,7 @@ instance Show IllegalEnvironment where
 
 instance Exception IllegalEnvironment
 
-checkUniqueness :: Module Qid a -> EuM ()
+checkUniqueness :: Module Qid a -> DkM ()
 checkUniqueness (decls, rules) = do
   chk decls
   mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
@@ -51,7 +51,7 @@ checkUniqueness (decls, rules) = do
                                 (throw $ DuplicateDefinition (head x))) $
                    group $ sort $ map bind_name bs
 
-checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> EuM ()
+checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
   topenv <- foldM chkBinding env decls
   mapM_ (chkRule topenv) rules

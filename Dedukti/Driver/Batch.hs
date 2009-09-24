@@ -4,14 +4,14 @@
 --
 -- The batch driver. It compiles all given targets and all their dependencies,
 -- also invoking the Haskell compiler on the generated source code.
-module Europa.Driver.Batch (make) where
+module Dedukti.Driver.Batch (make) where
 
-import Europa.Driver.Compile
-import Europa.Analysis.Dependency
-import Europa.Module
-import Europa.Parser
-import Europa.EuM
-import qualified Europa.Config as Config
+import Dedukti.Driver.Compile
+import Dedukti.Analysis.Dependency
+import Dedukti.Module
+import Dedukti.Parser
+import Dedukti.DkM
+import qualified Dedukti.Config as Config
 import qualified Control.Hmk.IO as IO
 import Control.Hmk
 import qualified Data.Text.Lazy.Encoding as T
@@ -33,7 +33,7 @@ cmp x y = do
 -- given root modules. Finding the dependencies of a module requires parsing
 -- the corresponding source file. To avoid parsing each file twice, the AST is
 -- kept in-memory in case it is needed later during compilation.
-rules :: [MName] -> EuM [Rule EuM FilePath]
+rules :: [MName] -> DkM [Rule DkM FilePath]
 rules targets = evalStateT (rules' targets) Map.empty
 
 -- Maintain a list of already seen modules to avoid parsing same modules twice
@@ -98,7 +98,7 @@ instance Exception CommandError
 
 -- | Perform each system action, aborting if an action returns
 -- non-zero exit code.
-abortOnError :: [EuM Result] -> EuM ()
+abortOnError :: [DkM Result] -> DkM ()
 abortOnError = mapM_ f where
     f cmd = do code <- cmd
                case code of
@@ -107,7 +107,7 @@ abortOnError = mapM_ f where
 
 -- | Compile each of the modules given as input and all of their
 -- dependencies, if necessary.
-make :: [MName] -> EuM ()
+make :: [MName] -> DkM ()
 make modules = do
   let targets = map (pathFromModule ".o") modules
   rs <- process cmp <$> rules modules

@@ -4,14 +4,14 @@
 --
 -- A code generator based on the haskell-src-exts package by Niklas Broberg.
 
-module Europa.CodeGen.Exts
-    (module Europa.CodeGen, Code) where
+module Dedukti.CodeGen.Exts
+    (module Dedukti.CodeGen, Code) where
 
-import Europa.CodeGen
-import Europa.Core
-import Europa.Module
-import Europa.Pretty
-import qualified Europa.Rule as Rule
+import Dedukti.CodeGen
+import Dedukti.Core
+import Dedukti.Module
+import Dedukti.Pretty
+import qualified Dedukti.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.Text.Lazy as T
@@ -73,7 +73,7 @@ instance CodeGen Record where
         T.pack $ prettyPrintWithMode defaultMode {layout = PPInLine} $
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing Nothing) deps
-              runtime = Hs.ImportDecl (*) (Hs.ModuleName "Europa.Runtime") False False Nothing Nothing Nothing
+              runtime = Hs.ImportDecl (*) (Hs.ModuleName "Dedukti.Runtime") False False Nothing Nothing Nothing
               modname m = Hs.ModuleName $ T.unpack $ T.intercalate "." $ map capitalize $ toList m
 
 -- | A similar encoding of names as the z-encoding of GHC. Non-letter

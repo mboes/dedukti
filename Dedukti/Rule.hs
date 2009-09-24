@@ -4,9 +4,9 @@
 --
 -- Various utility functions over rewrite rules and rule sets.
 
-module Europa.Rule where
+module Dedukti.Rule where
 
-import Europa.Core
+import Dedukti.Core
 import Data.List (groupBy, sortBy)
 import qualified Data.Stream as Stream
 import Control.Monad.State

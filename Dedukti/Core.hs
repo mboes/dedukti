@@ -2,7 +2,7 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 
-module Europa.Core
+module Dedukti.Core
     ( -- * Terms
       Expr(..), Binding(..)
     -- * Rules

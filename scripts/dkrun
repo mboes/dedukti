@@ -2,7 +2,7 @@
 
 if [ -z $* ]
 then
-    echo "Usage: eurun module.euo [DEPENDENCY]..." 1>&2
+    echo "Usage: dkrun module.euo [DEPENDENCY]..." 1>&2
     echo "    Where all dependent modules must be listed explicitly," 1>&2
     echo "    after the module to typecheck." 1>&2
     exit 1
@@ -11,4 +11,4 @@ fi
 main=$1
 shift 1
 
-echo "do t <- Europa.Runtime.start; main; Europa.Runtime.stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main
+echo "do t <- Dedukti.Runtime.start; main; Dedukti.Runtime.stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main

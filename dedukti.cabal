@@ -1,13 +1,13 @@
-name:           europa
+name:           dedukti
 version:        0.0
 author:         Mathieu Boespflug
 maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
 copyright:
     © 2009 CNRS - École Polytechnique - INRIA
-homepage:       http://www.lix.polytechnique.fr/~mboes/src/europa.git
+homepage:       http://www.lix.polytechnique.fr/~mboes/src/dedukti.git
 synopsis:       A type-checker for the λΠ-modulo calculus.
 description:
-    Europa is a proof checker for the λΠ-modulo calculus, a
+    Dedukti is a proof checker for the λΠ-modulo calculus, a
     dependently typed λ-calculus with the addition of typed rewrite
     rules, capable of expressing proofs in Deduction Modulo [1].
 
@@ -21,9 +21,9 @@ build-type:     Simple
 tested-with:    GHC ==6.10
 
 
-executable europa
-  main-is:             Europa.hs
-  other-modules:       Europa.Core, Europa.Parser, Europa.Pretty
+executable dedukti
+  main-is:             Dedukti.hs
+  other-modules:       Dedukti.Core, Dedukti.Parser, Dedukti.Pretty
   build-depends:       base >= 4, mtl >= 1.1, containers >= 0.2,
                        directory, filepath, process,
                        parsec >= 3.0.0, wl-pprint >= 1.0, bytestring >= 0.9.1.0,
@@ -37,7 +37,7 @@ executable europa
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 library
-  exposed-modules:     Europa.Runtime
+  exposed-modules:     Dedukti.Runtime
   build-depends:       time >= 1.1
   extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports

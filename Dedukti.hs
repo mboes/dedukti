@@ -9,11 +9,11 @@
 module Main where
 
 import System.Environment
-import qualified Europa.Config as Config
-import Europa.EuM
-import Europa.Module
-import Europa.Driver.Batch
-import Europa.Driver.Compile
+import qualified Dedukti.Config as Config
+import Dedukti.DkM
+import Dedukti.Module
+import Dedukti.Driver.Batch
+import Dedukti.Driver.Compile
 import Text.PrettyPrint.Leijen
 import Control.Monad (unless, when)
 import System.Console.GetOpt
@@ -56,9 +56,9 @@ printVersion = do
   self <- parameter Config.imageName
   version <- parameter Config.version
   io $ B.putStrLn $ T.encodeUtf8 $ T.pack $ flip displayS "" $ renderPretty 0.70 100 $
-     text "Europa" <+> text version <> line <> line <>
+     text "Dedukti" <+> text version <> line <> line <>
      text "Copyright (c) 2009 CNRS - École Polytechnique - INRIA." <> line <> line <>
-     fillText "You may redistribute copies of Europa under the terms of \
+     fillText "You may redistribute copies of Dedukti under the terms of \
               \the GNU General Public License. For more information about \
               \these matters, see the file named COPYING."
 
@@ -73,7 +73,7 @@ main = do
   when (not (null errs)) $ do
          hPutDoc stderr (vsep (map text errs))
          exitFailure
-  runEuM (initializeConfiguration opts) $
+  runDkM (initializeConfiguration opts) $
          case undefined of
            _ | FlagHelp `elem` opts -> printHelp
              | FlagVersion `elem` opts -> printVersion

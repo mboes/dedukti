@@ -5,7 +5,7 @@
 -- A representation of module names and associated functions to map module
 -- names to source files and vice-versa. Qualified names, as required in the
 -- presence of modules, are also defined here.
-module Europa.Module
+module Dedukti.Module
     ( -- * Data types
       Hierarchy(..), MName
     -- * Exceptions
@@ -18,7 +18,7 @@ module Europa.Module
     , Qid(..), qid, (.$), provenance, unqualify
     ) where
 
-import Europa.EuM
+import Dedukti.DkM
 import System.FilePath
 import Data.Char (isAlpha, isAlphaNum)
 import qualified Data.Text.Lazy as T

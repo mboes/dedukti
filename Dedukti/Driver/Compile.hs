@@ -4,17 +4,17 @@
 --
 -- Compile one file to Haskell source code.
 
-module Europa.Driver.Compile (compile, compileAST) where
+module Dedukti.Driver.Compile (compile, compileAST) where
 
-import Europa.Module
-import Europa.Parser
-import Europa.EuM
-import Europa.Core
-import Europa.Analysis.Dependency
-import Europa.Analysis.Scope
-import qualified Europa.CodeGen.Exts as CG
-import qualified Europa.Rule as Rule
-import qualified Europa.Analysis.Rule as Rule
+import Dedukti.Module
+import Dedukti.Parser
+import Dedukti.DkM
+import Dedukti.Core
+import Dedukti.Analysis.Dependency
+import Dedukti.Analysis.Scope
+import qualified Dedukti.CodeGen.Exts as CG
+import qualified Dedukti.Rule as Rule
+import qualified Dedukti.Analysis.Rule as Rule
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 import qualified Data.ByteString.Lazy as B
@@ -39,7 +39,7 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
 
 -- | Read the interface file of each module name to collect the declarations
 -- exported by the module.
-populateInitialEnvironment :: [MName] -> EuM (Set.Set Qid)
+populateInitialEnvironment :: [MName] -> DkM (Set.Set Qid)
 populateInitialEnvironment =
     liftM Set.unions .
     mapM (\dep -> let path = ifacePathFromModule dep
@@ -52,14 +52,14 @@ interface :: Pa Module -> T.Text
 interface (decls, _) = T.unlines (map (qid_stem . bind_name) decls)
 
 -- | Emit Haskell code for one module.
-compile :: MName -> EuM ()
+compile :: MName -> DkM ()
 compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
   compileAST mod =<< return (parse path) `ap` readT path
 
 -- | Emit Haskell code for one module, starting from the AST.
-compileAST :: MName -> Pa Module -> EuM ()
+compileAST :: MName -> Pa Module -> DkM ()
 compileAST mod src@(decls, rules) = do
   let deps = collectDependencies src
   -- For the purposes of scope checking it is necessary to load in the

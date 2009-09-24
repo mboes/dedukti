@@ -3,10 +3,10 @@
 -- License   : GPL
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
-module Europa.Parser (Pa, Europa.Parser.parse, parseIface) where
+module Dedukti.Parser (Pa, Dedukti.Parser.parse, parseIface) where
 
-import Europa.Core
-import Europa.Module
+import Dedukti.Core
+import Dedukti.Module
 import Text.Parsec hiding (ParseError, parse)
 import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)

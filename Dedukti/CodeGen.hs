@@ -3,10 +3,10 @@
 -- License   : GPL
 --
 -- Interface for all code generators.
-module Europa.CodeGen (CodeGen(..)) where
+module Dedukti.CodeGen (CodeGen(..)) where
 
-import Europa.Core
-import Europa.Module
+import Dedukti.Core
+import Dedukti.Module
 import qualified Data.Text.Lazy as T
 
 
