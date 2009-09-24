@@ -11,4 +11,4 @@ fi
 main=$1
 shift 1
 
-echo "do t <- start; main; stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main
+echo "do t <- Europa.Runtime.start; main; Europa.Runtime.stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts $* $main
