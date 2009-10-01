@@ -468,9 +468,9 @@ corresponding to the module one wants to proof check. If a module has
 dependencies, then the Haskell source files corresponding to these
 dependencies must be given as additional arguments to
 @command{dkrun}@footnote{This is a limitation of the current
-implementation and may be lifted one day.}. Say @code{A} depends on
-@code{B} and @code{C}, @code{B} depends on @code{D}. Then the following
-command proof checks @code{A}:
+implementation and may be lifted at some point in the future.}. Say
+@code{A} depends on @code{B} and @code{C}, @code{B} depends on @code{D}.
+Then the following command proof checks @code{A}:
 
 @example
 $ dkrun A.dko B.dko C.dko D.dko
