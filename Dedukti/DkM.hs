@@ -2,7 +2,7 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
--- The europa monad. This provides various facilities such as accumulating
+-- The dedukti monad. This provides various facilities such as accumulating
 -- warning messages or displaying error messages to the screen. Debugging
 -- facilities and an interface to the system are also provided.
 
