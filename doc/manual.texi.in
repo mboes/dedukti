@@ -1,5 +1,5 @@
 \input texinfo
-@setfilename manual.info
+@setfilename dedukti.info
 @macro dkversion
 esyscmd(awk '/^version:/{print $2}' ../dedukti.cabal)dnl
 @end macro

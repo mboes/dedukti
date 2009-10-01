@@ -5,13 +5,20 @@
 	m4 $prereq > $stem.texi
 	texi2pdf -b $stem.texi; rm -f manual.texi
 
+%.info: %.texi.in
+	m4 $prereq | makeinfo -
+
 default:QV:
 	echo 'Please specify one of "html" or "pdf" as targets.'
 	exit 1
 
 pdf:V: manual.pdf
 html:V: manual.html
+info:V: manual.info
 
 clean:V:
-	rm -f *.{aux,cp,cps,df,fn,html,ky,log,pdf,pg,toc,tp,vr}
+	rm -f *.{aux,cp,cps,df,fn,ky,log,pg,toc,tp,vr}
+	rm -f *.info
+	rm -f *.html
+	rm -f *.pdf
 	rm -f manual.texi
