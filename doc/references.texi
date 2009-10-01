@@ -1,0 +1,2 @@
+@item [DW99]
+G. Dowek and B. Werner, ``Proof Normalization Modulo,'' @cite{Types for Proofs and Programs}, 1999, pp. 62-77.

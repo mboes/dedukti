@@ -1,0 +1,413 @@
+\input texinfo
+@setfilename manual.info
+@macro dkversion
+esyscmd(awk '/^version:/{print $2}' ../dedukti.cabal)dnl
+@end macro
+@settitle Dedukti User's Guide, version @dkversion{}
+@documentencoding UTF-8
+@afourpaper
+
+@copying
+Copyright @copyright{} 2009 CNRS - École Polytechnique - INRIA.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. A
+copy of the license is included in the section entitled ``Copying this
+manual''.
+@end quotation
+@end copying
+
+@iftex
+@macro lambdapi
+@tex
+$\\lambda\\Pi$%
+@end tex
+@end macro
+@end iftex
+@ifnottex
+@macro lambdapi
+λΠ
+@end macro
+@end ifnottex
+
+@defindex df
+
+@macro dindex {entry}
+@dfindex \entry\
+@end macro
+
+@macro oindex {entry}
+@dfindex Operator, @code{\entry\}
+@end macro
+
+@synindex df cp
+@syncodeindex fn cp
+
+@titlepage
+@title Dedukti User's Guide
+@subtitle Version @dkversion{}
+@author Mathieu Boespflug (@email{mboes@@lix.polytechnique.fr})
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@node Top
+@top The Dedukti proof checker
+
+This is the manual for Dedukti, version @dkversion{}. Dedukti is a proof checker
+for the @lambdapi{}-calculus modulo.
+
+@menu
+* Overview::            The general architecture.
+* Installation::        How to install the Dedukti system.
+* Dedukti syntax::       The input language for Dedukti.
+* Invoking dedukti::     The compiler.
+* Invoking dkrun::      Executing the proof checks.
+* References::          Bibliographic references.
+* Copying this manual:: How you can copy and share this manual.
+* Index::
+@end menu
+
+@node Overview
+@chapter Overview
+@cindex architecture
+@cindex overview
+@cindex general usage
+
+@cindex @lambdapi{}-calculus modulo
+The @lambdapi{}-calculus is a dependently typed lambda-calculus that
+allows expressing proofs of minimal predicate logic through the
+Brouwer-Heyting-Kolmogorov interpretation and the Curry-de Bruijn-Howard
+correspondence. It can be extended in several ways to express proofs of
+some theory. One way is to express the theory in Deduction modulo, i.e.
+to orient the axioms as rewrite rules and to extend the
+@lambdapi{}-calculus to express proofs in Deduction modulo. We get in
+this way the @dfn{@lambdapi{}-calculus modulo}.
+
+Dedukti is a type checker for the @lambdapi{}-calculus modulo.
+
+The input is a series of source files that declare terms and define
+rules. Checking these declarations with respect to the given rules is a
+two step process. These source files are first compiled to object files.
+The objects files for each source file are then linked together before
+being executed to type check the rules and declarations of the input.
+
+As such the Dedukti system centers around two commands. @command{dedukti}
+is the compiler that generates object files from source files
+(@pxref{Invoking dedukti}). @command{dkrun} is the command that links all
+object files together and executes the resulting program
+(@pxref{Invoking dkrun}).
+
+@node Installation
+@chapter Installation
+@cindex configure
+@cindex setup
+@cindex install
+
+@cindex Cabal
+@cindex Hackage
+Dedukti uses the Cabal architecture for building and packaging
+applications and libraries.
+
+@menu
+* Local install::       Installing in your home directory.
+* Global install::      Installing in the system directories.
+@end menu
+
+@node Local install
+@section Installing Dedukti locally
+
+If you have the @command{cabal} command part of the @code{cabal-install}
+package, then you can obtain Dedukti from Hackage, configure and install
+it all in one go:
+
+@example
+$ cabal install dedukti --user
+@end example
+
+@cindex Haskell Platform
+@noindent
+@code{cabal-install} is shipped as part of the Haskell
+Platform@footnote{@uref{http://hackage.haskell.org/platform}}.
+Alternatively, unpack the Dedukti source tarball and run
+
+@example
+$ cabal configure --user
+$ cabal build
+$ cabal install
+@end example
+
+You will have to satisfy dependencies by hand, if necessary. This will
+install the Dedukti commands and other files under the cabal hierarchy in
+your home directory (typically @file{~/.cabal}). You will need to alter
+your @env{PATH} appropriately to run these commands.
+
+@node Global install
+@section Installing Dedukti globally
+
+If you have appropriate permissions, you can install Dedukti globally for
+all users of the system. If you have the @command{cabal} command then
+you can obtain Dedukti from Hackage, configure and install it all in one
+go:
+
+@example
+$ cabal install dedukti --global
+@end example
+
+@noindent
+Alternatively, unpack the Dedukti source tarball and run
+
+@example
+$ cabal configure --global
+$ cabal build
+$ cabal install
+@end example
+
+@node Dedukti syntax
+@chapter Dedukti syntax
+
+@menu
+* Syntax overview::     An informal description of input files.
+* Scoping rules::       The scope of declarations and rules.
+* Grammar::             A formal specification of the syntax.
+@end menu
+
+@node Syntax overview
+@section A informal overview of the syntax
+
+@dindex module
+@cindex top-level
+@cindex source file
+A Dedukti source file consists in a series of top-level declarations
+rules, all terminated by a period. Each source file defines a
+@dfn{module}.
+
+@subsection Declarations
+
+Declarations have the form
+
+@example
+t : A.
+@end example
+
+@noindent
+where @code{t} is an identifier and @code{A} is a type.
+
+@anchor{Rules}
+@subsection Rules
+
+@cindex rule environment
+@cindex pattern
+@dindex rule
+@dindex rule head
+@dindex head, of a rule
+@cindex head constant
+@oindex -->
+Rules always start with an environment, followed by a head on the left
+hand side and an expression on the right hand side of a long arrow. A
+@dfn{rule head} consists of a head constant and zero or more patterns.
+Here is an example:
+
+@example
+S : nat.
+O : nat.
+[y : nat] plus O y --> y.
+[x : nat, y : nat] plus (S x) y --> S (plus x y).
+@end example
+
+@noindent
+Two rules, each with two patterns in the head, are defined for the
+constant @code{plus}. All variables in the pattern must appear in the
+environment along with a type. All identifiers that are not mentioned in
+the environment are considered constants, which must be in scope of
+their declaration (@pxref{Scoping rules}). Here @code{O} and @code{S}
+are constants declared earlier. The free variables in the right hand
+side of the rule must be a subset of the pattern variables mentioned in
+the left hand side. It is illegal to put variables in the rule
+environment that are not also pattern variables in the left hand side of
+the rule.
+
+A current limitation of the implementation imposes that rules for the
+same head constant be defined contiguously and in the same module as the
+declaration of the head constant. Another limitation is that all rules
+must have same arity. That is, the head constant in each rule must be
+followed by the same number of patterns. Both limitations may be lifted
+in the future.
+
+@subsection Terms and types
+@cindex term
+@cindex sort
+@cindex product
+@cindex dependent product
+@cindex variable
+
+@dindex term
+@dindex type
+@dindex dependent product
+@dindex product
+@dindex abstraction
+@findex Type
+@findex Kind
+As in many dependently-typed languages, the @lambdapi{}-calculus modulo
+unifies the syntax of terms and types. Nearly all terms have types and
+those types are themselves terms. There are two special terms,
+@code{Type} and @code{Kind}, which we refer to as @dfn{sorts}. In the
+following, we will call @dfn{types} those terms whose type is a sort.
+
+A term is either a variable, an application of terms, and abstraction of
+a variable over a term, a dependent product or a sort.
+@dfn{Abstractions} are the regular lambda-abstractions of the
+lambda-calculus with an extra type annotation on the bound variable. It
+is written in Dedukti as in the following example:
+
+@oindex =>
+@example
+x : A => t
+@end example
+
+@noindent
+where @code{x} is a variable, @code{A} is a type and @code{t} is a term.
+Parentheses around the abstraction are optional. A product is written
+similarly:
+
+@oindex ->
+@example
+x : A -> B
+@end example
+
+@noindent
+with @code{A} and @code{B} types. As a convenience, if the variable
+@code{x} does not appear free in the type @code{B}, one may write
+
+@example
+A -> B
+@end example
+
+@dindex application
+@noindent
+instead. Finally @dfn{applications} are written as a simple
+juxtaposition of terms, as in @code{t1 t2}.
+
+@cindex operator precedence
+@cindex precedence
+@cindex associativity
+@quotation Note
+Products bind more strongly than abstractions, so that @code{x : A -> B
+=> t} is parsed as @code{x : (A -> B) => t}. Also, applications are
+left-associative, while products are right-associative. This means that
+
+@example
+((a b) c) d -> (e (f g) -> h)
+@end example
+
+@noindent
+is equivalent to
+
+@example
+a b c d -> e (f g) -> h
+@end example
+@end quotation
+
+@node Scoping rules
+@section Scoping rules
+@cindex scoping
+@cindex lexical scoping
+@cindex rules, scope of
+@cindex axioms, scope of
+
+An axiom declaration introduces the axiom into scope from the end of the
+declaration to the end of the file. Binding constructs such as products
+and abstractions introduce new variables whose scope encompasses the
+entire binding construct, i.e.@: variables are lexically scoped.
+
+Rules may be defined anywhere within the scope of the head constant to
+which it pertains and the scope of the constants appearing in the left
+and right hand sides of the rule. As noted in @ref{Rules}, rules must be
+defined in the same module as the declaration of the head constant.
+
+@node Grammar
+@section The grammar of axioms and rules
+@cindex grammar
+@cindex syntax
+
+The concrete syntax for the @lambdapi{}-calculus modulo used by Dedukti
+is given by the following grammar.
+
+@example
+qid ::= id.id | id
+toplevel ::= declaration toplevel
+           | rule toplevel
+           | eof
+binding ::= id : term
+declaration ::= id ":" term "."
+domain ::= id ":" applicative
+         | applicative
+sort ::= Type
+term ::= domain "->" term
+       | domain "=>" term
+       | applicative
+simple ::= sort
+         | qid
+         | "(" term ")"
+applicative ::= simple
+              | applicative simple
+rule ::= env term "-->" term
+env ::= "[]"
+      | "[" env2 "]"
+env2 ::= binding
+       | binding "," env2
+@end example
+
+@node Invoking dedukti
+@chapter Invoking @command{dedukti}
+
+@node Invoking dkrun
+@chapter Invoking @command{dkrun}
+
+@command{dkrun} is a wrapper script that invokes @command{ghci} with the
+appropriate flags on the Haskell source files (@file{.dko} files) given
+as arguments. If object files exist for the given @file{.dko} files,
+then these are loaded into memory and linked by the @command{ghci}
+linker. Otherwise the files are compiled to slower, interpreted bytecode
+by @command{ghci}.
+
+The first argument to @command{dkrun} is the @file{.dko} file
+corresponding to the module one wants to proof check. If a module has
+dependencies, then the Haskell source files corresponding to these
+dependencies must be given as additional arguments to @command{dkrun}.
+Say @code{A} depends on @code{B} and @code{C}, @code{B} depends on
+@code{D}. Then the following command proof checks @code{A}:
+
+@example
+$ dkrun A.dko B.dko C.dko D.dko
+@end example
+
+
+@node References
+@chapter References
+
+@enumerate
+
+@include references.texi
+
+@end enumerate
+
+@ifnottex
+@node Copying this manual
+@appendix Copying this manual
+
+@include fdl.texi
+@end ifnottex
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
