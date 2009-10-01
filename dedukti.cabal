@@ -1,16 +1,15 @@
 name:           dedukti
-version:        0.0
+version:        1.0
 author:         Mathieu Boespflug
 maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
-copyright:
-    © 2009 CNRS - École Polytechnique - INRIA
+copyright:      © 2009 CNRS - École Polytechnique - INRIA
 homepage:       http://www.lix.polytechnique.fr/~mboes/src/dedukti.git
 synopsis:       A type-checker for the λΠ-modulo calculus.
 description:
     Dedukti is a proof checker for the λΠ-modulo calculus, a
     dependently typed λ-calculus with the addition of typed rewrite
     rules, capable of expressing proofs in Deduction Modulo [1].
-
+    .
     [1] G. Dowek, Th. Hardin, C. Kirchner, Theorem proving modulo,
     /Journal of Automated Reasoning/, 31, 2003, pp. 33-72.
 category:       Theorem provers
@@ -28,7 +27,7 @@ executable dedukti
                        directory, filepath, process,
                        parsec >= 3.0.0, wl-pprint >= 1.0, bytestring >= 0.9.1.0,
                        haskell-src-exts >= 1.1.0, Stream >= 0.3, text >= 0.3,
-                       hmk >= 0.5
+                       hmk >= 0.9
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
                        FlexibleInstances, FlexibleContexts, OverloadedStrings,
