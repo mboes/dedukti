@@ -18,18 +18,18 @@ license-file:   COPYING
 cabal-version:  >= 1.6.0
 build-type:     Simple
 tested-with:    GHC ==6.10
-data-files:     t/bug.eu
-                t/coc.eu
-                t/coq/Datatypes.eu
-                t/delta1.eu
-                t/delta2.eu
-                t/exemple.eu
-                t/f.eu
-                t/fold/arith.eu
-                t/logic.eu
-                t/nat.eu
-                t/peano.eu
-                t/plus.eu
+data-files:     t/bug.dk
+                t/coc.dk
+                t/coq/Datatypes.dk
+                t/delta1.dk
+                t/delta2.dk
+                t/exemple.dk
+                t/f.dk
+                t/fold/arith.dk
+                t/logic.dk
+                t/nat.dk
+                t/peano.dk
+                t/plus.dk
 
 
 executable dedukti
