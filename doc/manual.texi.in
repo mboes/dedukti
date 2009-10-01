@@ -118,6 +118,7 @@ applications and libraries.
 @menu
 * Local install::       Installing in your home directory.
 * Global install::      Installing in the system directories.
+* Building the documentation::     How to build the documentation.
 @end menu
 
 @node Local install
@@ -144,7 +145,7 @@ $ cabal install
 @end example
 
 You will have to satisfy dependencies by hand, if necessary. This will
-install the Dedukti commands and other files under the cabal hierarchy in
+install the Dedukti commands and other files under the Cabal hierarchy in
 your home directory (typically @file{~/.cabal}). You will need to alter
 your @env{PATH} appropriately to run these commands.
 
@@ -168,6 +169,39 @@ $ cabal configure --global
 $ cabal build
 $ cabal install
 @end example
+
+@node Building the documentation
+@section Building the documentation
+
+If you prefer to have a local copy of this documentation, you can build
+it from the @file{doc/} folder in the source distribution. The build
+system is based on an @file{mkfile}, which plays the same role as
+@command{make}'s @file{Makefile} but with a slightly different syntax
+and simpler semantics. You can interpret @file{mkfile}'s using either
+Plan 9's original mk
+command@footnote{@uref{http://plan9.bell-labs.com/magic/man2html/1/mk}},
+or by using @command{hmk}, a Haskell clone of @command{mk} which is a
+dependency of Dedukti.
+
+To build the pdf version of this manual:
+
+@example
+$ cd doc
+$ hmk pdf
+@end example
+
+@noindent
+To build the html version of this manual:
+
+@example
+$ cd doc
+$ hmk html
+@end example
+
+The @command{hmk} command is part of the @file{hmk} Cabal package. It
+may be found either somewhere in your global path, or in Cabal's user
+folder, depending on the type of installation. You will also need a
+POSIX compatible environment to build the documentation.
 
 @node Dedukti syntax
 @chapter Dedukti syntax
