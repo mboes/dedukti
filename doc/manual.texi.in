@@ -401,6 +401,58 @@ env2 ::= binding
 @node Invoking dedukti
 @chapter Invoking @command{dedukti}
 
+@menu
+* One-shot mode::       Compiling one source file at a time.
+* Batch mode::          Let Dedukti figure out what needs to be compiled.
+@end menu
+
+@node One-shot mode
+@section One-shot mode
+
+The simplest mode of operation is the one-shot mode. @command{dedukti}
+will create a @file{.dko} file from the given source file. If the source
+file refers to other modules, then compilation may only proceed if the
+source files for those modules have also been compiled beforehand.
+
+A source file @file{a.dk} can be compiled as follows:
+
+@example
+$ dedukti a.dk
+@end example
+
+@noindent
+Once a @file{.dko} file has been produced, one can further process this
+file in order to obtain native object code. The @file{.dko} file is in
+fact Haskell source code, so it can be compiled using the GHC Haskell
+compiler. If this step is omitted, then the @file{.dko} file will be
+converted to bytecode on the fly by @command{dkrun} when it is loaded.
+Hence for better performance, it is better to compile all @file{.dko}
+files with the GHC compiler, so that native code will be used when
+checking each module, rather than bytecode. To have GHC called
+automatically for you with the right flags, see @ref{Batch mode}.
+
+The @file{.dk} extension may be omitted. If @file{a.dk} mentions modules
+@code{b} and @code{c} then files @file{b.dk} and @file{c.dk} need to be
+compiled first. The next section details how to have @command{dedukti}
+figure out dependencies and compile them in the right order
+automatically.
+
+@node Batch mode
+@section Batch mode
+
+Compile in batch mode by passing the @code{--make} flag to
+@command{dedukti}. In this mode, dependencies of the file given in
+argument will be compiled first, though after the dependencies of the
+dependencies have been compiled, etc. Those dependencies that do not
+need rebuilding, because their object file is up to date with respect to
+the source file, will not be rebuilt.
+
+In addition, calling @command{dedukti} in batch mode will cause it to
+invoke GHC on all compiled files, so as to produce native object code
+for the module given as argument and its dependencies. Compiling to
+native code often yields much better performance during checking.
+@xref{Invoking dkrun}.
+
 @node Invoking dkrun
 @chapter Invoking @command{dkrun}
 
@@ -414,9 +466,11 @@ by @command{ghci}.
 The first argument to @command{dkrun} is the @file{.dko} file
 corresponding to the module one wants to proof check. If a module has
 dependencies, then the Haskell source files corresponding to these
-dependencies must be given as additional arguments to @command{dkrun}.
-Say @code{A} depends on @code{B} and @code{C}, @code{B} depends on
-@code{D}. Then the following command proof checks @code{A}:
+dependencies must be given as additional arguments to
+@command{dkrun}@footnote{This is a limitation of the current
+implementation and may be lifted one day.}. Say @code{A} depends on
+@code{B} and @code{C}, @code{B} depends on @code{D}. Then the following
+command proof checks @code{A}:
 
 @example
 $ dkrun A.dko B.dko C.dko D.dko
