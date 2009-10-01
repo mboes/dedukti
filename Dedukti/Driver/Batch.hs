@@ -74,10 +74,9 @@ rules' targets = concat <$> mapM f targets where
                           , Rule chi [hi] (Just $ task_himv hi chi) cmp ]
     task_hscomp euo _ = do
       hscomp <- parameter Config.hsCompiler
-      io . IO.testExitCode =<< command hscomp [ "-c", "-x", "hs", euo
+      io . IO.testExitCode =<< command hscomp [ "-c", "-w", "-x", "hs", euo
                                               , "-XOverloadedStrings"
-                                              , "-XPatternGuards"
-                                              , "-fno-warn-overlapping-patterns" ]
+                                              , "-XPatternGuards" ]
     -- GHC won't find the interface files if their names don't start with a
     -- capital letter. So alias the interface file with a capitalized name.
     task_himv hi chi _ = do

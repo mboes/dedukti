@@ -11,4 +11,4 @@ fi
 main=$1
 shift 1
 
-echo "do t <- Dedukti.Runtime.start; main; Dedukti.Runtime.stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts -fno-warn-overlapping-patterns $* $main
+echo "do t <- Dedukti.Runtime.start; main; Dedukti.Runtime.stop t" | ghci -x hs -XOverloadedStrings -fglasgow-exts -w $* $main
