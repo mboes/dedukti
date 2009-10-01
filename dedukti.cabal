@@ -30,6 +30,10 @@ data-files:     t/bug.dk
                 t/nat.dk
                 t/peano.dk
                 t/plus.dk
+extra-source-files:   doc/mkfile
+                      doc/manual.texi.in
+                      doc/fdl.texi
+                      doc/references.texi
 
 
 executable dedukti
