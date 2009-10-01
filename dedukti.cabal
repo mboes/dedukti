@@ -15,14 +15,30 @@ description:
 category:       Theorem Provers, Compilers/Interpreters
 license:        GPL
 license-file:   COPYING
-cabal-version:  >= 1.2.0
+cabal-version:  >= 1.6.0
 build-type:     Simple
 tested-with:    GHC ==6.10
+data-files:     t/*.eu
 
 
 executable dedukti
   main-is:             Dedukti.hs
-  other-modules:       Dedukti.Core, Dedukti.Parser, Dedukti.Pretty
+  other-modules:       Dedukti.Core,
+                       Dedukti.Parser,
+                       Dedukti.Pretty,
+                       Dedukti.Driver.Interactive,
+                       Dedukti.Driver.Batch,
+                       Dedukti.Driver.Compile,
+                       Dedukti.Rule,
+                       Dedukti.DkM,
+                       Dedukti.Config,
+                       Dedukti.Module,
+                       Dedukti.CodeGen
+                       Dedukti.CodeGen.Exts,
+                       Dedukti.Analysis.Rule,
+                       Dedukti.Analysis.Scope,
+                       Dedukti.Analysis.Dependency
+
   build-depends:       base >= 4, mtl >= 1.1, containers >= 0.2,
                        directory, filepath, process,
                        parsec >= 3.0.0, wl-pprint >= 1.0, bytestring >= 0.9.1.0,
