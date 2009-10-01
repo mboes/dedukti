@@ -1,5 +1,5 @@
 name:           dedukti
-version:        1.0
+version:        1.0.0
 author:         Mathieu Boespflug
 maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
 copyright:      © 2009 CNRS - École Polytechnique - INRIA
@@ -12,7 +12,7 @@ description:
     .
     [1] G. Dowek, Th. Hardin, C. Kirchner, Theorem proving modulo,
     /Journal of Automated Reasoning/, 31, 2003, pp. 33-72.
-category:       Theorem provers
+category:       Theorem Provers, Compilers/Interpreters
 license:        GPL
 license-file:   COPYING
 cabal-version:  >= 1.2.0
