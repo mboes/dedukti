@@ -201,7 +201,8 @@ $ hmk html
 The @command{hmk} command is part of the @file{hmk} Cabal package. It
 may be found either somewhere in your global path, or in Cabal's user
 folder, depending on the type of installation. You will also need a
-POSIX compatible environment to build the documentation.
+POSIX compatible environment to build the documentation, including the
+@command{m4} command to preprocess the texinfo source.
 
 @node Dedukti syntax
 @chapter Dedukti syntax
