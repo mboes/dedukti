@@ -59,22 +59,22 @@ rules' targets = concat <$> mapM f targets where
     -- Now that we have the dependencies of the module, we can enounce a few
     -- build rules concerning the module.
     g mod ds compile = let capitalize x = toUpper (head x) : tail x
-                           eu  = srcPathFromModule mod
-                           euo = objPathFromModule mod
-                           eui = ifacePathFromModule mod
+                           dk  = srcPathFromModule mod
+                           dko = objPathFromModule mod
+                           dki = ifacePathFromModule mod
                            hi  = pathFromModule ".hi" mod
                            chi = capitalize hi
                            o   = pathFromModule ".o" mod
                            dephis = map (capitalize . pathFromModule ".hi") ds
-                       in [ Rule eu [] Nothing cmp
-                          , Rule euo [eu] (Just compile) cmp
-                          , Rule eui [eu] (Just compile) cmp
-                          , Rule hi (euo:eui:dephis) (Just $ task_hscomp euo) cmp
-                          , Rule o (euo:eui:dephis) (Just $ task_hscomp euo) cmp
+                       in [ Rule dk [] Nothing cmp
+                          , Rule dko [dk] (Just compile) cmp
+                          , Rule dki [dk] (Just compile) cmp
+                          , Rule hi (dko:dki:dephis) (Just $ task_hscomp dko) cmp
+                          , Rule o (dko:dki:dephis) (Just $ task_hscomp dko) cmp
                           , Rule chi [hi] (Just $ task_himv hi chi) cmp ]
-    task_hscomp euo _ = do
+    task_hscomp dko _ = do
       hscomp <- parameter Config.hsCompiler
-      io . IO.testExitCode =<< command hscomp [ "-c", "-w", "-x", "hs", euo
+      io . IO.testExitCode =<< command hscomp [ "-c", "-w", "-x", "hs", dko
                                               , "-XOverloadedStrings"
                                               , "-XPatternGuards" ]
     -- GHC won't find the interface files if their names don't start with a

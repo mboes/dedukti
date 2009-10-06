@@ -66,13 +66,13 @@ moduleFromPath =
     hierarchy . map (T.pack . check) . splitDirectories . dropExtension
 
 srcPathFromModule :: MName -> FilePath
-srcPathFromModule = pathFromModule ".eu"
+srcPathFromModule = pathFromModule ".dk"
 
 objPathFromModule :: MName -> FilePath
-objPathFromModule = pathFromModule ".euo"
+objPathFromModule = pathFromModule ".dko"
 
 ifacePathFromModule :: MName -> FilePath
-ifacePathFromModule = pathFromModule ".eui"
+ifacePathFromModule = pathFromModule ".dki"
 
 -- | The datatype of qualified names.
 data Qid = Qid { qid_qualifier :: !Hierarchy
