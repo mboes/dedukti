@@ -457,12 +457,14 @@ native code often yields much better performance during checking.
 @node Invoking dkrun
 @chapter Invoking @command{dkrun}
 
-@command{dkrun} is a wrapper script that invokes @command{ghci} with the
-appropriate flags on the Haskell source files (@file{.dko} files) given
-as arguments. If object files exist for the given @file{.dko} files,
-then these are loaded into memory and linked by the @command{ghci}
-linker. Otherwise the files are compiled to slower, interpreted bytecode
-by @command{ghci}.
+@command{dkrun} is a wrapper script@footnote{It can be found in the
+source distribution of dedukti or under the data directory of Cabal.
+Copy it somewhere in your path for convenience.} that invokes
+@command{ghci} with the appropriate flags on the Haskell source files
+(@file{.dko} files) given as arguments. If object files exist for the
+given @file{.dko} files, then these are loaded into memory and linked by
+the @command{ghci} linker. Otherwise the files are compiled to slower,
+interpreted bytecode by @command{ghci}.
 
 The first argument to @command{dkrun} is the @file{.dko} file
 corresponding to the module one wants to proof check. If a module has
