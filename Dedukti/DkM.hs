@@ -7,15 +7,16 @@
 -- facilities and an interface to the system are also provided.
 
 module Dedukti.DkM ( module Control.Monad
-                  , DkM, runDkM, warn, warnings, say
-                  , Verbosity(..)
-                  , configuration, parameter
-                  , command
-                  -- pretty-printing combinators.
-                  , Pretty(..), text, (<+>), (<>), int
-                  , fillText
-                  , E.Exception(..), Typeable, E.throw, io
-                  , onException) where
+                   , DkM, runDkM, warn, warnings, say
+                   , Verbosity(..)
+                   , configuration, parameter
+                   , command
+                   -- * pretty-printing combinators.
+                   , Pretty(..), text, (<+>), (<>), int
+                   , fillText
+                   , E.Exception(..), Typeable, E.throw, io
+                   -- * Wrappers around IO primitives.
+                   , onException, lazyDkM) where
 
 import Dedukti.Config as Config
 import Control.Monad
@@ -24,6 +25,7 @@ import qualified Control.Exception as E
 import Control.Applicative
 import Data.Typeable (Typeable) -- for exceptions
 import System.IO
+import System.IO.Unsafe (unsafeInterleaveIO)
 import System.Cmd
 import System.Exit
 import Text.PrettyPrint.Leijen hiding ((<$>))
@@ -78,4 +80,7 @@ io = liftIO
 onException :: DkM a -> DkM b -> DkM a
 onException x y = do
   conf <- configuration
-  io $ runDkM conf x `E.onException` runDkM conf y
+  io $ runDkM x conf `E.onException` runDkM y conf
+
+lazyDkM :: DkM a -> DkM a
+lazyDkM m = io . unsafeInterleaveIO . runDkM m =<< ask
