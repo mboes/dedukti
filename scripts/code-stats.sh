@@ -2,7 +2,7 @@
 
 prog=`cat <<EOF
 /^module /,/where/ { next; }
-/^(--|import)/ { next; }
+/^( *--|import)/ { next; }
 //
 EOF`
 
