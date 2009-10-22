@@ -19,6 +19,7 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Applicative
+import qualified GHC.Conc
 import Data.Typeable (Typeable)
 import System.Directory (copyFile)
 import Data.Char (toUpper)
@@ -72,23 +73,23 @@ rules' targets = concat <$> mapM f targets where
                           , Rule hi (dko:dki:dephis) (Just $ task_hscomp dko) cmp
                           , Rule o (dko:dki:dephis) (Just $ task_hscomp dko) cmp
                           , Rule chi [hi] (Just $ task_himv hi chi) cmp ]
-    task_hscomp dko _ = do
+    task_hscomp dko _ = abortOnError $ do
       hscomp <- parameter Config.hsCompiler
       io . IO.testExitCode =<< command hscomp [ "-c", "-w", "-x", "hs", dko
                                               , "-XOverloadedStrings"
                                               , "-XPatternGuards" ]
     -- GHC won't find the interface files if their names don't start with a
     -- capital letter. So alias the interface file with a capitalized name.
-    task_himv hi chi _ = do
+    task_himv hi chi _ = abortOnError $ do
       io $ copyFile hi chi
       return TaskSuccess
-    task_compile mod src _ = do
+    task_compile mod src _ = abortOnError $ do
       compileAST mod src `onException`
           (say Quiet $ text "In module" <+> pretty mod <> text ":")
       return TaskSuccess
 
 data CommandError = CommandError
-    deriving Typeable
+                    deriving Typeable
 
 instance Show CommandError where
     show CommandError = "Command returned non-zero exit status."
@@ -97,19 +98,30 @@ instance Exception CommandError
 
 -- | Perform each system action, aborting if an action returns
 -- non-zero exit code.
-abortOnError :: [DkM Result] -> DkM ()
-abortOnError = mapM_ f where
-    f cmd = do code <- cmd
-               case code of
-                 TaskSuccess -> return ()
-                 TaskFailure -> throw CommandError
+abortOnError :: DkM Result -> DkM Result
+abortOnError cmd = do
+  code <- cmd
+  case code of
+    TaskFailure -> throw CommandError
+    x -> return x
 
 -- | Compile each of the modules given as input and all of their
 -- dependencies, if necessary.
 make :: [MName] -> DkM ()
 make modules = do
+  config <- configuration
   let targets = map (pathFromModule ".o") modules
+      run :: Rule DkM a -> Rule IO a
+      run Rule{..} = Rule{ recipe = fmap (\f x -> runDkM (f x) config) recipe
+                         , isStale = \x y -> runDkM (isStale x y) config
+                         , .. }
   rs <- process cmp <$> rules modules
-  schedule <- mk rs targets
+  -- Depending on whether we have several cores or not, we either call
+  -- mkConcurrent to perform all the tasks concurrently, or call mk to create
+  -- a schedule and execute that. We call mk lazily because if we have several
+  -- cores then calculating the schedule is redundant.
+  schedule <- lazyDkM $ mk rs targets
   say Debug $ text "Tasks to execute:" <+> int (length schedule)
-  abortOnError schedule
+  if GHC.Conc.numCapabilities > 1 then
+      io $ mkConcurrent GHC.Conc.numCapabilities (map run rs) targets else
+      sequence_ schedule
