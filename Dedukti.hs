@@ -73,7 +73,7 @@ main = do
   when (not (null errs)) $ do
          hPutDoc stderr (vsep (map text errs))
          exitFailure
-  runDkM (initializeConfiguration opts) $
+  (`runDkM` initializeConfiguration opts) $
          case undefined of
            _ | FlagHelp `elem` opts -> printHelp
              | FlagVersion `elem` opts -> printVersion

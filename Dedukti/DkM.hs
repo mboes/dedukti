@@ -36,8 +36,8 @@ instance Applicative (ReaderT Config IO) where
 newtype DkM a = DkM (ReaderT Config IO a)
     deriving (Monad, MonadIO, Functor, Applicative, MonadReader Config)
 
-runDkM :: Config -> DkM a -> IO a
-runDkM conf (DkM m) = runReaderT m conf
+runDkM :: DkM a -> Config -> IO a
+runDkM (DkM m) = runReaderT m
 
 -- | Get all global parameters.
 configuration :: DkM Config
