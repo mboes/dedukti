@@ -16,6 +16,7 @@ import qualified Language.Haskell.Exts.Syntax as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.Text.Lazy as T
 import Data.Char (toUpper)
+import Data.List (foldl', foldl1')
 import qualified Data.Stream as Stream
 import Prelude hiding ((*))
 
@@ -176,7 +177,7 @@ pvariables =
     Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
 application :: [Hs.Exp] -> Hs.Exp
-application = foldl1 Hs.App
+application = foldl1' Hs.App
 
 -- Primitives
 
@@ -194,7 +195,7 @@ primType      = primitiveCon "Type" []
 primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (*) [pat] t)]
 primPi  dom pat range = primitiveCon "Pi" [dom, Hs.Paren (Hs.Lambda (*) [pat] range)]
 
-primApps c = foldl primApp (primCon c)
+primApps c = foldl' primApp (primCon c)
 
 typedAbstraction c b t =
     let (pat, ty, ran) =
@@ -222,7 +223,7 @@ primobj t = primitiveVar "obj" [t]
 -- | Build a pattern matching a constant.
 primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String (show (pretty c)))]
 primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
-primAppsP c = foldl primAppP (primConP c)
+primAppsP c = foldl' primAppP (primConP c)
 
 -- | Capitalize a word.
 capitalize :: T.Text -> T.Text
