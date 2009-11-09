@@ -186,10 +186,10 @@ unapply = reverse . aux where
 
 class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms.
-    transformM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
+    transformM :: Monad m => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
     -- | Helper function for top-down transformations.
-    descendM :: (Monad m, Ord (Id t)) => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
+    descendM :: Monad m => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
 instance Ord id => Transform (Module id a) where
     transformM f (decls, rules) =
