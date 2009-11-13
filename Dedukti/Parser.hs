@@ -20,7 +20,7 @@ import Data.Typeable (Typeable)
 type Pa t = t Qid Unannot
 
 -- The parsing monad.
-type P = Parsec String [Pa TyRule]
+type P = Parsec B.ByteString [Pa TyRule]
 
 newtype ParseError = ParseError String
     deriving Typeable
@@ -43,7 +43,7 @@ parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
     -- definitions. Here rules are accumulated by side-effect, added to the
     -- parser state as we encounter them.
-    case runParser ((,) <$> toplevel <*> allRules) [] name (B.unpack input) of
+    case runParser ((,) <$> toplevel <*> allRules) [] name input of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
 
