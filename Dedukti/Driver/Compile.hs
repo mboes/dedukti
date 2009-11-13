@@ -15,14 +15,9 @@ import Dedukti.Analysis.Scope
 import qualified Dedukti.CodeGen.Exts as CG
 import qualified Dedukti.Rule as Rule
 import qualified Dedukti.Analysis.Rule as Rule
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as T
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Set as Set
 
-
-readT = io . liftM T.decodeUtf8 . B.readFile
-writeT path = io . B.writeFile path . T.encodeUtf8
 
 -- | Qualify all occurrences of identifiers defined in current module.
 selfQualify :: MName -> [Pa RuleSet] -> [Pa RuleSet]
@@ -44,19 +39,19 @@ populateInitialEnvironment =
     liftM Set.unions .
     mapM (\dep -> let path = ifacePathFromModule dep
                   in liftM (Set.fromList . map (qual dep) . parseIface path) $
-                     readT path)
+                     io (B.readFile path))
         where qual mod qid = qid{qid_qualifier = mod}
 
 -- | Generate the content of an interface file.
-interface :: Pa Module -> T.Text
-interface (decls, _) = T.unlines (map (qid_stem . bind_name) decls)
+interface :: Pa Module -> B.ByteString
+interface (decls, _) = B.unlines (map (qid_stem . bind_name) decls)
 
 -- | Emit Haskell code for one module.
 compile :: MName -> DkM ()
 compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
-  compileAST mod =<< return (parse path) `ap` readT path
+  compileAST mod =<< return (parse path) `ap` io (B.readFile path)
 
 -- | Emit Haskell code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> DkM ()
@@ -77,5 +72,5 @@ compileAST mod src@(decls, rules) = do
   say Debug $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
-  writeT (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
-  writeT (ifacePathFromModule mod) $ interface src
+  io $ B.writeFile (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
+  io $ B.writeFile (ifacePathFromModule mod) $ interface src

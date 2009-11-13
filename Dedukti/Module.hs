@@ -21,11 +21,11 @@ module Dedukti.Module
 import Dedukti.DkM
 import System.FilePath
 import Data.Char (isAlpha, isAlphaNum)
-import qualified Data.Text.Lazy as T
+import qualified Data.ByteString.Lazy.Char8 as B
 import Text.PrettyPrint.Leijen
 
 
-data Hierarchy = !Hierarchy :. !T.Text | Root
+data Hierarchy = !Hierarchy :. !B.ByteString | Root
                  deriving (Eq, Ord, Show)
 
 type MName = Hierarchy
@@ -39,15 +39,15 @@ instance Show InvalidModuleName where
 instance Exception InvalidModuleName
 
 instance Pretty MName where
-    pretty (Root :. x) = text (T.unpack x)
-    pretty (xs :. x) = pretty xs <> char '.' <> text (T.unpack x)
+    pretty (Root :. x) = text (B.unpack x)
+    pretty (xs :. x) = pretty xs <> char '.' <> text (B.unpack x)
 
-hierarchy :: [T.Text] -> Hierarchy
+hierarchy :: [B.ByteString] -> Hierarchy
 hierarchy =  f . reverse where
     f [] = Root
     f (x:xs) = f xs :. x
 
-toList :: Hierarchy -> [T.Text]
+toList :: Hierarchy -> [B.ByteString]
 toList = reverse . f where
     f Root = []
     f (xs :. x) = x : f xs
@@ -59,11 +59,11 @@ check cmpt@(x:xs) | isAlpha x, and (map (\x -> isAlphaNum x || elem x "-+~") xs)
 
 pathFromModule :: String -> MName -> FilePath
 pathFromModule ext mod =
-    addExtension (joinPath $ map T.unpack $ toList mod) ext
+    addExtension (joinPath $ map B.unpack $ toList mod) ext
 
 moduleFromPath :: FilePath -> MName
 moduleFromPath =
-    hierarchy . map (T.pack . check) . splitDirectories . dropExtension
+    hierarchy . map (B.pack . check) . splitDirectories . dropExtension
 
 srcPathFromModule :: MName -> FilePath
 srcPathFromModule = pathFromModule ".dk"
@@ -76,16 +76,16 @@ ifacePathFromModule = pathFromModule ".dki"
 
 -- | The datatype of qualified names.
 data Qid = Qid { qid_qualifier :: !Hierarchy
-               , qid_stem      :: !T.Text
+               , qid_stem      :: !B.ByteString
                , qid_suffix    :: !Hierarchy }
            deriving (Eq, Ord, Show)
 
 -- | Shorthand qid introduction.
-qid :: T.Text -> Qid
+qid :: B.ByteString -> Qid
 qid x = Qid Root x Root
 
 -- | Append suffix.
-(.$) :: Qid -> T.Text -> Qid
+(.$) :: Qid -> B.ByteString -> Qid
 (Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
 
 -- | Get the module where the qid is defined, based on its qualifier.

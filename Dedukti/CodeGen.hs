@@ -7,7 +7,7 @@ module Dedukti.CodeGen (CodeGen(..)) where
 
 import Dedukti.Core
 import Dedukti.Module
-import qualified Data.Text.Lazy as T
+import Data.ByteString.Lazy.Char8 (ByteString)
 
 
 class CodeGen o where
@@ -23,4 +23,4 @@ class CodeGen o where
     serialize :: MName   -- ^ The module name
               -> [MName] -- ^ Dependencies
               -> Bundle o -- ^ Code
-              -> T.Text
+              -> ByteString

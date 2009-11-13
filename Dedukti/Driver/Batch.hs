@@ -14,8 +14,7 @@ import Dedukti.DkM
 import qualified Dedukti.Config as Config
 import qualified Control.Hmk.IO as IO
 import Control.Hmk
-import qualified Data.Text.Lazy.Encoding as T
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Applicative
@@ -48,7 +47,7 @@ rules' targets = concat <$> mapM f targets where
         Nothing -> do
           lift $ say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
           let path = srcPathFromModule mod
-          src <- lift (parse path <$> io (liftM T.decodeUtf8 (B.readFile path)))
+          src <- lift (parse path <$> io (B.readFile path))
           let dependencies = collectDependencies src
               rs = g mod dependencies (task_compile mod src)
           -- Recursively construct rules for dependent modules.

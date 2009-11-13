@@ -12,7 +12,7 @@ import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
 import qualified Control.Exception as Exception
-import qualified Data.Text.Lazy as T
+import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Typeable (Typeable)
 
 
@@ -38,18 +38,18 @@ instance Show IfaceError where
 
 instance Exception.Exception IfaceError
 
-parse :: SourceName -> T.Text -> Pa Module
+parse :: SourceName -> B.ByteString -> Pa Module
 parse name input =
     -- At the toplevel, a source file is a list of declarations and rule
     -- definitions. Here rules are accumulated by side-effect, added to the
     -- parser state as we encounter them.
-    case runParser ((,) <$> toplevel <*> allRules) [] name (T.unpack input) of
+    case runParser ((,) <$> toplevel <*> allRules) [] name (B.unpack input) of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
 
 -- | Parser for interface files.
-parseIface :: SourceName -> T.Text -> [Qid]
-parseIface _ = map qid . T.lines
+parseIface :: SourceName -> B.ByteString -> [Qid]
+parseIface _ = map qid . B.lines
 
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
@@ -82,17 +82,17 @@ qident = ident <?> "qid" where
     ident = do
       c <- identStart
       cs <- many identLetter
-      x <- (do let qualifier = T.pack (c:cs)
+      x <- (do let qualifier = B.pack (c:cs)
                c <- try $ do char '.'; identStart
                cs <- many identLetter
-               let name = T.pack (c:cs)
+               let name = B.pack (c:cs)
                return $ Qid (Root :. qualifier) name Root)
-           <|> return (qid (T.pack (c:cs)))
+           <|> return (qid (B.pack (c:cs)))
       whiteSpace
       return (Var x nann)
 
 -- | Unqualified name.
-ident = qid . T.pack <$> identifier
+ident = qid . B.pack <$> identifier
 
 -- | Root production rule of the grammar.
 --

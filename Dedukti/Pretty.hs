@@ -12,10 +12,10 @@ module Dedukti.Pretty (pretty) where
 import Dedukti.Core
 import Dedukti.Module
 import Text.PrettyPrint.Leijen
-import qualified Data.Text.Lazy as T
+import qualified Data.ByteString.Lazy.Char8 as B
 
 
-textT = text . T.unpack
+textB = text . B.unpack
 
 instance Pretty id => Pretty (Expr id a) where
     pretty (Lam x t _) = pretty x <+> text "=>" <+> pretty t
@@ -50,9 +50,9 @@ instance (Eq a, Ord id, Pretty id) => Pretty (TyRule id a) where
 
 instance Pretty Qid where
     pretty qid = joinQ (qid_qualifier qid) <>
-                 textT (qid_stem qid) <>
+                 textB (qid_stem qid) <>
                  joinS (qid_suffix qid)
         where joinQ Root = empty
-              joinQ (h :. x) = joinQ h <> textT x <> dot
+              joinQ (h :. x) = joinQ h <> textB x <> dot
               joinS Root = empty
-              joinS (h :. x) = joinS h <> char '_' <> textT x
+              joinS (h :. x) = joinS h <> char '_' <> textB x
