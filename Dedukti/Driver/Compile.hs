@@ -72,6 +72,7 @@ compileAST mod src@(decls, rules) = do
   checkUniqueness src
   checkScopes extdecls src
   Rule.checkOrdering rules
+  say Verbose $ text "Checking well formation of rule heads ..."
   mapM_ Rule.checkHead rules
   say Debug $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."

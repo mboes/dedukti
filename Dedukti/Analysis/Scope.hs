@@ -45,6 +45,7 @@ instance Exception IllegalEnvironment
 
 checkUniqueness :: Module Qid a -> DkM ()
 checkUniqueness (decls, rules) = do
+  say Verbose $ text "Checking that variables only appear once in rule environments ..."
   chk decls
   mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
     where chk bs = mapM_ (\x -> when (length x > 1)
@@ -53,6 +54,7 @@ checkUniqueness (decls, rules) = do
 
 checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
+  say Verbose $ text "Checking that all declarations are well scoped ..."
   topenv <- foldM chkBinding env decls
   mapM_ (chkRule topenv) rules
     where chkBinding env (x ::: ty) = do

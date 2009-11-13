@@ -20,6 +20,7 @@ instance Exception NonContiguousRules
 
 checkOrdering :: [TyRule Qid a] -> DkM ()
 checkOrdering rules = do
+  say Verbose $ text "Checking rule contiguity ..."
   mapM_ (\x -> when (length x > 1) (throw $ NonContiguousRules (head x))) $
         group $ sort $ map head $ group $ map Rule.headConstant rules
 
