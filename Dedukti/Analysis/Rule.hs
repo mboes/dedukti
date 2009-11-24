@@ -1,3 +1,9 @@
+-- |
+-- Copyright : © 2009 CNRS - École Polytechnique - INRIA
+-- License   : GPL
+--
+-- Various checks on rules.
+
 module Dedukti.Analysis.Rule where
 
 import Dedukti.Core
