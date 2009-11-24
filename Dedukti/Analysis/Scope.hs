@@ -4,8 +4,7 @@
 --
 -- Check that all occurrences of variables are in scope of their definitions.
 -- Other well-formedness checks can also be found here, such as rejecting
--- duplicate top-level definitions and enforcing contiguity of rule
--- defnitions.
+-- duplicate top-level definitions.
 
 module Dedukti.Analysis.Scope where
 
