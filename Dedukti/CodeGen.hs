@@ -3,6 +3,7 @@
 -- License   : GPL
 --
 -- Interface for all code generators.
+
 module Dedukti.CodeGen (CodeGen(..)) where
 
 import Dedukti.Core

@@ -4,6 +4,7 @@
 --
 -- The batch driver. It compiles all given targets and all their dependencies,
 -- also invoking the Haskell compiler on the generated source code.
+
 module Dedukti.Driver.Batch (make) where
 
 import Dedukti.Driver.Compile

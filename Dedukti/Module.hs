@@ -5,6 +5,7 @@
 -- A representation of module names and associated functions to map module
 -- names to source files and vice-versa. Qualified names, as required in the
 -- presence of modules, are also defined here.
+
 module Dedukti.Module
     ( -- * Data types
       Hierarchy(..), MName

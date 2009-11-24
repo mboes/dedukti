@@ -6,6 +6,7 @@
 -- arguments the appropriate driver is invoked. Everything is coordinated by
 -- the driver. This module is also the place where global configuration data
 -- is initialized.
+
 module Main where
 
 import System.Environment
