@@ -7,7 +7,7 @@
 module Dedukti.Driver.Compile (compile, compileAST) where
 
 import Dedukti.Module
-import Dedukti.Parser
+import Dedukti.Parser.External
 import Dedukti.DkM
 import Dedukti.Core
 import Dedukti.Analysis.Dependency

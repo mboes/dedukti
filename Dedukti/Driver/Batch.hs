@@ -10,7 +10,7 @@ module Dedukti.Driver.Batch (make) where
 import Dedukti.Driver.Compile
 import Dedukti.Analysis.Dependency
 import Dedukti.Module
-import Dedukti.Parser
+import Dedukti.Parser.External
 import Dedukti.DkM
 import qualified Dedukti.Config as Config
 import qualified Control.Hmk.IO as IO

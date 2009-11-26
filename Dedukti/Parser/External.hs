@@ -3,7 +3,7 @@
 -- License   : GPL
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
-module Dedukti.Parser (Pa, Dedukti.Parser.parse, parseIface) where
+module Dedukti.Parser.External (Pa, parse, parseIface) where
 
 import Dedukti.Core
 import Dedukti.Module
