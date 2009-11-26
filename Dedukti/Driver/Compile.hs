@@ -8,6 +8,7 @@ module Dedukti.Driver.Compile (compile, compileAST) where
 
 import Dedukti.Module
 import Dedukti.Parser.External
+import qualified Dedukti.Parser.Interface as Interface
 import Dedukti.DkM
 import Dedukti.Core
 import Dedukti.Analysis.Dependency
@@ -39,7 +40,7 @@ populateInitialEnvironment :: [MName] -> DkM Context
 populateInitialEnvironment deps =
     initContext . concat <$>
     mapM (\dep -> let path = ifacePathFromModule dep
-                  in map (qualify dep) . parseIface path <$>
+                  in map (qualify dep) . Interface.parse path <$>
                      io (B.readFile path)) deps
 
 -- | Generate the content of an interface file.

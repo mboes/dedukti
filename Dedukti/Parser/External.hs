@@ -3,7 +3,7 @@
 -- License   : GPL
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
-module Dedukti.Parser.External (Pa, parse, parseIface) where
+module Dedukti.Parser.External (Pa, parse) where
 
 import Dedukti.Core
 import Dedukti.Module
@@ -46,10 +46,6 @@ parse name input =
     case runParser ((,) <$> toplevel <*> allRules) [] name input of
       Left e -> Exception.throw (ParseError (show e))
       Right x -> x
-
--- | Parser for interface files.
-parseIface :: SourceName -> B.ByteString -> [Qid]
-parseIface _ = map qid . B.lines
 
 addRule :: Pa TyRule -> P ()
 addRule rule = modifyState (rule:)
