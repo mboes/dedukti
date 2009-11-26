@@ -84,12 +84,12 @@ xencode qid =
     B.unpack $
      joinQ (qid_qualifier qid) `B.append`
      -- Prepend all idents with an x to avoid clash with runtime functions.
-     B.cons 'x' (enc (qid_stem qid)) `B.append`
+     B.cons 'x' (enc $ fromAtom $ qid_stem qid) `B.append`
      joinS (qid_suffix qid)
         where joinQ Root = ""
-              joinQ (h :. x) = joinQ h `B.append` capitalize x `B.append` "."
+              joinQ (h :. x) = joinQ h `B.append` capitalize (fromAtom x) `B.append` "."
               joinS Root = ""
-              joinS (h :. x) = joinS h `B.append` "_" `B.append` x
+              joinS (h :. x) = joinS h `B.append` "_" `B.append` fromAtom x
               enc = B.concatMap f where
                   f 'x'  = "xx"
                   f '\'' = "xq"

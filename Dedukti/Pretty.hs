@@ -50,9 +50,9 @@ instance (Eq a, Ord id, Pretty id) => Pretty (TyRule id a) where
 
 instance Pretty Qid where
     pretty qid = joinQ (qid_qualifier qid) <>
-                 textB (qid_stem qid) <>
+                 textB (fromAtom (qid_stem qid)) <>
                  joinS (qid_suffix qid)
         where joinQ Root = empty
-              joinQ (h :. x) = joinQ h <> textB x <> dot
+              joinQ (h :. x) = joinQ h <> textB (fromAtom x) <> dot
               joinS Root = empty
-              joinS (h :. x) = joinS h <> char '_' <> textB x
+              joinS (h :. x) = joinS h <> char '_' <> textB (fromAtom x)

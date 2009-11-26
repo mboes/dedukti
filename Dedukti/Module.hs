@@ -6,6 +6,7 @@
 -- names to source files and vice-versa. Qualified names, as required in the
 -- presence of modules, are also defined here.
 
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 module Dedukti.Module
     ( -- * Data types
       Hierarchy(..), MName
@@ -15,18 +16,25 @@ module Dedukti.Module
     , hierarchy, toList
     , pathFromModule, moduleFromPath
     , srcPathFromModule, objPathFromModule, ifacePathFromModule
-    -- * Qualified names.
-    , Qid(..), qid, (.$), provenance, unqualify
+    -- * Qualified names
+    , Qid, qid_qualifier, qid_stem, qid_suffix
+    , qid, (.$), provenance, qualify, unqualify
+    -- * Atoms
+    , Atom
+    , fromAtom, toAtom
     ) where
 
 import Dedukti.DkM
 import System.FilePath
 import Data.Char (isAlpha, isAlphaNum)
 import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.ByteString as BS (concat)
 import Text.PrettyPrint.Leijen
+import qualified StringTable.Atom as Atom
+import StringTable.Atom (Atom)
 
 
-data Hierarchy = !Hierarchy :. !B.ByteString | Root
+data Hierarchy = !Hierarchy :. !Atom | Root
                  deriving (Eq, Ord, Show)
 
 type MName = Hierarchy
@@ -40,18 +48,24 @@ instance Show InvalidModuleName where
 instance Exception InvalidModuleName
 
 instance Pretty MName where
-    pretty (Root :. x) = text (B.unpack x)
-    pretty (xs :. x) = pretty xs <> char '.' <> text (B.unpack x)
+    pretty (Root :. x) = text (B.unpack (fromAtom x))
+    pretty (xs :. x) = pretty xs <> char '.' <> text (B.unpack (fromAtom x))
+
+fromAtom :: Atom -> B.ByteString
+fromAtom = B.fromChunks . return . Atom.fromAtom
+
+toAtom :: B.ByteString -> Atom
+toAtom = Atom.toAtom . BS.concat . B.toChunks
 
 hierarchy :: [B.ByteString] -> Hierarchy
 hierarchy =  f . reverse where
     f [] = Root
-    f (x:xs) = f xs :. x
+    f (x:xs) = f xs :. toAtom x
 
 toList :: Hierarchy -> [B.ByteString]
 toList = reverse . f where
     f Root = []
-    f (xs :. x) = x : f xs
+    f (xs :. x) = fromAtom x : f xs
 
 -- | Raise an exception if module name component is a valid identifier.
 check :: String -> String
@@ -76,24 +90,30 @@ ifacePathFromModule :: MName -> FilePath
 ifacePathFromModule = pathFromModule ".dki"
 
 -- | The datatype of qualified names.
-data Qid = Qid { qid_qualifier :: !Hierarchy
-               , qid_stem      :: !B.ByteString
-               , qid_suffix    :: !Hierarchy }
-           deriving (Eq, Ord, Show)
+data Qid = Qid !Hierarchy !Atom !Hierarchy
+           deriving (Eq, Show, Ord)
+
+qid_qualifier (Qid qual _ _) = qual
+qid_stem (Qid _ stem _) = stem
+qid_suffix (Qid _ _ suf) = suf
 
 -- | Shorthand qid introduction.
 qid :: B.ByteString -> Qid
-qid x = Qid Root x Root
+qid x = Qid Root (toAtom x) Root
 
 -- | Append suffix.
 (.$) :: Qid -> B.ByteString -> Qid
-(Qid qual x sufs) .$ suf = Qid qual x (sufs :. suf)
+(Qid qual x sufs) .$ suf = Qid qual x (sufs :. (toAtom suf))
 
 -- | Get the module where the qid is defined, based on its qualifier.
 provenance :: Qid -> Maybe MName
 provenance (Qid Root _ _) = Nothing
 provenance (Qid qual _ _) = Just qual
 
+-- | Set the qualifier.
+qualify :: Hierarchy -> Qid -> Qid
+qualify qual (Qid _ stem suf) = Qid qual stem suf
+
 -- | Remove any qualifier.
 unqualify :: Qid -> Qid
-unqualify qid = qid{qid_qualifier = Root}
+unqualify (Qid _ stem suf) = Qid Root stem suf

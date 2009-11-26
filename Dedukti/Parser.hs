@@ -11,8 +11,8 @@ import Text.Parsec hiding (ParseError, parse)
 import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
-import qualified Control.Exception as Exception
 import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Control.Exception as Exception
 import Data.Typeable (Typeable)
 
 
@@ -86,7 +86,7 @@ qident = ident <?> "qid" where
                c <- try $ do char '.'; identStart
                cs <- many identLetter
                let name = B.pack (c:cs)
-               return $ Qid (Root :. qualifier) name Root)
+               return $ qualify (hierarchy [qualifier]) (qid name))
            <|> return (qid (B.pack (c:cs)))
       whiteSpace
       return (Var x nann)

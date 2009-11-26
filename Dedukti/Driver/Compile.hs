@@ -12,6 +12,7 @@ import Dedukti.DkM
 import Dedukti.Core
 import Dedukti.Analysis.Dependency
 import Dedukti.Analysis.Scope
+import Control.Applicative
 import qualified Dedukti.CodeGen.Exts as CG
 import qualified Dedukti.Rule as Rule
 import qualified Dedukti.Analysis.Rule as Rule
@@ -23,9 +24,9 @@ import qualified Data.Set as Set
 selfQualify :: MName -> [Pa RuleSet] -> [Pa RuleSet]
 selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
                         in map (descend (f defs))
-                               (map (\RS{..} -> RS{rs_name = rs_name{qid_qualifier = mod}, ..}) rsets)
+                               (map (\RS{..} -> RS{rs_name = qualify mod rs_name, ..}) rsets)
     where f defs (Var x a) | Nothing <- provenance x
-                           , x `Set.member` defs = Var x{qid_qualifier = mod} a
+                           , x `Set.member` defs = Var (qualify mod x) a
           f defs (Lam (x ::: ty) t a) =
               Lam (x ::: f defs ty) (f (Set.delete x defs) t) a
           f defs (Pi (x ::: ty) t a) =
@@ -34,17 +35,16 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
 
 -- | Read the interface file of each module name to collect the declarations
 -- exported by the module.
-populateInitialEnvironment :: [MName] -> DkM (Set.Set Qid)
-populateInitialEnvironment =
-    liftM Set.unions .
+populateInitialEnvironment :: [MName] -> DkM Context
+populateInitialEnvironment deps =
+    initContext . concat <$>
     mapM (\dep -> let path = ifacePathFromModule dep
-                  in liftM (Set.fromList . map (qual dep) . parseIface path) $
-                     io (B.readFile path))
-        where qual mod qid = qid{qid_qualifier = mod}
+                  in map (qualify dep) . parseIface path <$>
+                     io (B.readFile path)) deps
 
 -- | Generate the content of an interface file.
 interface :: Pa Module -> B.ByteString
-interface (decls, _) = B.unlines (map (qid_stem . bind_name) decls)
+interface (decls, _) = B.unlines (map (fromAtom . qid_stem . bind_name) decls)
 
 -- | Emit Haskell code for one module.
 compile :: MName -> DkM ()

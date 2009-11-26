@@ -14,7 +14,8 @@ import qualified Dedukti.Rule as Rule
 import Dedukti.Pretty ()
 import Dedukti.DkM
 import Data.List (sort, group)
-import qualified Data.Set as Set
+import qualified Data.Map as Map
+import qualified StringTable.AtomSet as AtomSet
 
 
 newtype DuplicateDefinition = DuplicateDefinition Qid
@@ -51,27 +52,39 @@ checkUniqueness (decls, rules) = do
                                 (throw $ DuplicateDefinition (head x))) $
                    group $ sort $ map bind_name bs
 
-checkScopes :: forall a. Show a => Set.Set Qid -> Module Qid a -> DkM ()
+type Context = Map.Map MName AtomSet.AtomSet
+
+-- | Initial environment to pass to 'checkScopes'.
+initContext :: [Qid]                -- ^ declarations from other modules.
+            -> Context
+initContext qids =
+  Map.fromList $ map (\qid -> (qid_qualifier qid, AtomSet.singleton (qid_stem qid))) qids
+
+checkScopes :: forall a. Show a => Context -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
   say Verbose $ text "Checking that all declarations are well scoped ..."
   topenv <- foldM chkBinding env decls
   mapM_ (chkRule topenv) rules
-    where chkBinding env (x ::: ty) = do
+    where ins qid env = Map.insertWith' AtomSet.union (qid_qualifier qid)
+                        (AtomSet.singleton (qid_stem qid)) env
+          mem qid env = maybe False (AtomSet.notMember (qid_stem qid))
+                        (Map.lookup (qid_qualifier qid) env)
+          chkBinding env (x ::: ty) = do
             chkExpr env ty
-            return $ Set.insert x env
+            return $ ins x env
           chkRule topenv r@(env :@ rule) = do
-            let lhsvars = Set.fromList [ x | Var x _ <- everyone (Rule.head r) ]
-            mapM_ (\x -> when (x `Set.notMember` lhsvars) $
+            let lhsvars = AtomSet.fromList [ qid_stem x | Var x _ <- everyone (Rule.head r) ]
+            mapM_ (\x -> when (qid_stem x `AtomSet.notMember` lhsvars) $
                          throw (IllegalEnvironment x)) (map bind_name $ env_bindings env)
             ruleenv <- foldM chkBinding topenv $ env_bindings env
-            descendM (chkExpr (topenv `Set.union` ruleenv)) rule
+            descendM (chkExpr (Map.unionWith AtomSet.union topenv ruleenv)) rule
           chkExpr env t@(Var x _) = do
-            when (x `Set.notMember` env) (throw $ ScopeError x)
+            when (x `mem` env) (throw $ ScopeError x)
             return (t :: Expr Qid a)
           chkExpr env (Lam (x ::: ty) t _) = do
             chkExpr env ty
-            chkExpr (Set.insert x env) t
+            chkExpr (ins x env) t
           chkExpr env (Pi (x ::: ty) t _)  = do
             chkExpr env ty
-            chkExpr (Set.insert x env) t
+            chkExpr (ins x env) t
           chkExpr env t = descendM (chkExpr env) t
