@@ -16,7 +16,8 @@ module Dedukti.Core
     , bind_name, bind_type
     , isAbstraction, isApplication, isVariable, isAtomic, isApplicative
     -- * Environments
-    , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!), isin
+    , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!)
+    , isin, fromBindings
     -- * Annotations
     , Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
     -- * Smart constructors
