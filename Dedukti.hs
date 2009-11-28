@@ -17,7 +17,8 @@ import Dedukti.Driver.Batch
 import Dedukti.Driver.Compile
 import Text.PrettyPrint.Leijen
 import Control.Monad (unless, when)
-import System.Console.GetOpt
+import Data.List (partition, isPrefixOf)
+import Data.Either (partitionEithers)
 import System.Exit
 import System.IO
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -26,15 +27,24 @@ import qualified Data.ByteString.Lazy.Char8 as B
 data Flag = FlagMake | FlagHelp | FlagVersion | FlagVerbose | FlagVeryVerbose
             deriving (Eq, Ord, Show)
 
-options = [ Option [] ["make"] (NoArg FlagMake)
-                       "Build MODULE and all its dependencies in one go."
-          , Option ['v'] [] (OptArg verb "v")
-                       "Be verbose. -vv to be even more verbose."
-          , Option ['h'] ["help"] (NoArg FlagHelp) "This usage information."
-          , Option [] ["version"] (NoArg FlagVersion) "Output version information then exit." ]
-    where verb Nothing = FlagVerbose
-          verb (Just "v") = FlagVeryVerbose
-          verb _ = error "Unrecognized verbosity level."
+flagDescriptions =
+  [ (["--make"], [FlagMake],
+     "Build MODULE and all its dependencies in one go.")
+  , (["-v", "-vv"], [FlagVerbose, FlagVeryVerbose],
+     "Be verbose, -vv to be even more verbose.")
+  , (["-h", "--help"], repeat FlagHelp,
+     "This usage information.")
+  , (["--version"], [FlagVersion],
+     "Output version information then exit.") ]
+
+parseCmdline args =
+  let (hyphened, rest) = partition (\arg -> "-" `isPrefixOf` arg) args
+      (errors, flags) = partitionEithers $ map toFlag hyphened
+  in (flags, rest, errors)
+    where flagmap = concat $ map (uncurry zip) $ map (\(x, y, _) -> (x, y)) flagDescriptions
+          toFlag x = case lookup x flagmap of
+            Nothing -> Left "Flag not found."
+            Just f -> Right f
 
 printUsage = do
   self <- parameter Config.imageName
@@ -44,10 +54,12 @@ printUsage = do
 
 printHelp = do
   self <- parameter Config.imageName
-  let header = show $ text "Usage:" <+>
+  let header = text "Usage:" <+>
                (text self <+> text "[OPTION]..." <+> text "MODULE")
                <$> text "Options:"
-  io $ putStrLn (usageInfo header options)
+      flags = vsep (map pflag flagDescriptions)
+  io $ putStrLn $ show $ header <$> indent 4 flags
+    where pflag (flags, _, desc) = fillBreak 14 (hcat $ punctuate (text ", ") $ map text flags) <+> text desc
 
 bailout = printUsage >> io exitFailure
 
@@ -68,7 +80,7 @@ initializeConfiguration = foldr aux Config.defaultConfig
 
 main = do
   args <- getArgs
-  let (opts, files, errs) = getOpt RequireOrder options args
+  let (opts, files, errs) = parseCmdline args
   when (not (null errs)) $ do
          hPutDoc stderr (vsep (map text errs))
          exitFailure
