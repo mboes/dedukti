@@ -42,6 +42,7 @@ executable dedukti
   other-modules:       Dedukti.Core,
                        Dedukti.Parser,
                        Dedukti.Parser.External,
+                       Dedukti.Parser.Prefix,
                        Dedukti.Pretty,
                        Dedukti.Driver.Interactive,
                        Dedukti.Driver.Batch,
