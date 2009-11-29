@@ -6,6 +6,9 @@
 
 module Dedukti.Config where
 
+import System.Environment (getProgName)
+import System.IO.Unsafe (unsafePerformIO)
+
 
 data Verbosity = Quiet | Verbose | Debug
                  deriving (Eq, Ord, Show)
@@ -18,7 +21,7 @@ data Config = Config
     }
 
 defaultConfig =
-    Config { imageName = "dedukti"
+    Config { imageName = unsafePerformIO $ getProgName
            , hsCompiler = "ghc"
            , version = "0.1"
            , verbosity = Quiet }
