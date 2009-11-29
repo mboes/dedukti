@@ -10,7 +10,7 @@ module Dedukti.Driver.Batch (make) where
 import Dedukti.Driver.Compile
 import Dedukti.Analysis.Dependency
 import Dedukti.Module
-import Dedukti.Parser.External
+import Dedukti.Parser
 import Dedukti.DkM
 import qualified Dedukti.Config as Config
 import qualified Control.Hmk.IO as IO
@@ -48,7 +48,8 @@ rules' targets = concat <$> mapM f targets where
         Nothing -> do
           lift $ say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
           let path = srcPathFromModule mod
-          src <- lift (parse path <$> io (B.readFile path))
+          config <- lift configuration
+          src <- lift (parse config path <$> io (B.readFile path))
           let dependencies = collectDependencies src
               rs = g mod dependencies (task_compile mod src)
           -- Recursively construct rules for dependent modules.

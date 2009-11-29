@@ -7,7 +7,7 @@
 module Dedukti.Driver.Compile (compile, compileAST) where
 
 import Dedukti.Module
-import Dedukti.Parser.External
+import Dedukti.Parser
 import qualified Dedukti.Parser.Interface as Interface
 import Dedukti.DkM
 import Dedukti.Core
@@ -52,7 +52,8 @@ compile :: MName -> DkM ()
 compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
-  compileAST mod =<< return (parse path) `ap` io (B.readFile path)
+  config <- configuration
+  compileAST mod =<< return (parse config path) `ap` io (B.readFile path)
 
 -- | Emit Haskell code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> DkM ()

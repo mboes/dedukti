@@ -5,9 +5,10 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 module Dedukti.Parser.External (Pa, parse) where
 
+import {-# SOURCE #-} Dedukti.Parser
 import Dedukti.Core
 import Dedukti.Module
-import Text.Parsec hiding (ParseError, parse)
+import Text.Parsec hiding (SourceName, ParseError, parse)
 import qualified Text.Parsec.Token as Token
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
@@ -15,9 +16,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Control.Exception as Exception
 import Data.Typeable (Typeable)
 
-
--- The AST type as returned by the Parser.
-type Pa t = t Qid Unannot
 
 -- The parsing monad.
 type P = Parsec B.ByteString [Pa TyRule]
