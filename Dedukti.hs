@@ -24,12 +24,19 @@ import System.IO
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
-data Flag = FlagMake | FlagHelp | FlagVersion | FlagVerbose | FlagVeryVerbose
+data Flag = FlagMake
+          | FlagFormat Config.Format
+          | FlagHelp | FlagVersion
+          | FlagVerbose | FlagVeryVerbose
             deriving (Eq, Ord, Show)
 
 flagDescriptions =
   [ (["--make"], [FlagMake],
      "Build MODULE and all its dependencies in one go.")
+  , (["-fexternal"], [FlagFormat Config.External],
+     "Force recognizing input as (human-readable) external format.")
+  , (["-fprefix-notation"], [FlagFormat Config.Prefix],
+     "Force recognizing input as (fast) prefix format.")
   , (["-v", "-vv"], [FlagVerbose, FlagVeryVerbose],
      "Be verbose, -vv to be even more verbose.")
   , (["-h", "--help"], repeat FlagHelp,
@@ -59,7 +66,8 @@ printHelp = do
                <$> text "Options:"
       flags = vsep (map pflag flagDescriptions)
   io $ putStrLn $ show $ header <$> indent 4 flags
-    where pflag (flags, _, desc) = fillBreak 14 (hcat $ punctuate (text ", ") $ map text flags) <+> text desc
+    where pflag (flags, _, desc) = fillBreak 14 (hcat $ punctuate (text ", ") $
+                                   map text flags) <+> text desc
 
 bailout = printUsage >> io exitFailure
 
@@ -76,6 +84,7 @@ printVersion = do
 initializeConfiguration = foldr aux Config.defaultConfig
     where aux FlagVerbose c     = c { Config.verbosity = Verbose }
           aux FlagVeryVerbose c = c { Config.verbosity = Debug }
+          aux (FlagFormat f) c  = c { Config.format = Just f }
           aux _ c               = c
 
 main = do
