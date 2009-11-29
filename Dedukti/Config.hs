@@ -11,16 +11,14 @@ data Verbosity = Quiet | Verbose | Debug
                  deriving (Eq, Ord, Show)
 
 data Config = Config
-    { homeDir :: FilePath
-    , imageName :: FilePath
+    { imageName :: FilePath
     , version :: String
     , hsCompiler :: FilePath
     , verbosity :: Verbosity
     }
 
 defaultConfig =
-    Config { homeDir = "."
-           , imageName = "dedukti"
+    Config { imageName = "dedukti"
            , hsCompiler = "ghc"
            , version = "0.1"
            , verbosity = Quiet }
