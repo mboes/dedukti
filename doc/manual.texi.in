@@ -66,8 +66,8 @@ for the @lambdapi{}-calculus modulo.
 @menu
 * Overview::            The general architecture.
 * Installation::        How to install the Dedukti system.
-* Dedukti syntax::       The input language for Dedukti.
-* Invoking dedukti::     The compiler.
+* Dedukti syntax::      The input language for Dedukti.
+* Invoking dedukti::    The compiler.
 * Invoking dkrun::      Executing the proof checks.
 * References::          Bibliographic references.
 * Copying this manual:: How you can copy and share this manual.
@@ -208,9 +208,10 @@ POSIX compatible environment to build the documentation, including the
 @chapter Dedukti syntax
 
 @menu
-* Syntax overview::     An informal description of input files.
-* Scoping rules::       The scope of declarations and rules.
-* Grammar::             A formal specification of the syntax.
+* Syntax overview::         An informal description of input files.
+* Scoping rules::           The scope of declarations and rules.
+* Grammar::                 A formal specification of the syntax.
+* Prefix notation grammar:: A formal specification of an alternative syntax.
 @end menu
 
 @node Syntax overview
@@ -399,12 +400,46 @@ env2 ::= binding
        | binding "," env2
 @end example
 
+@node Prefix notation grammar
+@section Axioms and rules in prefix notation
+@cindex grammar
+@cindex syntax
+@cindex prefix notation
+@cindex polish notation
+
+For the rationale behind prefix notation, see @ref{Prefix syntax}
+
+Source files in prefix notation consist in a string of whitespace
+delimited tokens, as is the case for the human-readable format defined
+above. Unlike that format, however, there is no syntax for comments,
+though a @code{FORMAT} pragma may appear on the first line. Any token
+that is not one of the literals appearing in the grammar below is
+considered an identifier. Identifiers are period separated lists of
+characters, everything before the last period specifying the module
+qualifier for an identifier.
+
+@example
+qid ::= id.id | id
+toplevel ::= binding toplevel
+           | rule toplevel
+           | eof
+binding ::= ":" id term
+sort ::= "Type"
+term ::= "->" binding term
+       | "=>" binding term
+       | "@@" term term
+rule ::= "-->" env term term
+env ::= "[]"
+      | "," binding env
+@end example
+
 @node Invoking dedukti
 @chapter Invoking @command{dedukti}
 
 @menu
 * One-shot mode::       Compiling one source file at a time.
 * Batch mode::          Let Dedukti figure out what needs to be compiled.
+* Prefix syntax::       Input source files to Dedukti in alternative syntax.
 @end menu
 
 @node One-shot mode
@@ -453,6 +488,45 @@ invoke GHC on all compiled files, so as to produce native object code
 for the module given as argument and its dependencies. Compiling to
 native code often yields much better performance during checking.
 @xref{Invoking dkrun}.
+
+@node Prefix syntax
+@section Prefix syntax
+@cindex prefix notation
+@cindex polish notation
+@cindex syntax
+@cindex source files
+@cindex parsing
+
+Because Dedukti may be used as the backend proof checker for a number of
+frontend mechanized translators, proof assistants and other interactive
+environments, in many cases the input to Dedukti is not human crafted
+but mechanically generated. Dedukti therefore accepts source files in an
+alternative syntax that can be parsed much more efficiently, inspired by
+Jan Łukasiewicz' polish notation for sentential
+logic@footnote{@uref{http://en.wikipedia.org/wiki/Polish_notation}}. The
+syntax uses prefix notation for operators, much like Lisp, but unlike
+Lisp, arities for all the operators are fixed and known in advance,
+therefore no parentheses are need around subterms.
+
+This syntax for Dedukti axioms and rules is the preferred target syntax
+for automated tools that produce Dedukti code. Parsing time is at least
+an order of magnitude smaller for source files in prefix notation.
+Dedukti can automatically recognize the syntax of the source file if the
+first line of the source file is a @code{FORMAT} pragma
+(@pxref{Pragmas}). It is also possible to force a particular format
+using the following command line options:
+
+@table @option
+@item -fexternal
+Force recognizing input as (human-readable) external format.
+
+@item -fprefix-notation
+Force recognizing input as (fast) prefix format.
+
+@end table
+
+See @ref{Prefix notation grammar} for the lexical and grammatical
+structure of this syntax.
 
 @node Invoking dkrun
 @chapter Invoking @command{dkrun}
