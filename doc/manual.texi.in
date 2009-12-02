@@ -379,11 +379,11 @@ qid ::= id.id | id
 toplevel ::= declaration toplevel
            | rule toplevel
            | eof
-binding ::= id : term
-declaration ::= id ":" term "."
+binding ::= id ":" term
+declaration ::= binding "."
 domain ::= id ":" applicative
          | applicative
-sort ::= Type
+sort ::= "Type"
 term ::= domain "->" term
        | domain "=>" term
        | applicative
@@ -392,7 +392,7 @@ simple ::= sort
          | "(" term ")"
 applicative ::= simple
               | applicative simple
-rule ::= env term "-->" term
+rule ::= env term "-->" term "."
 env ::= "[]"
       | "[" env2 "]"
 env2 ::= binding

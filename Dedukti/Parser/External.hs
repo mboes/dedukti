@@ -101,13 +101,13 @@ toplevel =
 
 -- | Binding construct.
 --
--- > binding ::= id : term
+-- > binding ::= id ":" term
 binding = ((:::) <$> ident <* reservedOp ":" <*> term)
           <?> "binding"
 
 -- | Top-level declarations.
 --
--- > declaration ::= id ":" term "."
+-- > declaration ::= binding "."
 declaration = (binding <* dot)
               <?> "declaration"
 
@@ -120,7 +120,7 @@ domain = (    ((:::) <$> try (ident <* reservedOp ":") <*> applicative)
          <?> "domain"
 
 -- |
--- > sort ::= Type
+-- > sort ::= "Type"
 sort = Type <$ reserved "Type"
 
 -- | Terms and types.
@@ -161,7 +161,7 @@ applicative = (\xs -> case xs of
 
 -- | A rule.
 --
--- > rule ::= env term "-->" term
+-- > rule ::= env term "-->" term "."
 -- > env ::= "[]"
 -- >       | "[" env2 "]"
 -- > env2 ::= binding
