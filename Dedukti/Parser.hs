@@ -23,7 +23,8 @@ type Pa t = t Qid Unannot
 
 parse :: Config.Config -> SourceName -> B.ByteString -> Pa Module
 parse config name input =
-  let magic = "(; # FORMAT prefix # ;)\n"
-  in if magic `B.isPrefixOf` input || Config.format config == Just Config.Prefix
-     then Prefix.parse name (B.drop (B.length magic) input)
-     else External.parse name input
+  let magic = "(; # FORMAT prefix # ;)\n" in
+  case (magic `B.isPrefixOf` input, Config.format config) of
+    (True, _) -> Prefix.parse name (B.drop (B.length magic) input)
+    (False, Just Config.Prefix) -> Prefix.parse name input
+    (False, Just Config.External) -> External.parse name input
