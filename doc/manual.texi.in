@@ -476,7 +476,7 @@ automatically.
 @node Batch mode
 @section Batch mode
 
-Compile in batch mode by passing the @code{--make} flag to
+Compile in batch mode by passing the @code{--make} option to
 @command{dedukti}. In this mode, dependencies of the file given in
 argument will be compiled first, though after the dependencies of the
 dependencies have been compiled, etc. Those dependencies that do not
