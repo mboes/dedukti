@@ -1,3 +1,3 @@
 #!/bin/sh
 
-awk '/^-- > / {sub(/-- > /, ""); print; }' Dedukti/Parser.hs
+awk '/^-- > / {sub(/-- > /, ""); print; }' Dedukti/Parser/External.hs
