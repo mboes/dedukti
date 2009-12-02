@@ -453,6 +453,7 @@ sort ::= "Type"
 term ::= "->" binding term
        | "=>" binding term
        | "@@" term term
+       | qid
 rule ::= "-->" env term term
 env ::= "[]"
       | "," binding env
