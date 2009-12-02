@@ -209,6 +209,7 @@ POSIX compatible environment to build the documentation, including the
 
 @menu
 * Syntax overview::         An informal description of input files.
+* Pragmas::                 Use source pragmas for compiler hints.
 * Scoping rules::           The scope of declarations and rules.
 * Grammar::                 A formal specification of the syntax.
 * Prefix notation grammar:: A formal specification of an alternative syntax.
@@ -349,6 +350,30 @@ is equivalent to
 a b c d -> e (f g) -> h
 @end example
 @end quotation
+
+@node Pragmas
+@section Pragmas
+@cindex pragmas
+
+Multi-line comments whose first non-blank character following the
+comment delimiter is a hash ``@verb{.#.}'' symbol are treated specially
+by Dedukti. These comments are considered @dfn{pragmas}, providing hints
+to the compilation process. The syntax of pragmas is as follows.
+Following the hash sign is the name of the pragma, in upper case. All
+remaining tokens until the closing comment delimiter are arguments to
+the pragma.
+
+Currently, the only supported pragma is the @code{FORMAT} pragma,
+expliciting the syntax of the source file in which it occurs. This
+pragma may only appear on the first line of the source file, as in the
+following:
+
+@example
+(; # FORMAT prefix ;)
+@end example
+
+This line says that the source file is in prefix notation (@pxref{Prefix
+syntax}).
 
 @node Scoping rules
 @section Scoping rules
