@@ -33,7 +33,7 @@ parse name = partitionEithers . map classify . foldr step [] . tokens
         classify _ = error $ "Parse error in " ++ name
 
 tokens :: B.ByteString -> [Token]
-tokens = B.splitWith isSpace
+tokens = filter (not . B.null) . B.splitWith isSpace
 
 step :: Token -> Stack -> Stack
 
