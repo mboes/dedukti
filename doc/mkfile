@@ -9,7 +9,7 @@
 	m4 $prereq | makeinfo -
 
 default:QV:
-	echo 'Please specify one of "html" or "pdf" as targets.'
+	echo 'Please specify one of "html", "pdf" or "info" as targets.'
 	exit 1
 
 pdf:V: manual.pdf
