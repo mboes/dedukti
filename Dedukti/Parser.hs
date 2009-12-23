@@ -27,4 +27,5 @@ parse config name input =
   case (magic `B.isPrefixOf` input, Config.format config) of
     (True, _) -> Prefix.parse name (B.drop (B.length magic) input)
     (False, Just Config.Prefix) -> Prefix.parse name input
-    (False, _) -> External.parse name input
+    (False, Just Config.External) -> External.parse name input
+    (False, Nothing) -> External.parse name input
