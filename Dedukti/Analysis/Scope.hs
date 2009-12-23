@@ -58,7 +58,7 @@ type Context = Map.Map MName AtomSet.AtomSet
 initContext :: [Qid]                -- ^ declarations from other modules.
             -> Context
 initContext qids =
-  Map.fromList $ map (\qid -> (qid_qualifier qid, AtomSet.singleton (qid_stem qid))) qids
+  Map.fromListWith AtomSet.union $ map (\qid -> (qid_qualifier qid, AtomSet.singleton (qid_stem qid))) qids
 
 checkScopes :: forall a. Show a => Context -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
