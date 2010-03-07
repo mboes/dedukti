@@ -60,10 +60,10 @@ executable dedukti
   build-depends:       base >= 4 && < 5, mtl >= 1.1, containers >= 0.2,
                        directory, filepath, process,
                        bytestring >= 0.9.1.0,
-                       parsec >= 3.0.0,
+                       parsec >= 3.1.0,
                        wl-pprint >= 1.0,
                        haskell-src-exts >= 1.1.0,
-                       Stream >= 0.3,
+                       Stream >= 0.3 && < 0.3.2,
                        hmk >= 0.9,
                        stringtable-atom >= 0.0.6
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
