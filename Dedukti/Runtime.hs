@@ -29,7 +29,6 @@ import Control.Exception
 import Text.Show.Functions ()
 import Data.Typeable hiding (typeOf)
 import Prelude hiding (pi, catch)
-import System.IO
 import Data.Time.Clock
 
 

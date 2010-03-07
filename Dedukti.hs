@@ -16,7 +16,6 @@ import Dedukti.Module
 import Dedukti.Driver.Batch
 import Dedukti.Driver.Compile
 import Text.PrettyPrint.Leijen
-import Control.Monad (unless, when)
 import Data.List (partition, isPrefixOf)
 import Data.Either (partitionEithers)
 import System.Exit

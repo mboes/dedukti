@@ -20,7 +20,6 @@ import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Applicative
 import qualified GHC.Conc
-import Data.Typeable (Typeable)
 import System.Directory (copyFile)
 import Data.Char (toUpper)
 
