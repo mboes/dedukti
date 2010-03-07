@@ -170,11 +170,9 @@ pvar :: Id Record -> Hs.Pat
 pvar = Hs.PVar . varName
 
 -- | Produce a set of variables y1, ..., yn
-variables =
-    Stream.unfold (\i -> (Hs.Var $ Hs.UnQual $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
+variables = Stream.unfold (\i -> (Hs.Var $ Hs.UnQual $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
-pvariables =
-    Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
+pvariables = Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
 
 application :: [Hs.Exp] -> Hs.Exp
 application = foldl1' Hs.App
