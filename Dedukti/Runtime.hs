@@ -105,11 +105,11 @@ box sorts ty ty_code obj_code
 
 typeOf :: Int -> Term -> Code
 typeOf n (Box ty _) = ty
-typeOf n (TLam bx@(Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
-typeOf n (TPi bx@(Box Type a) f) = typeOf (n + 1) (f (Box a (Var n)))
-typeOf n (TApp t1 bx@(Box ty2 t2))
+typeOf n (TLam (Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
+typeOf n (TPi (Box Type a) f) = typeOf (n + 1) (f (Box a (Var n)))
+typeOf n (TApp t1 (Box ty2 t2))
     | Pi tya f <- typeOf n t1, convertible n tya ty2 = f t2
-typeOf n (TApp t1 bx@(UBox tty2 t2))
+typeOf n (TApp t1 (UBox tty2 t2))
     | Pi tya f <- typeOf n t1, ty2 <- typeOf n tty2,
       convertible n tya ty2 = f t2
 typeOf n TType = Kind
