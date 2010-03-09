@@ -64,7 +64,7 @@ executable dedukti
                        wl-pprint >= 1.0,
                        haskell-src-exts >= 1.1.0,
                        Stream >= 0.3 && < 0.3.2,
-                       hmk >= 0.9,
+                       hmk >= 0.9.7,
                        stringtable-atom >= 0.0.6
   extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
                        DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
