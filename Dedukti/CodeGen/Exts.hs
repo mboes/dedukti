@@ -106,7 +106,7 @@ function (RS x _ rs) =
           rhs = foldr primLam
                 (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : Stream.take n variables))
                 (Stream.take n pvariables)
-          f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x n])
+          f | n > 0     = Hs.FunBind (map (neutralClause x n) [1..n] ++ map clause rs ++ [defaultClause x n])
             | otherwise = Hs.FunBind (map clause rs)
 
 clause :: Em TyRule -> Hs.Match
@@ -122,10 +122,18 @@ clause rule =
                    primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
           qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
 
-defaultClause :: Id Record -> Int -> Hs.Match
-defaultClause x n =
-    Hs.Match (*) (Hs.Ident "__") (Stream.take n pvariables) Nothing
+-- | If the i-th term is not a constructed term then produce a neutral form.
+neutralClause :: Id Record -> Int -> Int -> Hs.Match
+neutralClause x n i =
+    Hs.Match (*) (Hs.Ident "__") (set i (Stream.take n pvariables)) Nothing
           (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) (Hs.BDecls [])
+    where set 0 xs = xs
+          set 1 (Hs.PVar x :xs) = Hs.PAsPat x (Hs.PParen (Hs.PApp (Hs.UnQual $ Hs.Ident "Var") [Hs.PWildCard])) : xs
+          set n (x:xs) = x : set (n - 1) xs
+
+-- | The default clause produces a neutral form too.
+defaultClause :: Id Record -> Int -> Hs.Match
+defaultClause x n = neutralClause x n 0
 
 value :: Id Record -> Hs.Exp -> Hs.Decl
 value x rhs =
