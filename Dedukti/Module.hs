@@ -69,7 +69,7 @@ toList = reverse . f where
 
 -- | Raise an exception if module name component is a valid identifier.
 check :: String -> String
-check cmpt@(x:xs) | isAlpha x, and (map (\x -> isAlphaNum x || elem x "-+~") xs) = cmpt
+check cmpt@(x:xs) | isAlpha x, and (map (\x -> isAlphaNum x || elem x "_-+~") xs) = cmpt
                   | otherwise = throw $ InvalidModuleName cmpt
 
 pathFromModule :: String -> MName -> FilePath
