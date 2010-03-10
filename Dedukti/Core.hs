@@ -46,8 +46,8 @@ infix 2 :::
 
 -- | A type decorating a variable, or a type on its own.
 data Binding id a = id ::: Expr id a
-               | Hole (Expr id a)
-                 deriving (Eq, Ord, Show)
+                  | Hole (Expr id a)
+                    deriving (Eq, Ord, Show)
 
 -- | A rewrite rule.
 data Rule id a = Expr id a :--> Expr id a

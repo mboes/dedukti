@@ -17,25 +17,28 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 textB = text . B.unpack
 
+-- | For purposes of pretty-printing, need to distinguish a top-level binding
+-- from a binding representing the domain of a dependent product or
+-- abstraction.
+newtype Domain id a = Domain (Binding id a)
+
 instance Pretty id => Pretty (Binding id a) where
     pretty (x ::: ty) = pretty x <+> char ':' <+> pretty ty
     pretty (Hole ty) =  pretty ty
 
     prettyList = vcat . map (\x -> pretty x <> dot)
 
-instance Pretty Qid where
-    pretty qid = joinQ (qid_qualifier qid) <>
-                 textB (fromAtom (qid_stem qid)) <>
-                 joinS (qid_suffix qid)
-        where joinQ Root = empty
-              joinQ (h :. x) = joinQ h <> textB (fromAtom x) <> dot
-              joinS Root = empty
-              joinS (h :. x) = joinS h <> char '_' <> textB (fromAtom x)
+instance Pretty id => Pretty (Domain id a) where
+    pretty (Domain dom) =
+        let pty | Pi _ _ _ <- bind_type dom = parens (pretty (bind_type dom))
+                | otherwise = pretty (bind_type dom)
+        in case dom of
+             x ::: _ -> pretty x <+> char ':' <+> pty
+             Hole _ -> pty
 
 instance Pretty id => Pretty (Expr id a) where
-    pretty (Lam x t _) = pretty x <+> text "=>" <+> pretty t
-    pretty (Pi x t _) | Pi _ _ _ <- bind_type x = parens (pretty x) <+> text "->" <+> pretty t
-                      | otherwise = pretty x <+> text "->" <+> pretty t
+    pretty (Lam dom ran _) = pretty dom <+> text "=>" <+> pretty ran
+    pretty (Pi dom ran _) = pretty (Domain dom) <+> text "->" <+> pretty ran
     pretty (App t1 t2 _) =
         let f = if isApplicative t1 then id else parens
             g = if isAtomic t2 then id else parens
