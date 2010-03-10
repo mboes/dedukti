@@ -71,7 +71,7 @@ compileAST mod src@(decls, rules) = do
   Rule.checkOrdering rules
   say Verbose $ text "Checking well formation of rule heads ..."
   mapM_ Rule.checkHead rules
-  say Debug $ pretty (concatMap rs_rules (Rule.ruleSets decls rules))
+  say Debug $ pretty $ Rule.ruleSets decls rules
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
   let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
   io $ B.writeFile (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
