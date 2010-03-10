@@ -63,7 +63,7 @@ linearize xs (env :@ lhs :--> rhs) =
             (xs, seen, constraints) <- get
             if x `Set.member` seen then
                 do let Stream.Cons x' xs' = xs
-                   put (xs', Set.insert x seen, (x, x'):constraints)
+                   put (xs', Set.insert x' seen, (x, x'):constraints)
                    return $ Var x' a else
                 do put (xs, Set.insert x seen, constraints)
                    return t
