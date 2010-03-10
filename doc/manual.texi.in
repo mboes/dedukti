@@ -113,7 +113,10 @@ object files together and executes the resulting program
 @cindex Cabal
 @cindex Hackage
 Dedukti uses the Cabal architecture for building and packaging
-applications and libraries.
+applications and libraries. Regardless of the method of installation
+chosen, one needs to satisfy manually dependency on system libraries,
+such as the PCRE library. It might also be necessary to install
+development version of these packages, depending on your distribution.
 
 @menu
 * Local install::       Installing in your home directory.
