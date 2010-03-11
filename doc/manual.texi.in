@@ -119,10 +119,25 @@ such as the PCRE library. It might also be necessary to install
 development version of these packages, depending on your distribution.
 
 @menu
+* Requirements::        Required versions for compiler and libraries.
 * Local install::       Installing in your home directory.
 * Global install::      Installing in the system directories.
 * Building the documentation::     How to build the documentation.
 @end menu
+
+@node Requirements
+@section Requirements
+@cindex system libaries
+@cindex Haskell compiler
+
+Dedukti requires the Glorious Haskell Compiler (GHC) versions 6.10 and
+above to compile. Note that GHC 6.12.1 has a bug preventing a dependency
+of Dedukti to compile properly, so ulterior revisions in the 6.12 series
+are recommended.
+
+The PCRE library 7.0 or above, including the header files, must be
+present on the system before proceeding to @ref{Local install} or
+@ref{Global install}.
 
 @node Local install
 @section Installing Dedukti locally
