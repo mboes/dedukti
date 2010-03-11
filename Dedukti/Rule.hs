@@ -12,7 +12,6 @@ import qualified Data.Stream as Stream
 import Control.Monad.State
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List (foldl')
 import Prelude hiding (head)
 import qualified Prelude
 
