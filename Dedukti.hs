@@ -21,6 +21,8 @@ import Data.Either (partitionEithers)
 import System.Exit
 import System.IO
 import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Paths_dedukti as Cabal (version)
+import Data.Version
 
 
 data Flag = FlagMake
@@ -72,9 +74,8 @@ bailout = printUsage >> io exitFailure
 
 printVersion = do
   self <- parameter Config.imageName
-  version <- parameter Config.version
   io $ B.putStrLn $ B.pack $ flip displayS "" $ renderPretty 0.70 100 $
-     text "Dedukti" <+> text version <> line <> line <>
+     text "Dedukti" <+> text (showVersion Cabal.version) <> line <> line <>
      text "Copyright (c) 2009 CNRS - École Polytechnique - INRIA." <> line <> line <>
      fillText "You may redistribute copies of Dedukti under the terms of \
               \the GNU General Public License. For more information about \

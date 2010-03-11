@@ -18,7 +18,6 @@ data Format = External | Prefix
 
 data Config = Config
     { imageName :: FilePath
-    , version :: String
     , hsCompiler :: FilePath
     , verbosity :: Verbosity
     , format :: Maybe Format    -- ^ @Just format@ if input format is forced.
@@ -27,7 +26,6 @@ data Config = Config
 defaultConfig =
     Config { imageName = unsafePerformIO $ getProgName
            , hsCompiler = "ghc"
-           , version = "0.1"
            , verbosity = Quiet
            , format = Nothing }
 
