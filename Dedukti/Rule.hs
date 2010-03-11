@@ -37,9 +37,9 @@ arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
 
 -- | Combine declarations with their associated rules, if any.
 ruleSets :: (Show id, Show a, Ord id) => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
-ruleSets ds rs = snd $ foldl' aux (sortBy cmp (group rs), []) ds where
-    aux ([],       rsets) (x ::: ty)          = ([], RS x ty [] : rsets)
-    aux (rs : rss, rsets) (x ::: ty)
+ruleSets ds rs = snd $ foldr aux (sortBy cmp (group rs), []) ds where
+    aux (x ::: ty) ([],       rsets)          = ([], RS x ty [] : rsets)
+    aux (x ::: ty) (rs : rss, rsets)
         | x == headConstant (Prelude.head rs) = (rss, RS x ty rs : rsets)
         | otherwise                           = (rs : rss, RS x ty [] : rsets)
     -- We cannot change the order of the declarations, but we need rules to be
@@ -47,7 +47,7 @@ ruleSets ds rs = snd $ foldl' aux (sortBy cmp (group rs), []) ds where
     ordering = Map.fromList (zip (map bind_name ds) [0..])
     cmp x y = let xi = ordering Map.! headConstant (Prelude.head x)
                   yi = ordering Map.! headConstant (Prelude.head y)
-              in compare xi yi
+              in compare yi xi
 
 -- | Make the rule left-linear and return collected unification constraints.
 -- This function must be provided with an infinite supply of fresh variable
