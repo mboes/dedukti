@@ -116,14 +116,14 @@ typeOf n TType = Kind
 typeOf n t = throw TypeError
 
 checkDeclaration :: String -> Term -> IO ()
-checkDeclaration x t = catch (evaluate t >> putStrLn "Check") handler
+checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) handler
     where handler (SomeException e) = do
-            putStrLn $ "Error during checking of " ++ x
+            putStrLn $ "Error during checking of " ++ x ++ "."
             throw e
 
 checkRule :: Term -> Term -> Term
 checkRule lhs rhs | convertible 0 (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
-                  | otherwise = throw RuleError
+                  | otherwise = throw $ RuleError (pretty (typeOf 0 lhs)) (pretty (typeOf 0 rhs))
 
 start :: IO UTCTime
 start = do
