@@ -2,7 +2,7 @@
 
 if [ -z $* ]
 then
-    echo "Usage: dkrun module.euo [DEPENDENCY]..." 1>&2
+    echo "Usage: dkrun module.dko [DEPENDENCY]..." 1>&2
     echo "    Where all dependent modules must be listed explicitly," 1>&2
     echo "    after the module to typecheck." 1>&2
     exit 1
