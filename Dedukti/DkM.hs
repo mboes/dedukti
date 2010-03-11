@@ -16,7 +16,7 @@ module Dedukti.DkM ( module Control.Monad
                    , fillText
                    , E.Exception(..), Typeable, E.throw, io
                    -- * Wrappers around IO primitives.
-                   , onException, lazyDkM) where
+                   , onException) where
 
 import Dedukti.Config as Config
 import Control.Monad
@@ -25,7 +25,6 @@ import qualified Control.Exception as E
 import Control.Applicative
 import Data.Typeable (Typeable) -- for exceptions
 import System.IO
-import System.IO.Unsafe (unsafeInterleaveIO)
 import System.Cmd
 import System.Exit
 import Text.PrettyPrint.Leijen hiding ((<$>))
@@ -81,6 +80,3 @@ onException :: DkM a -> DkM b -> DkM a
 onException x y = do
   conf <- configuration
   io $ runDkM x conf `E.onException` runDkM y conf
-
-lazyDkM :: DkM a -> DkM a
-lazyDkM m = io . unsafeInterleaveIO . runDkM m =<< ask
