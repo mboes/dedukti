@@ -31,28 +31,47 @@ data Flag = FlagMake
           | FlagVerbose | FlagVeryVerbose
             deriving (Eq, Ord, Show)
 
+data FlagArity a = Nullary String Flag
+                 | Unary String (String -> Flag)
+
 flagDescriptions =
-  [ (["--make"], [FlagMake],
+  [ ([Nullary "--make" FlagMake],
      "Build MODULE and all its dependencies in one go.")
-  , (["-fexternal"], [FlagFormat Config.External],
+  , ([Nullary "-fexternal" (FlagFormat Config.External)],
      "Force recognizing input as (human-readable) external format.")
-  , (["-fprefix-notation"], [FlagFormat Config.Prefix],
+  , ([Nullary "-fprefix-notation" (FlagFormat Config.Prefix)],
      "Force recognizing input as (fast) prefix format.")
-  , (["-v", "-vv"], [FlagVerbose, FlagVeryVerbose],
+  , ([Unary "-v[v]" $ \arg -> if null arg then FlagVerbose else FlagVeryVerbose],
      "Be verbose, -vv to be even more verbose.")
-  , (["-h", "--help"], repeat FlagHelp,
+  , (zipWith ($) [Nullary "-h", Nullary "--help"] (repeat FlagHelp),
      "This usage information.")
-  , (["--version"], [FlagVersion],
+  , ([Nullary "--version" FlagVersion],
      "Output version information then exit.") ]
 
+-- Flag descriptions obey the following conventions:
+--
+-- - double hyphen flags don't have arguments.
+--
+-- - Everything after the first letter of a hyphen flag is part of the
+--   argument.
 parseCmdline args =
   let (hyphened, rest) = partition (\arg -> "-" `isPrefixOf` arg) args
       (errors, flags) = partitionEithers $ map toFlag hyphened
   in (flags, rest, errors)
-    where flagmap = concat $ map (uncurry zip) $ map (\(x, y, _) -> (x, y)) flagDescriptions
-          toFlag x = case lookup x flagmap of
-            Nothing -> Left "Flag not found."
-            Just f -> Right f
+    where flagmap = concatMap fst flagDescriptions
+          unpack ('-':'-':name) = (name, "")
+          unpack ('-':name:arg) = ([name], arg)
+          unpack x = error $ "Malformed argument: " ++ x
+          lookupFlag name arg (Nullary n f : desc)
+              | fst (unpack n) == name =
+                  if null arg
+                  then Right f
+                  else Left $ "No argument expected for flag " ++ n
+          lookupFlag name arg (Unary n f : desc)
+              | fst (unpack n) == name = Right (f arg)
+          lookupFlag name _ [] = Left $ "Flag not found: " ++ name
+          lookupFlag name arg (_:desc) = lookupFlag name arg desc
+          toFlag x | (name, arg) <- unpack x = lookupFlag name arg flagmap
 
 printUsage = do
   self <- parameter Config.imageName
@@ -67,8 +86,10 @@ printHelp = do
                <$> text "Options:"
       flags = vsep (map pflag flagDescriptions)
   io $ putStrLn $ show $ header <$> indent 4 flags
-    where pflag (flags, _, desc) = fillBreak 14 (hcat $ punctuate (text ", ") $
-                                   map text flags) <+> text desc
+    where pflag (flags, desc) = fillBreak 14 (hcat $ punctuate (text ", ") $
+                                   map (text . name) flags) <+> text desc
+          name (Nullary n _) = n
+          name (Unary n _) = n
 
 bailout = printUsage >> io exitFailure
 
@@ -91,7 +112,7 @@ main = do
   args <- getArgs
   let (opts, files, errs) = parseCmdline args
   when (not (null errs)) $ do
-         hPutDoc stderr (vsep (map text errs))
+         hPutDoc stderr (vcat (map text errs) <> line)
          exitFailure
   (`runDkM` initializeConfiguration opts) $
          case undefined of
