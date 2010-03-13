@@ -21,11 +21,13 @@ data Config = Config
     , hsCompiler :: FilePath
     , verbosity :: Verbosity
     , format :: Maybe Format    -- ^ @Just format@ if input format is forced.
+    , jobs :: Int               -- ^ Number of simultaneous jobs to run.
     }
 
 defaultConfig =
     Config { imageName = unsafePerformIO $ getProgName
            , hsCompiler = "ghc"
            , verbosity = Quiet
-           , format = Nothing }
+           , format = Nothing
+           , jobs = 1 }
 

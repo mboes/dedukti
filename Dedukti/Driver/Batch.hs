@@ -19,7 +19,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Applicative
-import qualified GHC.Conc
 import System.Directory (copyFile)
 import Data.Char (toUpper)
 
@@ -119,8 +118,9 @@ make modules = do
   -- Depending on whether we have several cores or not, we either call
   -- mkConcurrent to perform all the tasks concurrently, or call mk to create
   -- a schedule and execute that.
-  if GHC.Conc.numCapabilities > 1 then
-      do io $ mkConcurrent GHC.Conc.numCapabilities (map run rs) targets else
+  n <- parameter Config.jobs
+  if n > 1 then
+      do io $ mkConcurrent n (map run rs) targets else
       do schedule <- mk rs targets
-         say Debug $ text "Tasks to execute:" <+> int (length schedule)
+         say Verbose $ text "Tasks to execute:" <+> int (length schedule)
          sequence_ schedule

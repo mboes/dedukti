@@ -26,6 +26,7 @@ import Data.Version
 
 
 data Flag = FlagMake
+          | FlagJobs Int
           | FlagFormat Config.Format
           | FlagHelp | FlagVersion
           | FlagVerbose | FlagVeryVerbose
@@ -37,6 +38,8 @@ data FlagArity a = Nullary String Flag
 flagDescriptions =
   [ ([Nullary "--make" FlagMake],
      "Build MODULE and all its dependencies in one go.")
+  , ([Unary "-jN" (FlagJobs . read)],
+     "Perform N jobs at once.")
   , ([Nullary "-fexternal" (FlagFormat Config.External)],
      "Force recognizing input as (human-readable) external format.")
   , ([Nullary "-fprefix-notation" (FlagFormat Config.Prefix)],
@@ -106,6 +109,7 @@ initializeConfiguration = foldr aux Config.defaultConfig
     where aux FlagVerbose c     = c { Config.verbosity = Verbose }
           aux FlagVeryVerbose c = c { Config.verbosity = Debug }
           aux (FlagFormat f) c  = c { Config.format = Just f }
+          aux (FlagJobs n) c    = c { Config.jobs = n }
           aux _ c               = c
 
 main = do
