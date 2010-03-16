@@ -30,6 +30,7 @@ import Text.Show.Functions ()
 import Data.Typeable hiding (typeOf)
 import Prelude hiding (pi, catch)
 import Data.Time.Clock
+import Text.PrettyPrint.Leijen
 
 
 -- Exceptions
@@ -40,7 +41,7 @@ data SortError = SortError
 data TypeError = TypeError
     deriving (Show, Typeable)
 
-data RuleError = RuleError
+data RuleError = RuleError Doc Doc
     deriving (Show, Typeable)
 
 instance Exception SortError
@@ -136,3 +137,15 @@ stop t = do
   t' <- getCurrentTime
   let total = diffUTCTime t' t
   putStrLn $ "Stop. Runtime: " ++ show total
+
+-- Pretty printing.
+
+instance Pretty Code where
+  pretty = p 0 where
+    p n (Var x) = text (show x)
+    p n (Con c) = text (show c)
+    p n (Lam f) = parens (int n <+> text "=>" <+> p (n + 1) (f (Var n)))
+    p n (Pi ty1 ty2) = parens (int n <+> colon <+> p n ty1 <+> text "->" <+> p (n + 1) (ty2 (Var n)))
+    p n (App t1 t2) = parens (p n t1 <+> p n t2)
+    p n Type = text "Type"
+    p n Kind = text "Kind"
