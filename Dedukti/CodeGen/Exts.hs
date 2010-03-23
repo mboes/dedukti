@@ -17,7 +17,7 @@ import qualified Language.Haskell.Exts.Build as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toUpper)
-import Data.List (foldl', foldl1')
+import Data.List (foldl')
 import qualified Data.Stream as Stream
 import Prelude hiding ((*))
 
@@ -49,27 +49,24 @@ instance CodeGen Record where
               defs_rule n (env :@ lhs :--> rhs) =
                   let rec (x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
                       Bundle decls = coalesce $ foldr rec [ruleCheck] (env_bindings env)
-                  in  Hs.FunBind [Hs.Match (*) (varName (x .$ "rule" .$ B.pack (show n)))
-                                  []
-                                  Nothing
-                                  (Hs.UnGuardedRhs (primitiveVar "main" []))
-                                  (Hs.BDecls decls)]
+                  in Hs.sfun (*) (varName (x .$ "rule" .$ B.pack (show n))) []
+                         (Hs.UnGuardedRhs (primitiveVar "main" []))
+                         (Hs.binds decls)
                       where ruleCheck = Rec (qid "rule") 0
                                             [Hs.nameBind (*) (varName (qid "rule" .$ "box"))
                                              (primitiveVar "checkRule" [term lhs, term rhs])]
 
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
-        where main = Hs.FunBind [Hs.Match (*) (Hs.Ident "main") []
-                                       Nothing (Hs.UnGuardedRhs checks) (Hs.BDecls [])]
+        where main = Hs.nameBind (*) (Hs.name "main") checks
               checks = Hs.Do (concatMap rules records ++ map declaration records)
-              declaration rec = Hs.Qualifier (primitiveVar "checkDeclaration"
-                                              [ Hs.Lit $ Hs.String $ show $ pretty $ unqualify $ rec_name rec
+              declaration rec = Hs.qualStmt (primitiveVar "checkDeclaration"
+                                              [ Hs.strE $ show $ pretty $ unqualify $ rec_name rec
                                               , var (rec_name rec .$ "box") ])
               rules (Rec _ 0 _) = []
               rules (Rec x nr _) =
-                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Starting rule " ++ show (pretty (unqualify x)) ++ ".")]] ++
-                  map (\n -> Hs.Qualifier $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
-                  [Hs.Qualifier $ primitiveVar "putStrLn" [Hs.Lit $ Hs.String ("Finished rule " ++ show (pretty (unqualify x)) ++ ".")]]
+                  [Hs.qualStmt $ primitiveVar "putStrLn" [Hs.strE ("Starting rule " ++ show (pretty (unqualify x)) ++ ".")]] ++
+                  map (\n -> Hs.qualStmt $ var (x .$ "rule" .$ B.pack (show n))) [0..nr-1] ++
+                  [Hs.qualStmt $ primitiveVar "putStrLn" [Hs.strE ("Finished rule " ++ show (pretty (unqualify x)) ++ ".")]]
 
     serialize mod deps (Bundle decls) =
         B.pack $ prettyPrintWithMode defaultMode {layout = PPInLine} $
@@ -99,13 +96,11 @@ xencode qid =
                       | otherwise = B.singleton x
 
 function :: Em RuleSet -> Hs.Decl
-function (RS x _ []) =
-    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs (primCon x)) (Hs.BDecls [])]
-function (RS x _ rs) =
-    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [f])]
+function (RS x _ []) = Hs.nameBind (*) (varName x) (primCon x)
+function (RS x _ rs) = Hs.sfun (*) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.binds [f])
     where n = Rule.arity (head rs)
           rhs = foldr primLam
-                (application (Hs.Var (Hs.UnQual (Hs.Ident "__")) : Stream.take n variables))
+                (Hs.metaFunction "__" (Stream.take n variables))
                 (Stream.take n pvariables)
           f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x n])
             | otherwise = Hs.FunBind (map clause rs)
@@ -114,19 +109,19 @@ clause :: Em TyRule -> Hs.Match
 clause rule =
     let (lrule@(env :@ _ :--> rhs), constraints) = Rule.linearize qids rule
     in if null constraints
-       then Hs.Match (*) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
-            Nothing (Hs.UnGuardedRhs (code rhs)) (Hs.BDecls [])
-       else Hs.Match (*) (Hs.Ident "__") (map (pattern env) (Rule.patterns lrule))
-            Nothing (Hs.GuardedRhss [Hs.GuardedRhs (*) (guards constraints) (code rhs)]) (Hs.BDecls [])
+       then Hs.Match (*) (Hs.name "__") (map (pattern env) (Rule.patterns lrule))
+            Nothing (Hs.UnGuardedRhs (code rhs)) Hs.noBinds
+       else Hs.Match (*) (Hs.name "__") (map (pattern env) (Rule.patterns lrule))
+            Nothing (Hs.GuardedRhss [Hs.GuardedRhs (*) (guards constraints) (code rhs)]) Hs.noBinds
     where guards constraints =
-              map (\(x, x') -> Hs.Qualifier $
-                   primitiveVar "convertible" [Hs.Lit (Hs.Int 0), var x, var x']) constraints
+              map (\(x, x') -> Hs.qualStmt $
+                   primitiveVar "convertible" [Hs.intE 0, var x, var x']) constraints
           qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
-    Hs.Match (*) (Hs.Ident "__") (Stream.take n pvariables) Nothing
-          (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) (Hs.BDecls [])
+    Hs.Match (*) (Hs.name "__") (Stream.take n pvariables) Nothing
+          (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) Hs.noBinds
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
 pattern env (Var x _) | x `isin` env = pvar x
@@ -137,9 +132,9 @@ pattern env expr = case unapply expr of
 code :: Em Expr -> Hs.Exp
 code (Var x _)            = var x
 code (Lam (x ::: ty) t _) = primLam (pvar x) (code t)
-code (Lam (Hole ty) t _)  = primLam Hs.PWildCard (code t)
+code (Lam (Hole ty) t _)  = primLam Hs.wildcard (code t)
 code (Pi (x ::: ty) t _)  = primPi (code ty) (pvar x) (code t)
-code (Pi (Hole ty) t _)   = primPi (code ty) Hs.PWildCard (code t)
+code (Pi (Hole ty) t _)   = primPi (code ty) Hs.wildcard (code t)
 code (App t1 t2 _)        = primap (code t1) (code t2)
 code Type                 = primType
 
@@ -156,34 +151,31 @@ term Kind          = primTKind
 (*) = Hs.SrcLoc "" 0 0
 
 varName :: Id Record -> Hs.Name
-varName = Hs.Ident . xencode . unqualify
+varName = Hs.name . xencode . unqualify
 
 -- | Smart variable constructor.
 var :: Id Record -> Hs.Exp
-var = Hs.Var . Hs.UnQual . Hs.Ident . xencode
+var = Hs.var . Hs.name . xencode
 
 pvar :: Id Record -> Hs.Pat
 pvar = Hs.PVar . varName
 
 -- | Produce a set of variables y1, ..., yn
-variables = Stream.unfold (\i -> (Hs.Var $ Hs.UnQual $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
+variables = Stream.unfold (\i -> (Hs.Var $ Hs.UnQual $ Hs.name $ ('y':) $ show i, i + 1)) 0
 
-pvariables = Stream.unfold (\i -> (Hs.PVar $ Hs.Ident $ ('y':) $ show i, i + 1)) 0
-
-application :: [Hs.Exp] -> Hs.Exp
-application = foldl1' Hs.App
+pvariables = Stream.unfold (\i -> (Hs.PVar $ Hs.name $ ('y':) $ show i, i + 1)) 0
 
 -- Primitives
 
-primitiveVar s [] = Hs.Var $ Hs.UnQual $ Hs.Ident s
-primitiveVar s xs = Hs.Paren $ application $ (Hs.Var $ Hs.UnQual $ Hs.Ident s) : xs
+primitiveVar s [] = Hs.var $ Hs.name s
+primitiveVar s xs = Hs.Paren $ Hs.metaFunction s xs
 
-primitiveCon s [] = Hs.Con $ Hs.UnQual $ Hs.Ident s
-primitiveCon s xs = Hs.Paren $ application $ (Hs.Con $ Hs.UnQual $ Hs.Ident s) : xs
+primitiveCon s [] = Hs.Con $ Hs.UnQual $ Hs.name s
+primitiveCon s xs = Hs.Paren $ Hs.appFun (Hs.Con $ Hs.UnQual $ Hs.name s) xs
 
 primap  t1 t2 = primitiveVar "ap"  [t1, t2]
 primApp t1 t2 = primitiveCon "App" [t1, t2]
-primCon c     = primitiveCon "Con" [Hs.Lit (Hs.String (show (pretty c)))]
+primCon c     = primitiveCon "Con" [Hs.strE $ show $ pretty c]
 primType      = primitiveCon "Type" []
 
 primLam pat t = primitiveCon "Lam" [Hs.Paren (Hs.Lambda (*) [pat] t)]
@@ -196,8 +188,8 @@ typedAbstraction c b t =
             case b of
               x ::: ty -> ( pvar (x .$ "box")
                           , ty
-                          , Hs.Let (Hs.BDecls [Hs.nameBind (*) (varName x) (primobj (var (x .$ "box")))]) t )
-              Hole ty  -> (Hs.PWildCard, ty, t)
+                          , Hs.Let (Hs.binds [Hs.nameBind (*) (varName x) (primobj (var (x .$ "box")))]) t )
+              Hole ty  -> (Hs.wildcard, ty, t)
         dom = if isVariable ty
               then term ty else primsbox (term ty) primType (code ty)
     in primitiveCon c [dom, Hs.Paren (Hs.Lambda (*) [pat] ran)]
@@ -215,8 +207,8 @@ primsbox ty ty_code obj_code = primitiveVar "sbox" [ty, ty_code, obj_code]
 primobj t = primitiveVar "obj" [t]
 
 -- | Build a pattern matching a constant.
-primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "Con") [Hs.PLit (Hs.String (show (pretty c)))]
-primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.Ident "App") [t1, t2]
+primConP c = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.name "Con") [Hs.PLit (Hs.String (show (pretty c)))]
+primAppP t1 t2 = Hs.PParen $ Hs.PApp (Hs.UnQual $ Hs.name "App") [t1, t2]
 primAppsP c = foldl' primAppP (primConP c)
 
 -- | Capitalize a word.
