@@ -13,6 +13,7 @@ import Dedukti.Module
 import Dedukti.Pretty
 import qualified Dedukti.Rule as Rule
 import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Build as Hs
 import Language.Haskell.Exts.Pretty
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toUpper)
@@ -39,9 +40,9 @@ instance CodeGen Record where
 
     emit rs@(RS x ty rules) =
         Rec x (length rules) (function rs : def_ty : def_box : zipWith defs_rule [0..] rules)
-        where def_ty  = value (x .$ "ty") (code ty)
-              def_box = value (x .$ "box")
-                                     (primbbox (term ty) (var (x .$ "ty")) (var x))
+        where def_ty  = Hs.nameBind (*) (varName (x .$ "ty")) (code ty)
+              def_box = Hs.nameBind (*) (varName (x .$ "box"))
+                        (primbbox (term ty) (var (x .$ "ty")) (var x))
               -- Checking rules involves much of the same work as checking all
               -- declarations at top-level, so let's just call the code
               -- generation functions recursively.
@@ -54,7 +55,7 @@ instance CodeGen Record where
                                   (Hs.UnGuardedRhs (primitiveVar "main" []))
                                   (Hs.BDecls decls)]
                       where ruleCheck = Rec (qid "rule") 0
-                                            [value (qid "rule" .$ "box")
+                                            [Hs.nameBind (*) (varName (qid "rule" .$ "box"))
                                              (primitiveVar "checkRule" [term lhs, term rhs])]
 
     coalesce records = Bundle $ concatMap rec_code records ++ [main]
@@ -127,11 +128,6 @@ defaultClause x n =
     Hs.Match (*) (Hs.Ident "__") (Stream.take n pvariables) Nothing
           (Hs.UnGuardedRhs (primApps x (Stream.take n variables))) (Hs.BDecls [])
 
-value :: Id Record -> Hs.Exp -> Hs.Decl
-value x rhs =
-    Hs.FunBind [Hs.Match (*) (varName x) [] Nothing (Hs.UnGuardedRhs rhs) (Hs.BDecls [])]
-
-
 pattern :: Em Env -> Em Expr -> Hs.Pat
 pattern env (Var x _) | x `isin` env = pvar x
 pattern env expr = case unapply expr of
@@ -200,7 +196,7 @@ typedAbstraction c b t =
             case b of
               x ::: ty -> ( pvar (x .$ "box")
                           , ty
-                          , Hs.Let (Hs.BDecls [value x (primobj (var (x .$ "box")))]) t )
+                          , Hs.Let (Hs.BDecls [Hs.nameBind (*) (varName x) (primobj (var (x .$ "box")))]) t )
               Hole ty  -> (Hs.PWildCard, ty, t)
         dom = if isVariable ty
               then term ty else primsbox (term ty) primType (code ty)

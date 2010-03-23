@@ -4,7 +4,7 @@
 --
 -- Interface for all code generators.
 
-module Dedukti.CodeGen (CodeGen(..)) where
+module Dedukti.CodeGen where
 
 import Dedukti.Core
 import Dedukti.Module
