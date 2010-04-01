@@ -1,3 +1,5 @@
+module Main where
+
 import Test.Framework (defaultMain)
 import Test.Framework.Providers.API
 import System.FilePath
