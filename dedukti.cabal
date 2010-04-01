@@ -36,6 +36,16 @@ extra-source-files:   doc/mkfile
                       doc/fdl.texi
                       doc/references.texi
 
+flag test
+  description: Compile test harness (requires test-framework).
+  default:     False
+
+library
+  exposed-modules:     Dedukti.Runtime
+  build-depends:       time >= 1.1
+  extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
+
 executable dedukti
   main-is:             Dedukti.hs
   other-modules:       Dedukti.Core,
@@ -78,14 +88,12 @@ executable dedukti
 
 executable dedukti-tests
   main-is:             Test.hs
-  build-depends:       directory, filepath, process,
-                       test-framework >= 0.2 && < 0.3
-  extensions:          DeriveDataTypeable, MultiParamTypeClasses,
-                       RecordWildCards
-  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
-
-library
-  exposed-modules:     Dedukti.Runtime
-  build-depends:       time >= 1.1
-  extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances
-  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
+  if !flag(test)
+    buildable: False
+  else
+    buildable: True
+    build-depends:       directory, filepath, process,
+                         test-framework >= 0.2 && < 0.3
+    extensions:          DeriveDataTypeable, MultiParamTypeClasses,
+                         RecordWildCards
+    ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
