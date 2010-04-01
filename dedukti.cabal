@@ -36,7 +36,6 @@ extra-source-files:   doc/mkfile
                       doc/fdl.texi
                       doc/references.texi
 
-
 executable dedukti
   main-is:             Dedukti.hs
   other-modules:       Dedukti.Core,
@@ -63,14 +62,17 @@ executable dedukti
                        parsec >= 3.1.0,
                        wl-pprint >= 1.0,
                        haskell-src-exts >= 1.1.0,
+                       haskell-src-exts-qq >= 0.1,
                        Stream >= 0.3 && < 0.3.2,
                        hmk >= 0.9.7,
                        stringtable-atom >= 0.0.6
-  extensions:          EmptyDataDecls, PatternGuards, GeneralizedNewtypeDeriving
-                       DeriveDataTypeable, TypeFamilies, LiberalTypeSynonyms,
+  extensions:          EmptyDataDecls, PatternGuards,
+                       GeneralizedNewtypeDeriving, DeriveDataTypeable,
+                       TypeFamilies, LiberalTypeSynonyms,
                        FlexibleInstances, FlexibleContexts, OverloadedStrings,
                        RecordWildCards, TypeSynonymInstances, ScopedTypeVariables
-                       MultiParamTypeClasses
+                       MultiParamTypeClasses,
+                       TemplateHaskell, QuasiQuotes
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 library
