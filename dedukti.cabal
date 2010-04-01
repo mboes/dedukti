@@ -3,7 +3,7 @@ version:        1.0.3
 author:         Mathieu Boespflug
 maintainer:     Mathieu Boespflug <mboes@lix.polytechnique.fr>
 copyright:      © 2009 CNRS - École Polytechnique - INRIA
-homepage:       http://www.lix.polytechnique.fr/~mboes/src/dedukti.git
+homepage:       http://www.lix.polytechnique.fr/dedukti
 synopsis:       A type-checker for the λΠ-modulo calculus.
 description:
     Dedukti is a proof checker for the λΠ-modulo calculus, a
