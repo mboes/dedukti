@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ -z $* ]
+if [ -z "$*" ]
 then
     echo "Usage: dkrun module.dko [DEPENDENCY]..." 1>&2
     echo "    Where all dependent modules must be listed explicitly," 1>&2
