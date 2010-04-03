@@ -123,6 +123,7 @@ development version of these packages, depending on your distribution.
 * Local install::       Installing in your home directory.
 * Global install::      Installing in the system directories.
 * Building the documentation::     How to build the documentation.
+* Smoke tests::         Running smoke tests (for developers)
 @end menu
 
 @node Requirements
@@ -223,6 +224,26 @@ may be found either somewhere in your global path, or in Cabal's user
 folder, depending on the type of installation. You will also need a
 POSIX compatible environment to build the documentation, including the
 @command{m4} command to preprocess the texinfo source.
+
+@node Smoke tests
+@section Smoke tests
+@cindex test harness
+@cindex smoke tests
+
+The package description file for Dedukti declares a @code{test} flag.
+Enabling this flag instructs Cabal to build the test harness as well.
+The test harness currently contains a handful of smoke tests useful for
+sanity checking of new patches to Dedukti, for instance.
+
+In a Dedukti source directory, one can perform smoke tests as follows:
+
+@example
+$ cabal configure -f test
+$ cabal build
+$ cabal test
+@end example
+
+New changesets should not be submitted unless all tests pass.
 
 @node Dedukti syntax
 @chapter Dedukti syntax
