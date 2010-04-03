@@ -52,6 +52,7 @@ executable dedukti
                        Dedukti.Parser,
                        Dedukti.Parser.External,
                        Dedukti.Parser.Prefix,
+                       Dedukti.Parser.Interface,
                        Dedukti.Pretty,
                        Dedukti.Driver.Interactive,
                        Dedukti.Driver.Batch,
