@@ -40,6 +40,10 @@ flag test
   description: Compile test harness (requires test-framework).
   default:     False
 
+source-repository head
+  type:     git
+  location: git://github.com/mboes/dedukti
+
 library
   exposed-modules:     Dedukti.Runtime
   build-depends:       time >= 1.1
