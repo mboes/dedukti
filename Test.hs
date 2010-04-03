@@ -84,7 +84,7 @@ main = defaultMain tests
 
 tests = [ testGroup "Smoke tests"
           [ check "nat" []
-          , check "logic" []
           , check "coc" []
+          , check "logic" ["coc"]
           , check "peano" ["logic", "coc"]
           , checkFailure "bug" [] ] ]
