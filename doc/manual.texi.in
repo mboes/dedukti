@@ -135,9 +135,11 @@ above to compile. Note that GHC 6.12.1 has a bug preventing a dependency
 of Dedukti to compile properly, so ulterior revisions in the 6.12 series
 are recommended.
 
-The PCRE library 7.0 or above, including the header files, must be
-present on the system before proceeding to @ref{Local install} or
-@ref{Global install}.
+The PCRE library version 7.0 or above, including the header files, must
+be present on the system before proceeding to @ref{Local install} or
+@ref{Global install}. Dedukti has an indirect dependency on @code{happy
+>= 1.17}. You should ensure that the @command{happy} command is in a
+location mentioned in your @env{PATH}.
 
 @node Local install
 @section Installing Dedukti locally
