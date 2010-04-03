@@ -31,6 +31,8 @@ import Data.Typeable hiding (typeOf)
 import Prelude hiding (pi, catch)
 import Data.Time.Clock
 import Text.PrettyPrint.Leijen
+import System.Exit
+import System.Posix.Process (exitImmediately)
 
 
 -- Exceptions
@@ -137,6 +139,8 @@ stop t = do
   t' <- getCurrentTime
   let total = diffUTCTime t' t
   putStrLn $ "Stop. Runtime: " ++ show total
+  -- Use Posix exitImmediately rather than System.Exit to really exit GHCi.
+  exitImmediately ExitSuccess
 
 -- Pretty printing.
 
