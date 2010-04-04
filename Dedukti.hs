@@ -2,7 +2,7 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
--- This module is the entry point for europa. Based on the command line
+-- This module is the entry point for Dedukti. Based on the command line
 -- arguments the appropriate driver is invoked. Everything is coordinated by
 -- the driver. This module is also the place where global configuration data
 -- is initialized.
