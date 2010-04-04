@@ -69,8 +69,8 @@ executable dedukti
                        Dedukti.CodeGen.Exts,
                        Dedukti.Analysis.Rule,
                        Dedukti.Analysis.Scope,
-                       Dedukti.Analysis.Dependency
-
+                       Dedukti.Analysis.Dependency,
+                       System.Console.Option
   build-depends:       base >= 4 && < 5, mtl >= 1.1, containers >= 0.2,
                        directory, filepath, process,
                        bytestring >= 0.9.1.0,
