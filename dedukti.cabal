@@ -52,24 +52,24 @@ library
 
 executable dedukti
   main-is:             Dedukti.hs
-  other-modules:       Dedukti.Core,
-                       Dedukti.Parser,
-                       Dedukti.Parser.External,
-                       Dedukti.Parser.Prefix,
-                       Dedukti.Parser.Interface,
-                       Dedukti.Pretty,
-                       Dedukti.Driver.Interactive,
-                       Dedukti.Driver.Batch,
-                       Dedukti.Driver.Compile,
-                       Dedukti.Rule,
-                       Dedukti.DkM,
-                       Dedukti.Config,
-                       Dedukti.Module,
+  other-modules:       Dedukti.Core
+                       Dedukti.Parser
+                       Dedukti.Parser.External
+                       Dedukti.Parser.Prefix
+                       Dedukti.Parser.Interface
+                       Dedukti.Pretty
+                       Dedukti.Driver.Interactive
+                       Dedukti.Driver.Batch
+                       Dedukti.Driver.Compile
+                       Dedukti.Rule
+                       Dedukti.DkM
+                       Dedukti.Config
+                       Dedukti.Module
                        Dedukti.CodeGen
-                       Dedukti.CodeGen.Exts,
-                       Dedukti.Analysis.Rule,
-                       Dedukti.Analysis.Scope,
-                       Dedukti.Analysis.Dependency,
+                       Dedukti.CodeGen.Exts
+                       Dedukti.Analysis.Rule
+                       Dedukti.Analysis.Scope
+                       Dedukti.Analysis.Dependency
                        System.Console.Option
   build-depends:       base >= 4 && < 5, mtl >= 1.1, containers >= 0.2,
                        directory, filepath, process,
