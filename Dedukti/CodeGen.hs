@@ -17,6 +17,8 @@ class CodeGen o where
     -- | Emit code corresponding to an individual rule set.
     emit :: RuleSet (Id o) (A o) -> o
 
+    -- | Combine code from a number of rule sets, typically forming a module,
+    -- into a bundle.
     coalesce :: [o] -> Bundle o
 
     -- | Produce the byte sequence to write to a file, given the code

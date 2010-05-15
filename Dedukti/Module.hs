@@ -34,6 +34,7 @@ import qualified StringTable.Atom as Atom
 import StringTable.Atom (Atom)
 
 
+-- | A generic stack-like datatype for representing hierarchical names.
 data Hierarchy = !Hierarchy :. !Atom | Root
                  deriving (Eq, Ord, Show)
 

@@ -11,6 +11,9 @@ import qualified Dedukti.Rule as Rule
 import Data.ByteString.Lazy (ByteString)
 
 
+dk = QuasiQuote { quoteExp = parse "<interactive>"
+                , quoteDec = undefined }
+
 -- | Emit Haskell code for one module.
 eval :: String -> ByteString
 eval input =

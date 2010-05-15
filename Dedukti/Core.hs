@@ -76,6 +76,7 @@ data RuleSet id a = RS { rs_name :: id
 
 type Module id a = ([Binding id a], [TyRule id a])
 
+-- | Type families used to project out the type parameters from the datatypes.
 type family Id t
 type family A t
 

@@ -2,8 +2,9 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
--- The batch driver. It compiles all given targets and all their dependencies,
--- also invoking the Haskell compiler on the generated source code.
+-- The batch driver. It compiles all given targets and all their dependencies
+-- (using the Compile driver), also invoking the Haskell compiler on the
+-- generated source code.
 
 module Dedukti.Driver.Batch (make) where
 
@@ -23,6 +24,7 @@ import System.Directory (copyFile)
 import Data.Char (toUpper)
 
 
+-- The staleness check.
 cmp x y = do
   s <- io $ IO.isStale x y
   say Debug $ text "Compared" <+> text x <+> text y <> text ":" <+> text (show s)

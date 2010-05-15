@@ -24,6 +24,8 @@ instance Show NonContiguousRules where
 
 instance Exception NonContiguousRules
 
+-- | All rules for a same constant must be given contiguously, without
+-- intervening rules for other constants.
 checkOrdering :: [TyRule Qid a] -> DkM ()
 checkOrdering rules = do
   say Verbose $ text "Checking rule contiguity ..."
