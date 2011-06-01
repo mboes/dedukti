@@ -293,8 +293,8 @@ hand side and an expression on the right hand side of a long arrow. A
 Here is an example:
 
 @example
-S : nat.
 O : nat.
+S : nat -> nat.
 [y : nat] plus O y --> y.
 [x : nat, y : nat] plus (S x) y --> S (plus x y).
 @end example
