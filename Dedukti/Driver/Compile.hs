@@ -9,12 +9,15 @@ module Dedukti.Driver.Compile (compile, compileAST) where
 import Dedukti.Module
 import Dedukti.Parser
 import qualified Dedukti.Parser.Interface as Interface
+import qualified Dedukti.Config as Config
 import Dedukti.DkM
 import Dedukti.Core
 import Dedukti.Analysis.Dependency
 import Dedukti.Analysis.Scope
 import Control.Applicative
-import qualified Dedukti.CodeGen.Exts as CG
+import qualified Dedukti.CodeGen as CG
+import qualified Dedukti.CodeGen.Exts
+--import qualified Dedukti.CodeGen.Lua
 import qualified Dedukti.Rule as Rule
 import qualified Dedukti.Analysis.Rule as Rule
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -55,7 +58,7 @@ compile mod = do
   config <- configuration
   compileAST mod =<< return (parse config path) `ap` io (B.readFile path)
 
--- | Emit Haskell code for one module, starting from the AST.
+-- | Emit code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> DkM ()
 compileAST mod src@(decls, rules) = do
   let deps = collectDependencies src
@@ -73,6 +76,13 @@ compileAST mod src@(decls, rules) = do
   mapM_ Rule.checkHead rules
   say Debug $ pretty $ Rule.ruleSets decls rules
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
-  let code = map CG.emit (selfQualify mod (Rule.ruleSets decls rules)) :: [CG.Code]
-  io $ B.writeFile (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
+  let rs = selfQualify mod (Rule.ruleSets decls rules)
+  parameter Config.cg >>= \cg -> case cg of
+    Just _ -> undefined
+    Nothing -> goCG (undefined :: Dedukti.CodeGen.Exts.Code) mod rs deps
   io $ B.writeFile (ifacePathFromModule mod) $ interface src
+  where goCG :: forall g. CG.CodeGen g => g -> MName -> [RuleSet (Id g) (A g)] -> [MName] -> DkM ()
+        goCG _ mod rs deps = do
+          let code = map CG.emit rs :: [g]
+          io $ B.writeFile (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
+
