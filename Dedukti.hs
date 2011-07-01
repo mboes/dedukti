@@ -27,6 +27,7 @@ import Data.Version
 data Flag = FlagMake
           | FlagJobs Int
           | FlagFormat Config.Format
+          | FlagCodeGen Config.CodeGen
           | FlagHelp | FlagVersion
           | FlagVerbose | FlagVeryVerbose
             deriving (Eq, Ord, Show)
@@ -40,6 +41,8 @@ flagDescriptions =
      "Force recognizing input as (human-readable) external format.")
   , ([Nullary "-fprefix-notation" (FlagFormat Config.Prefix)],
      "Force recognizing input as (fast) prefix format.")
+  , ([Nullary "-flua" (FlagCodeGen Config.Lua)],
+     "Compile to Lua code.")
   , ([Unary "-v[v]" $ \arg -> if null arg then FlagVerbose else FlagVeryVerbose],
      "Be verbose, -vv to be even more verbose.")
   , (zipWith ($) [Nullary "-h", Nullary "--help"] (repeat FlagHelp),
@@ -66,6 +69,7 @@ initializeConfiguration = foldr aux Config.defaultConfig
     where aux FlagVerbose c     = c { Config.verbosity = Verbose }
           aux FlagVeryVerbose c = c { Config.verbosity = Debug }
           aux (FlagFormat f) c  = c { Config.format = Just f }
+          aux (FlagCodeGen g) c = c { Config.cg = Just g }
           aux (FlagJobs n) c    = c { Config.jobs = n }
           aux _ c               = c
 

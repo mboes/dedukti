@@ -16,11 +16,15 @@ data Verbosity = Quiet | Verbose | Debug
 data Format = External | Prefix
               deriving (Eq, Ord, Show)
 
+data CodeGen = HaskellExts | Lua
+               deriving (Eq, Ord, Show)
+
 data Config = Config
     { imageName :: FilePath
     , hsCompiler :: FilePath
     , verbosity :: Verbosity
     , format :: Maybe Format    -- ^ @Just format@ if input format is forced.
+    , cg :: Maybe CodeGen       -- ^ @Just cg@ if output code is forced.
     , jobs :: Int               -- ^ Number of simultaneous jobs to run.
     }
 
@@ -29,5 +33,6 @@ defaultConfig =
            , hsCompiler = "ghc"
            , verbosity = Quiet
            , format = Nothing
+           , cg = Nothing
            , jobs = 1 }
 
