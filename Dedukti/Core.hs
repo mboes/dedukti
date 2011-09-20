@@ -18,8 +18,8 @@ module Dedukti.Core
     -- * Environments
     , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!)
     , isin, fromBindings
-    -- * Annotations
-    , Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
+    -- * Anntoations
+    , annot, Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
     -- * Smart constructors
     , abstract, apply, unapply
     -- * Transformations
@@ -156,6 +156,15 @@ data Unannot = Unannot deriving (Eq, Ord, Show)
 
 -- | Unannot should stay abstract. |nann| constructs a value of type |Unannot|.
 nann = Unannot
+
+-- | Annotation extraction.
+annot (Lam _ _ a) = a
+annot (Pi _ _ a)  = a
+annot (Let _ _ a) = a
+annot (App _ _ a) = a
+annot (Var _ a)   = a
+annot _ = error "No annotation."
+
 
 -- | Annotation operator.
 (%%) :: (a -> Expr id a) -> a -> Expr id a
