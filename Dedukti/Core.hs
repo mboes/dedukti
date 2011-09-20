@@ -14,7 +14,7 @@ module Dedukti.Core
     -- * Convenience functions
     , (.->)
     , bind_name, bind_type
-    , isAbstraction, isApplication, isVariable, isAtomic, isApplicative
+    , isAbstraction, isVariable, isAtomic, isApplicative
     -- * Environments
     , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!)
     , isin, fromBindings
@@ -94,31 +94,36 @@ type instance A  (TyRule id a) = a
 type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
 
+(.->) :: Expr id a -> Expr id a -> a -> Expr id a
 x .-> y = Pi (Hole x) y
 infixr .->
 
-bind_type (x ::: ty) = ty
+bind_type :: Binding id a -> Expr id a
+bind_type (_ ::: ty) = ty
 bind_type (Hole ty) = ty
 
+bind_name :: Binding id a -> id
 bind_name (x ::: _) = x
 bind_name (Hole _) = error "Binding has no name."
 
+isAbstraction :: Expr id a -> Bool
 isAbstraction (Lam _ _ _) = True
 isAbstraction (Pi _ _ _)  = True
 isAbstraction _           = False
 
-isApplication (App _ _ _) = True
-isApplication _           = False
-
+isVariable :: Expr id a -> Bool
 isVariable (Var _ _) = True
 isVariable _         = False
 
+isAtomic :: Expr id a -> Bool
 isAtomic (Var _ _) = True
 isAtomic Type      = True
 isAtomic Kind      = True
 isAtomic _         = False
 
-isApplicative x = isAtomic x || isApplication x
+isApplicative :: Expr id a -> Bool
+isApplicative (App _ _ _) = True
+isApplicative t = isAtomic t
 
 env_bindings (Env bs _) = bs
 env_domain (Env bs map) = Map.keys map
@@ -131,6 +136,7 @@ emptyEnv = Env [] Map.empty
 -- | Extend an environment with a new binding.
 (&) :: Ord id => Binding id a -> Env id a -> Env id a
 x ::: ty & Env bs map = Env ((x ::: ty) : bs) (Map.insert x ty map)
+_ & Env _ _ = error "Binding is not a typing assumption."
 
 (!) :: Ord id => Env id a -> id -> Expr id a
 Env _ map ! x = map Map.! x
