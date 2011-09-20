@@ -36,6 +36,7 @@ import qualified Data.Map as Map
 
 data Expr id a = Lam (Binding id a) (Expr id a) a
                | Pi  (Binding id a) (Expr id a) a
+               | Let (Binding id a) (Expr id a) a
                | App (Expr id a) (Expr id a) a
                | Var id a
                | Type
@@ -44,9 +45,10 @@ data Expr id a = Lam (Binding id a) (Expr id a) a
 
 infix 2 :::
 
--- | A type decorating a variable, or a type on its own.
+-- | A type decorating a variable, a type on its own, or an expression defining a variable
 data Binding id a = id ::: Expr id a
                   | Hole (Expr id a)
+                  | id := Expr id a
                     deriving (Eq, Ord, Show)
 
 -- | A rewrite rule.
@@ -101,10 +103,12 @@ infixr .->
 bind_type :: Binding id a -> Expr id a
 bind_type (_ ::: ty) = ty
 bind_type (Hole ty) = ty
+bind_type (_ := _) = error "Binding has no type."
 
 bind_name :: Binding id a -> id
 bind_name (x ::: _) = x
 bind_name (Hole _) = error "Binding has no name."
+bind_name (x := _) = x
 
 isAbstraction :: Expr id a -> Bool
 isAbstraction (Lam _ _ _) = True
@@ -209,9 +213,11 @@ instance Ord id => Transform (Module id a) where
 instance Ord id => Transform (Binding id a) where
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
     transformM f (Hole ty) = return Hole `ap` transformM f ty
+    transformM f (x := t) = return (x :=) `ap` transformM f t
 
     descendM f (x ::: ty) = return (x :::) `ap` f ty
     descendM f (Hole ty) = return Hole `ap` f ty
+    descendM f (x := t) = return (x :=) `ap` f t
 
 instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ rule) =
