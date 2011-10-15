@@ -110,6 +110,12 @@ bind_name (x ::: _) = x
 bind_name (Hole _) = error "Binding has no name."
 bind_name (x := _) = x
 
+binding :: MonadPlus m => Expr id a -> m (Binding id a)
+binding (Lam b t _) = return b
+binding (Pi b t _) = return b
+binding (Let b t _) = return b
+binding _ = mzero
+
 isAbstraction :: Expr id a -> Bool
 isAbstraction (Lam _ _ _) = True
 isAbstraction (Pi _ _ _)  = True
