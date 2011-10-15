@@ -67,7 +67,7 @@ checkScopes env (decls, rules) = do
   mapM_ (chkRule topenv) rules
     where ins qid env = Map.insertWith' AtomSet.union (qid_qualifier qid)
                         (AtomSet.singleton (qid_stem qid)) env
-          mem qid env = maybe False (AtomSet.notMember (qid_stem qid))
+          notmem qid env = maybe False (AtomSet.notMember (qid_stem qid))
                         (Map.lookup (qid_qualifier qid) env)
           chkBinding env (x ::: ty) = do
             chkExpr env ty
@@ -79,7 +79,7 @@ checkScopes env (decls, rules) = do
             ruleenv <- foldM chkBinding topenv $ env_bindings env
             descendM (chkExpr (Map.unionWith AtomSet.union topenv ruleenv)) rule
           chkExpr env t@(Var x _) = do
-            when (x `mem` env) (throw $ ScopeError x)
+            when (x `notmem` env) (throw $ ScopeError x)
             return (t :: Expr Qid a)
           chkExpr env (Lam (x ::: ty) t _) = do
             chkExpr env ty
