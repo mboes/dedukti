@@ -199,6 +199,10 @@ abstract [] t _ = t
 abstract (x:xs) t (a:annots) = Lam x (abstract xs t annots) %% a
 abstract _ _ _ = error "Fewer annotations than number of variables."
 
+unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
+unabstract (Lam b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
+unabstract t k = k [] t []
+
 -- | Invariant: in apply ts annots, length annots == length ts - 1.
 apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
 apply t [] _ = t
@@ -206,10 +210,11 @@ apply t (x:xs) (a:annots) = apply (App t x %% a) xs annots
 apply _ _ _= error "Fewer annotations than number of applications."
 
 -- | Turn nested applications into a list.
-unapply :: Expr id a -> [Expr id a]
-unapply = reverse . aux where
-    aux (App t1 t2 _) = t2 : aux t1
-    aux t = [t]
+unapply :: Expr id a -> (Expr id a -> [Expr id a] -> [a] -> r) -> r
+unapply t k = go [] [] t where
+  go xs as (App t1 t2 a) = go (t2:xs) (a:as) t1
+  go xs as t = k t xs as
+
 
 class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms.
