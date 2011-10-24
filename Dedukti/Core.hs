@@ -249,7 +249,9 @@ instance Ord id => Transform (Expr id a) where
       t' <- transformM f t
       f $ B (x ::: ty') t' a
     transformM f (A t1 t2 a) = do
-      f =<< return A `ap` transformM f t1 `ap` transformM f t2 `ap` return a
+      t1' <- transformM f t1
+      t2' <- transformM f t2
+      f $ A t1' t2' a
     transformM f t = f t
 
     descendM f (B (L x) t a) = do
