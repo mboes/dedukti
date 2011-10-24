@@ -12,7 +12,6 @@ module Dedukti.Core
     -- * Type functions
     , Id, A
     -- * Convenience functions
-    , (.->)
     , bind_name, bind_type
     , isAbstraction, isVariable, isAtomic, isApplicative
     -- * Environments
@@ -21,7 +20,7 @@ module Dedukti.Core
     -- * Anntoations
     , annot, Unannot, nann, (%%), (%%%), (<%%>), (<%%%>)
     -- * Smart constructors
-    , abstract, apply, unapply
+    , abstract, unabstract, apply, unapply
     -- * Transformations
     , Transform(..), transform, descend
     -- * Query
@@ -34,11 +33,9 @@ import Control.Monad.State
 import qualified Data.Map as Map
 
 
-data Expr id a = Lam (Binding id a) (Expr id a) a
-               | Pi  (Binding id a) (Expr id a) a
-               | Let (Binding id a) (Expr id a) a
-               | App (Expr id a) (Expr id a) a
-               | Var id a
+data Expr id a = B (Binding id a) (Expr id a) a -- ^ Bind an assumption
+               | A (Expr id a) (Expr id a) a    -- ^ Application
+               | V id a                         -- ^ Variable occurrence
                | Type
                | Kind
                  deriving (Eq, Ord, Show)
@@ -46,9 +43,9 @@ data Expr id a = Lam (Binding id a) (Expr id a) a
 infix 2 :::
 
 -- | A type decorating a variable, a type on its own, or an expression defining a variable
-data Binding id a = id ::: Expr id a
-                  | Hole (Expr id a)
-                  | id := Expr id a
+data Binding id a = L id             -- ^ Lambda binding
+                  | id ::: Expr id a -- ^ Pi binding
+                  | id := Expr id a  -- ^ Let binding
                     deriving (Eq, Ord, Show)
 
 -- | A rewrite rule.
@@ -96,43 +93,32 @@ type instance A  (TyRule id a) = a
 type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
 
-(.->) :: Expr id a -> Expr id a -> a -> Expr id a
-x .-> y = Pi (Hole x) y
-infixr .->
-
 bind_type :: Binding id a -> Expr id a
 bind_type (_ ::: ty) = ty
-bind_type (Hole ty) = ty
-bind_type (_ := _) = error "Binding has no type."
+bind_type _ = error "Binding has no type."
 
 bind_name :: Binding id a -> id
+bind_name (L x) = x
 bind_name (x ::: _) = x
-bind_name (Hole _) = error "Binding has no name."
 bind_name (x := _) = x
 
-binding :: MonadPlus m => Expr id a -> m (Binding id a)
-binding (Lam b t _) = return b
-binding (Pi b t _) = return b
-binding (Let b t _) = return b
-binding _ = mzero
-
 isAbstraction :: Expr id a -> Bool
-isAbstraction (Lam _ _ _) = True
-isAbstraction (Pi _ _ _)  = True
-isAbstraction _           = False
+isAbstraction (B (L _) _ _) = True
+isAbstraction (B (_ ::: _) _ _)  = True
+isAbstraction _ = False
 
 isVariable :: Expr id a -> Bool
-isVariable (Var _ _) = True
-isVariable _         = False
+isVariable (V _ _) = True
+isVariable _       = False
 
 isAtomic :: Expr id a -> Bool
-isAtomic (Var _ _) = True
-isAtomic Type      = True
-isAtomic Kind      = True
-isAtomic _         = False
+isAtomic (V _ _) = True
+isAtomic Type = True
+isAtomic Kind = True
+isAtomic _ = False
 
 isApplicative :: Expr id a -> Bool
-isApplicative (App _ _ _) = True
+isApplicative (A _ _ _) = True
 isApplicative t = isAtomic t
 
 env_bindings (Env bs _) = bs
@@ -164,11 +150,9 @@ data Unannot = Unannot deriving (Eq, Ord, Show)
 nann = Unannot
 
 -- | Annotation extraction.
-annot (Lam _ _ a) = a
-annot (Pi _ _ a)  = a
-annot (Let _ _ a) = a
-annot (App _ _ a) = a
-annot (Var _ a)   = a
+annot (B _ _ a) = a
+annot (A _ _ a) = a
+annot (V _ a)   = a
 annot _ = error "No annotation."
 
 
@@ -196,23 +180,23 @@ infixl 1 <%%%>
 -- | Invariant: in abstract xs t annots, length annots == length xs.
 abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
-abstract (x:xs) t (a:annots) = Lam x (abstract xs t annots) %% a
+abstract (b:bs) t (a:annots) = B b (abstract bs t annots) %% a
 abstract _ _ _ = error "Fewer annotations than number of variables."
 
 unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
-unabstract (Lam b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
+unabstract (B b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
 unabstract t k = k [] t []
 
 -- | Invariant: in apply ts annots, length annots == length ts - 1.
 apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
 apply t [] _ = t
-apply t (x:xs) (a:annots) = apply (App t x %% a) xs annots
+apply t (x:xs) (a:annots) = apply (A t x %% a) xs annots
 apply _ _ _= error "Fewer annotations than number of applications."
 
 -- | Turn nested applications into a list.
 unapply :: Expr id a -> (Expr id a -> [Expr id a] -> [a] -> r) -> r
 unapply t k = go [] [] t where
-  go xs as (App t1 t2 a) = go (t2:xs) (a:as) t1
+  go xs as (A t1 t2 a) = go (t2:xs) (a:as) t1
   go xs as t = k t xs as
 
 
@@ -231,12 +215,12 @@ instance Ord id => Transform (Module id a) where
         return (,) `ap` mapM (descendM f) decls `ap` mapM (descendM f) rules
 
 instance Ord id => Transform (Binding id a) where
+    transformM f (L x) = return (L x)
     transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
-    transformM f (Hole ty) = return Hole `ap` transformM f ty
     transformM f (x := t) = return (x :=) `ap` transformM f t
 
+    descendM f (L x) = return (L x)
     descendM f (x ::: ty) = return (x :::) `ap` f ty
-    descendM f (Hole ty) = return Hole `ap` f ty
     descendM f (x := t) = return (x :=) `ap` f t
 
 instance Ord id => Transform (TyRule id a) where
@@ -261,44 +245,26 @@ instance Ord id => Transform (RuleSet id a) where
         return RS `ap` return rs_name `ap` descendM f rs_type `ap` mapM (descendM f) rs_rules
 
 instance Ord id => Transform (Expr id a) where
-    transformM f (Lam (x ::: ty) t a) = do
+    transformM f (B (L x) t a) = do
+      t' <- transformM f t
+      f $ B (L x) t' a
+    transformM f (B (x ::: ty) t a) = do
       ty' <- transformM f ty
       t' <- transformM f t
-      f $ Lam (x ::: ty') t' a
-    transformM f (Lam (Hole ty) t a) = do
-      ty' <- transformM f ty
-      t' <- transformM f t
-      f $ Lam (Hole ty') t' a
-    transformM f (Pi (x ::: ty) t a) = do
-      ty' <- transformM f ty
-      t' <- transformM f t
-      f $ Pi (x ::: ty') t' a
-    transformM f (Pi (Hole ty) t a) = do
-      ty' <- transformM f ty
-      t' <- transformM f t
-      f $ Pi (Hole ty') t' a
-    transformM f (App t1 t2 a) = do
-      f =<< return App `ap` transformM f t1 `ap` transformM f t2 `ap` return a
+      f $ B (x ::: ty') t' a
+    transformM f (A t1 t2 a) = do
+      f =<< return A `ap` transformM f t1 `ap` transformM f t2 `ap` return a
     transformM f t = f t
 
-    descendM f (Lam (x ::: ty) t a) = do
+    descendM f (B (L x) t a) = do
+      t' <- f t
+      return $ B (L x) t' a
+    descendM f (B (x ::: ty) t a) = do
       ty' <- f ty
       t' <- f t
-      return $ Lam (x ::: ty') t' a
-    descendM f (Lam (Hole ty) t a) = do
-      ty' <- f ty
-      t' <-  f t
-      return $ Lam (Hole ty') t' a
-    descendM f (Pi (x ::: ty) t a) = do
-      ty' <- f ty
-      t' <- f t
-      return $ Pi (x ::: ty') t' a
-    descendM f (Pi (Hole ty) t a) = do
-      ty' <- f ty
-      t' <- f t
-      return $ Pi (Hole ty') t' a
-    descendM f (App t1 t2 a) = do
-      return App `ap` f t1 `ap` f t2 `ap` return a
+      return $ B (x ::: ty') t' a
+    descendM f (A t1 t2 a) = do
+      return A `ap` f t1 `ap` f t2 `ap` return a
     descendM f t = return t
 
 -- | Pure bottom-up transformation on terms.
