@@ -93,10 +93,6 @@ type instance A  (TyRule id a) = a
 type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
 
-bind_type :: Binding id a -> Expr id a
-bind_type (_ ::: ty) = ty
-bind_type _ = error "Binding has no type."
-
 bind_name :: Binding id a -> id
 bind_name (L x) = x
 bind_name (x ::: _) = x
