@@ -30,13 +30,6 @@ import System.Exit
 import Text.PrettyPrint.Leijen hiding ((<$>))
 
 
-
-#if !MIN_VERSION_mtl(2,0,0)
-instance Applicative (ReaderT Config IO) where
-    pure = return
-    (<*>) = ap
-#endif
-
 newtype DkM a = DkM (ReaderT Config IO a)
     deriving (Monad, MonadIO, Functor, Applicative, MonadReader Config)
 
