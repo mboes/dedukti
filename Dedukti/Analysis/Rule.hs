@@ -44,5 +44,5 @@ instance Exception BadPattern
 
 checkHead :: TyRule Qid a -> DkM ()
 checkHead (env :@ lhs :--> rhs) =
-    let bad = [ x | App (Var x _) _ _ <- everyone lhs, x `isin` env ]
+    let bad = [ x | A (V x _) _ _ <- everyone lhs, x `isin` env ]
     in when (not (null bad)) $ throw (BadPattern bad)

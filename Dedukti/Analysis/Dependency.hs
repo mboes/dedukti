@@ -13,5 +13,5 @@ import qualified Data.Set as Set
 
 collectDependencies :: Module Qid a -> [MName]
 collectDependencies drs =
-    Set.toList $ Set.fromList [ m | Var x _ <- everyone drs
+    Set.toList $ Set.fromList [ m | V x _ <- everyone drs
                                   , Just m <- return (provenance x) ]

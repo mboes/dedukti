@@ -12,7 +12,7 @@ module Dedukti.Core
     -- * Type functions
     , Id, A
     -- * Convenience functions
-    , bind_name, bind_type
+    , bind_name
     , isAbstraction, isVariable, isAtomic, isApplicative
     -- * Environments
     , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!)

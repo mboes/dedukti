@@ -61,7 +61,7 @@ data Code = Var !Int
           | Kind
             deriving (Eq, Show)
 
-data Term = TLam !Term !(Term -> Term)
+data Term = TLam !(Term -> Term)
           | TPi  !Term !(Term -> Term)
           | TApp !Term !Term
           | TType

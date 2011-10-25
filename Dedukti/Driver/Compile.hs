@@ -29,12 +29,12 @@ selfQualify :: MName -> [Pa RuleSet] -> [Pa RuleSet]
 selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
                         in map (descend (f defs))
                                (map (\RS{..} -> RS{rs_name = qualify mod rs_name, ..}) rsets)
-    where f defs (Var x a) | Nothing <- provenance x
-                           , x `Set.member` defs = Var (qualify mod x) a
-          f defs (Lam (x ::: ty) t a) =
-              Lam (x ::: f defs ty) (f (Set.delete x defs) t) a
-          f defs (Pi (x ::: ty) t a) =
-              Pi (x ::: f defs ty) (f (Set.delete x defs) t) a
+    where f defs (V x a) | Nothing <- provenance x
+                         , x `Set.member` defs = V (qualify mod x) %% a
+          f defs (B (L x) t a) =
+              B (L x) (f (Set.delete x defs) t) %% a
+          f defs (B (x ::: ty) t a) =
+              B (x ::: f defs ty) (f (Set.delete x defs) t) %% a
           f defs t = descend (f defs) (t :: Pa Expr)
 
 -- | Read the interface file of each module name to collect the declarations

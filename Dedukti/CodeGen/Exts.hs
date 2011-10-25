@@ -129,9 +129,8 @@ defaultClause x n =
 constant c = [hs| Con $(Hs.strE $ show $ pretty c) |]
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
-pattern env (Var x _) | x `isin` env = Hs.pvar (varName x)
-pattern env expr = case unapply expr of
-                     Var x _ : xs -> primAppsP x (map (pattern env) xs)
+pattern env (V x _) | x `isin` env = Hs.pvar (varName x)
+pattern env expr = unapply expr (\(V x _) xs _ -> primAppsP x (map (pattern env) xs))
 
 -- | Build a pattern matching constant.
 primConP c = Hs.PParen (Hs.pApp (Hs.name "Con") [Hs.strP (show (pretty c))])
@@ -140,31 +139,26 @@ primAppsP c = foldl' primAppP (primConP c)
 
 -- | Turn an expression into object code with types erased.
 code :: Em Expr -> Hs.Exp
-code (Var x _)            = var x
-code (Lam (x ::: ty) t _) | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
-code (Lam (Hole ty) t _)  = [hs| Lam (\_ -> $(code t)) |]
-code (Pi (x ::: ty) t _)  | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
-code (Pi (Hole ty) t _)   = [hs| Pi $(code ty) (\_ -> $(code t)) |]
-code (App t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
-code Type                 = [hs| Type |]
+code (V x _)            = var x
+code (B (L x) t _)      | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
+code (B (x ::: ty) t _) | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
+code (A t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
+code Type               = [hs| Type |]
 
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
-term (Var x _)     = var (x .$ "box")
-term (Lam b t _)   = typedAbstraction [hs| TLam |] b (term t)
-term (Pi b t _)    = typedAbstraction [hs| TPi |] b (term t)
-term (App t1 t2 _) = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
-term Type          = [hs| TType |]
+term (V x _)            = var (x .$ "box")
+term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
+term (B (x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
+term (A t1 t2 _)        = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
+term Type               = [hs| TType |]
 
-typedAbstraction c b t =
-    case b of
-      x ::: ty -> [hs| $c $(dom ty) (\((box)) -> $ran) |]
-          where box = varName (x .$ "box")
-                ran = let n = varName x
-                      in [hs| let ((n)) = obj $(Hs.var box) in $t |]
-      Hole ty  -> [hs| $c $(dom ty) (\_ -> $t) |]
-    where dom ty = if isVariable ty
-                   then term ty else [hs| sbox $(term ty) Type $(code ty) |]
+typedAbstraction c x ty t = [hs| $c $(dom ty) (\((box)) -> $ran) |]
+  where box = varName (x .$ "box")
+        ran = let n = varName x
+              in [hs| let ((n)) = obj $(Hs.var box) in $t |]
+        dom ty = if isVariable ty
+                 then term ty else [hs| sbox $(term ty) Type $(code ty) |]
 
 varName :: Id Record -> Hs.Name
 varName = Hs.name . xencode . unqualify

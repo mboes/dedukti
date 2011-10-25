@@ -83,7 +83,7 @@ qident = ident <?> "qid" where
                return $ qualify (hierarchy [qualifier]) (qid name))
            <|> return (qid (B.pack (c:cs)))
       whiteSpace
-      return (Var x nann)
+      return (V x nann)
 
 -- | Unqualified name.
 ident = qid . B.pack <$> identifier
@@ -116,7 +116,7 @@ declaration = (binding <* dot)
 -- > domain ::= id ":" applicative
 -- >          | applicative
 domain = (    ((:::) <$> try (ident <* reservedOp ":") <*> applicative)
-          <|> (Hole <$> applicative))
+          <|> ((qid "hole" .$ "parser" :::) <$> applicative))
          <?> "domain"
 
 -- |
@@ -133,12 +133,12 @@ sort = Type <$ reserved "Type"
 -- >        | domain "=>" term
 -- >        | applicative
 term = do
-  d <- domain
+  d@(x ::: ty) <- domain
   choice [ pi d <?> "pi"
          , lambda d <?> "lambda"
-         , return (bind_type d)]
-    where pi d = Pi <$> pure d <* reservedOp "->" <*> term <%%> nann
-          lambda d = Lam <$> pure d <* reservedOp "=>" <*> term <%%> nann
+         , return ty ]
+    where pi d = B d <$ reservedOp "->" <*> term <%%> nann
+          lambda (x ::: _) = B (L x) <$ reservedOp "=>" <*> term <%%> nann
 
 -- | Constituents of an applicative form.
 --

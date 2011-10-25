@@ -69,22 +69,25 @@ checkScopes env (decls, rules) = do
                         (AtomSet.singleton (qid_stem qid)) env
           notmem qid env = maybe False (AtomSet.notMember (qid_stem qid))
                         (Map.lookup (qid_qualifier qid) env)
+          chkBinding env (L x) = return $ ins x env
           chkBinding env (x ::: ty) = do
             chkExpr env ty
             return $ ins x env
+          chkBinding env (x := t) = do
+            chkExpr env t
+            return $ ins x env
           chkRule topenv r@(env :@ rule) = do
-            let lhsvars = AtomSet.fromList [ qid_stem x | Var x _ <- everyone (Rule.head r) ]
+            let lhsvars = AtomSet.fromList [ qid_stem x | V x _ <- everyone (Rule.head r) ]
             mapM_ (\x -> when (qid_stem x `AtomSet.notMember` lhsvars) $
                          throw (IllegalEnvironment x)) (map bind_name $ env_bindings env)
             ruleenv <- foldM chkBinding topenv $ env_bindings env
             descendM (chkExpr (Map.unionWith AtomSet.union topenv ruleenv)) rule
-          chkExpr env t@(Var x _) = do
+          chkExpr env t@(V x _) = do
             when (x `notmem` env) (throw $ ScopeError x)
-            return (t :: Expr Qid a)
-          chkExpr env (Lam (x ::: ty) t _) = do
-            chkExpr env ty
+            return t
+          chkExpr env (B (L x) t _) = do
             chkExpr (ins x env) t
-          chkExpr env (Pi (x ::: ty) t _)  = do
+          chkExpr env (B (x ::: ty) t _)  = do
             chkExpr env ty
             chkExpr (ins x env) t
           chkExpr env t = descendM (chkExpr env) t

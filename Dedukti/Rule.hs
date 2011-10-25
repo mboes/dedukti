@@ -20,11 +20,10 @@ head :: TyRule id a -> Expr id a
 head (_ :@ (lhs :--> _)) = lhs
 
 headConstant :: TyRule id a -> id
-headConstant = unvar . Prelude.head . unapply . head where
-    unvar (Var x _) = x
+headConstant r = unapply (head r) (\(V x _) _ _ -> x)
 
 patterns :: TyRule id a -> [Expr id a]
-patterns = Prelude.tail . unapply . head
+patterns r = unapply (head r) (\_ ts _ -> ts)
 
 -- | Group set of rules by head constant.
 group :: Eq id => [TyRule id a] -> [[TyRule id a]]
@@ -32,7 +31,7 @@ group = groupBy f where
     f x y = headConstant x == headConstant y
 
 arity :: TyRule id a -> Int
-arity (_ :@ lhs :--> _) = length (unapply lhs) - 1
+arity = length . patterns
 
 -- | Combine declarations with their associated rules, if any.
 ruleSets :: (Show id, Show a, Ord id) => [Binding id a] -> [TyRule id a] -> [RuleSet id a]
@@ -58,12 +57,12 @@ linearize xs (env :@ lhs :--> rhs) =
         -- that of the variables they are unified to.
         env' = foldr (\(x,x') env -> x' ::: (env ! x) & env) env constraints
     in (env' :@ lhs' :--> rhs, constraints)
-    where f t@(Var x a) | x `isin` env = do
+    where f t@(V x a) | x `isin` env = do
             (xs, seen, constraints) <- get
             if x `Set.member` seen then
                 do let Stream.Cons x' xs' = xs
                    put (xs', Set.insert x' seen, (x, x'):constraints)
-                   return $ Var x' a else
+                   return $ V x' a else
                 do put (xs, Set.insert x seen, constraints)
                    return t
           f t = return t
