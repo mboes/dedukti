@@ -27,7 +27,7 @@ module Dedukti.Runtime
 import qualified Data.ByteString.Char8 as B
 import Control.Exception
 import Text.Show.Functions ()
-import Data.Typeable hiding (typeOf)
+import Data.Typeable
 import Prelude hiding (pi, catch)
 import Data.Time.Clock
 import Text.PrettyPrint.Leijen
@@ -40,14 +40,18 @@ import System.Posix.Process (exitImmediately)
 data SortError = SortError
     deriving (Show, Typeable)
 
-data TypeError = TypeError
+data CheckError = CheckError
     deriving (Show, Typeable)
 
-data RuleError = RuleError Doc Doc
+data SynthError = SynthError
+    deriving (Show, Typeable)
+
+data RuleError = RuleError
     deriving (Show, Typeable)
 
 instance Exception SortError
-instance Exception TypeError
+instance Exception CheckError
+instance Exception SynthError
 instance Exception RuleError
 
 -- Convertible and static terms.
@@ -103,20 +107,23 @@ bbox = box [Type, Kind]
 sbox = box [Type]
 
 box sorts ty ty_code obj_code
-    | typeOf 0 ty `elem` sorts = Box ty_code obj_code
+    | synth 0 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw SortError
 
-typeOf :: Int -> Term -> Code
-typeOf n (Box ty _) = ty
-typeOf n (TLam (Box Type a) f) = Pi a (\x -> typeOf n (f (Box a x)))
-typeOf n (TPi (Box Type a) f) = typeOf (n + 1) (f (Box a (Var n)))
-typeOf n (TApp t1 (Box ty2 t2))
-    | Pi tya f <- typeOf n t1, convertible n tya ty2 = f t2
-typeOf n (TApp t1 (UBox tty2 t2))
-    | Pi tya f <- typeOf n t1, ty2 <- typeOf n tty2,
+check :: Int -> Term -> Code -> Bool
+check n (TLam f) (Pi a f') = check (n + 1) (f (Box a (Var n))) (f' (Var n))
+check n t ty = convertible n (synth n t) ty
+
+synth :: Int -> Term -> Code
+synth n (Box ty _) = ty
+synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
+synth n (TApp t1 (Box ty2 t2))
+    | Pi tya f <- synth n t1, convertible n tya ty2 = f t2
+synth n (TApp t1 (UBox tty2 t2))
+    | Pi tya f <- synth n t1, ty2 <- synth n tty2,
       convertible n tya ty2 = f t2
-typeOf n TType = Kind
-typeOf n t = throw TypeError
+synth n TType = Kind
+synth n t = throw SynthError
 
 checkDeclaration :: String -> Term -> IO ()
 checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) handler
@@ -125,8 +132,8 @@ checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) h
             throw e
 
 checkRule :: Term -> Term -> Term
-checkRule lhs rhs | convertible 0 (typeOf 0 lhs) (typeOf 0 rhs) = emptyBox
-                  | otherwise = throw $ RuleError (pretty (typeOf 0 lhs)) (pretty (typeOf 0 rhs))
+checkRule lhs rhs | ty <- synth 0 lhs, check 0 rhs ty = emptyBox
+                  | otherwise = throw $ RuleError
 
 start :: IO UTCTime
 start = do
