@@ -46,12 +46,16 @@ data CheckError = CheckError
 data SynthError = SynthError
     deriving (Show, Typeable)
 
+data ConvError = ConvError Doc Doc
+    deriving (Show, Typeable)
+
 data RuleError = RuleError
     deriving (Show, Typeable)
 
 instance Exception SortError
 instance Exception CheckError
 instance Exception SynthError
+instance Exception ConvError
 instance Exception RuleError
 
 -- Convertible and static terms.
@@ -82,18 +86,28 @@ ap t1 t2 = App t1 t2
 obj :: Term -> Code
 obj (Box _ obj) = obj
 
-convertible :: Int -> Code -> Code -> Bool
-convertible n (Var x) (Var x') = x == x'
-convertible n (Con c) (Con c') = c == c'
-convertible n (Lam t) (Lam t') =
-    convertible (n + 1) (t (Var n)) (t' (Var n))
-convertible n (Pi ty1 ty2) (Pi ty3 ty4) =
-    convertible n ty1 ty3 && convertible (n + 1) (ty2 (Var n)) (ty4 (Var n))
-convertible n (App t1 t2) (App t3 t4) =
-    convertible n t1 t3 && convertible n t2 t4
-convertible n Type Type = True
-convertible n Kind Kind = True
-convertible n _ _ = False
+-- | In the runtime, predicates are represented in half CPS, taking a success
+-- continuation but throw an exception on failure.
+type Prop = forall r. r -> r
+
+-- | Check that a predicate really evaluates to True.
+reflect :: Prop -> Bool
+reflect k | r <- k True = r
+
+convertible :: Int -> Code -> Code -> Prop
+convertible n t1 t2 k | conv n t1 t2 = k
+                      | otherwise = throw $ ConvError (prettyOpen n t1) (prettyOpen n t2)
+  where conv n (Var x) (Var x') = x == x'
+        conv n (Con c) (Con c') = c == c'
+        conv n (Lam t) (Lam t') =
+          conv (n + 1) (t (Var n)) (t' (Var n))
+        conv n (Pi ty1 ty2) (Pi ty3 ty4) =
+          conv n ty1 ty3 && conv (n + 1) (ty2 (Var n)) (ty4 (Var n))
+        conv n (App t1 t2) (App t3 t4) =
+          conv n t1 t3 && conv n t2 t4
+        conv n Type Type = True
+        conv n Kind Kind = True
+        conv n _ _ = False
 
 -- | A box in which we didn't put anything.
 emptyBox = Box undefined undefined
@@ -110,7 +124,7 @@ box sorts ty ty_code obj_code
     | synth 0 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw SortError
 
-check :: Int -> Term -> Code -> Bool
+check :: Int -> Term -> Code -> Prop
 check n (TLam f) (Pi a f') = check (n + 1) (f (Box a (Var n))) (f' (Var n))
 check n t ty = convertible n (synth n t) ty
 
@@ -118,10 +132,12 @@ synth :: Int -> Term -> Code
 synth n (Box ty _) = ty
 synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
 synth n (TApp t1 (Box ty2 t2))
-    | Pi tya f <- synth n t1, convertible n tya ty2 = f t2
+    | Pi tya f <- synth n t1,
+      reflect (convertible n tya ty2) = f t2
 synth n (TApp t1 (UBox tty2 t2))
-    | Pi tya f <- synth n t1, ty2 <- synth n tty2,
-      convertible n tya ty2 = f t2
+    | Pi tya f <- synth n t1,
+      ty2 <- synth n tty2,
+      reflect (convertible n tya ty2) = f t2
 synth n TType = Kind
 synth n t = throw SynthError
 
@@ -132,7 +148,7 @@ checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) h
             throw e
 
 checkRule :: Term -> Term -> Term
-checkRule lhs rhs | ty <- synth 0 lhs, check 0 rhs ty = emptyBox
+checkRule lhs rhs | ty <- synth 0 lhs, reflect (check 0 rhs ty) = emptyBox
                   | otherwise = throw $ RuleError
 
 start :: IO UTCTime

@@ -47,7 +47,8 @@ source-repository head
 library
   exposed-modules:     Dedukti.Runtime
   build-depends:       time >= 1.1, unix >= 2.3
-  extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances
+  extensions:          DeriveDataTypeable, PatternGuards, FlexibleInstances,
+                       RankNTypes
   ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
 
 executable dedukti
