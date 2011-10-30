@@ -152,11 +152,15 @@ stop t = do
 -- Pretty printing.
 
 instance Pretty Code where
-  pretty = p 0 where
-    p n (Var x) = text (show x)
-    p n (Con c) = text (show c)
-    p n (Lam f) = parens (int n <+> text "=>" <+> p (n + 1) (f (Var n)))
-    p n (Pi ty1 ty2) = parens (int n <+> colon <+> p n ty1 <+> text "->" <+> p (n + 1) (ty2 (Var n)))
-    p n (App t1 t2) = parens (p n t1 <+> p n t2)
-    p n Type = text "Type"
-    p n Kind = text "Kind"
+  pretty = prettyOpen 0
+
+prettyOpen n (Var x) = text (show x)
+prettyOpen n (Con c) = text (show c)
+prettyOpen n (Lam f) =
+  parens (int n <+> text "=>" <+> prettyOpen (n + 1) (f (Var n)))
+prettyOpen n (Pi ty1 ty2) =
+  parens (int n <+> colon <+> prettyOpen n ty1 <+> text "->" <+> prettyOpen (n + 1) (ty2 (Var n)))
+prettyOpen n (App t1 t2) =
+  parens (prettyOpen n t1 <+> prettyOpen n t2)
+prettyOpen n Type = text "Type"
+prettyOpen n Kind = text "Kind"
