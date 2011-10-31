@@ -6,7 +6,6 @@
 -- names to source files and vice-versa. Qualified names, as required in the
 -- presence of modules, are also defined here.
 
-{-# OPTIONS_GHC -funbox-strict-fields #-}
 module Dedukti.Module
     ( -- * Data types
       Hierarchy(..), MName
@@ -35,7 +34,7 @@ import StringTable.Atom (Atom)
 
 
 -- | A generic stack-like datatype for representing hierarchical names.
-data Hierarchy = !Hierarchy :. !Atom | Root
+data Hierarchy = !Hierarchy :. {-# UNPACK #-} !Atom | Root
                  deriving (Eq, Ord, Show)
 
 type MName = Hierarchy

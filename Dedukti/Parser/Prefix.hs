@@ -6,7 +6,6 @@
 -- polish notation. This format has the advantage of being very easy to parse
 -- efficiently.
 
-{-# OPTIONS_GHC -funbox-strict-fields #-}
 module Dedukti.Parser.Prefix (Pa, parse) where
 
 import {-# SOURCE #-} Dedukti.Parser
