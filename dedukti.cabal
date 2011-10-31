@@ -59,7 +59,6 @@ executable dedukti
                        Dedukti.Parser.Prefix
                        Dedukti.Parser.Interface
                        Dedukti.Pretty
-                       Dedukti.Driver.Interactive
                        Dedukti.Driver.Batch
                        Dedukti.Driver.Compile
                        Dedukti.Rule
