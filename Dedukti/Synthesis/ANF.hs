@@ -18,8 +18,8 @@ monadic = descend (go 0) where
   go n (A t1 t2 a) =
     let t1' = if isAtomic t1 then t1 else go n t1
         t2' = if isAtomic t2 then t2 else go n t2
-        x = qid (B.append "x" (B.pack $ show n)) .$ "anf"
-        y = qid (B.append "y" (B.pack $ show n)) .$ "anf"
+        x = qid "x" .$ B.pack (show n) .$ "anf"
+        y = qid "y" .$ B.pack (show n) .$ "anf"
     in B (x := t1') (B (y := t2') (A (V x %% annot t1) (V y %% annot t2) %% a) %% a) %% a
   go n e = e
 
