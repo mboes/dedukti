@@ -42,6 +42,8 @@ instance Show BadPattern where
 
 instance Exception BadPattern
 
+-- | Check that none of the pattern heads are listed as pattern
+-- variables in the rule environment.
 checkHead :: TyRule Qid a -> DkM ()
 checkHead (env :@ lhs :--> rhs) =
     let bad = [ x | A (V x _) _ _ <- everyone lhs, x `isin` env ]

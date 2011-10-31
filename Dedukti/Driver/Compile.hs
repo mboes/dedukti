@@ -24,7 +24,10 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Set as Set
 
 
--- | Qualify all occurrences of identifiers defined in current module.
+-- | Qualify all occurrences of identifiers defined in current
+-- module. This gives us an easy way to distinguish constants,
+-- belonging to the global environment, from variables, which are
+-- locally bound in a term.
 selfQualify :: MName -> [Pa RuleSet] -> [Pa RuleSet]
 selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
                         in map (descend (f defs))
@@ -62,9 +65,9 @@ compile mod = do
 compileAST :: MName -> Pa Module -> DkM ()
 compileAST mod src@(decls, rules) = do
   let deps = collectDependencies src
-  -- For the purposes of scope checking it is necessary to load in the
-  -- environment all those declarations from immediate dependencies. For this
-  -- we read an interface file, much faster to parse than the actual
+  -- For the purposes of scope checking, it is necessary to load in the
+  -- environment all the declarations from immediate dependencies. For this
+  -- we read an interface file - much faster to parse than the actual
   -- dependencies themselves.
   say Verbose $ text "Populating environment for" <+> text (show mod) <+> text "..."
   extdecls <- populateInitialEnvironment deps

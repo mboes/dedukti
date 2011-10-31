@@ -35,14 +35,15 @@ import qualified Data.Map as Map
 
 data Expr id a = B (Binding id a) (Expr id a) a -- ^ Bind an assumption
                | A (Expr id a) (Expr id a) a    -- ^ Application
-               | V id a                         -- ^ Variable occurrence
+               | V id a                         -- ^ Variable
                | Type
                | Kind
                  deriving (Eq, Ord, Show)
 
 infix 2 :::
 
--- | A type decorating a variable, a type on its own, or an expression defining a variable
+-- | A type decorating a variable, a type on its own, or an expression
+-- defining a variable
 data Binding id a = L id             -- ^ Lambda binding
                   | id ::: Expr id a -- ^ Pi binding
                   | id := Expr id a  -- ^ Let binding
@@ -53,9 +54,10 @@ data Rule id a = Expr id a :--> Expr id a
                  deriving (Eq, Ord, Show)
 infix 9 :-->
 
--- | An environment is and *ordered* list of bindings, since types can depend
--- on items defined earlier in environment. We opt for a hybrid
--- representation, for both fast membership tests and conservation of order.
+-- | An environment is and /ordered/ list of bindings, since types can
+-- depend on items defined earlier in environment. We opt for a hybrid
+-- representation, for both fast membership tests and conservation of
+-- order.
 data Env id a = Env [Binding id a] (Map.Map id (Expr id a))
                 deriving (Eq, Ord, Show)
 
@@ -98,6 +100,7 @@ bind_name (L x) = x
 bind_name (x ::: _) = x
 bind_name (x := _) = x
 
+-- | A lambda or Pi abstraction.
 isAbstraction :: Expr id a -> Bool
 isAbstraction (B (L _) _ _) = True
 isAbstraction (B (_ ::: _) _ _)  = True
@@ -113,6 +116,7 @@ isAtomic Type = True
 isAtomic Kind = True
 isAtomic _ = False
 
+-- | An atomic term or an application.
 isApplicative :: Expr id a -> Bool
 isApplicative (A _ _ _) = True
 isApplicative t = isAtomic t
@@ -133,19 +137,22 @@ _ & Env _ _ = error "Binding is not a typing assumption."
 (!) :: Ord id => Env id a -> id -> Expr id a
 Env _ map ! x = map Map.! x
 
+-- | Environment membership.
 isin :: Ord id => id -> Env id a -> Bool
 isin x (Env _ map) = Map.member x map
 
 fromBindings :: Ord id => [Binding id a] -> Env id a
 fromBindings = foldr (&) (Env [] Map.empty)
 
--- | Phantom type used to express no annotation.
+-- | The type of vacuous annotations.
 data Unannot = Unannot deriving (Eq, Ord, Show)
 
--- | Unannot should stay abstract. |nann| constructs a value of type |Unannot|.
+-- | Unannot should stay abstract. 'nann' constructs a value of type 'Unannot'.
+nann :: Unannot
 nann = Unannot
 
 -- | Annotation extraction.
+annot :: Expr id a -> a
 annot (B _ _ a) = a
 annot (A _ _ a) = a
 annot (V _ a)   = a
@@ -173,7 +180,7 @@ infixl 1 %%%
 infixl 1 <%%>
 infixl 1 <%%%>
 
--- | Invariant: in abstract xs t annots, length annots == length xs.
+-- | Invariant: in @abstract xs t annots@, @length annots == length xs@.
 abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
 abstract (b:bs) t (a:annots) = B b (abstract bs t annots) %% a
@@ -183,13 +190,13 @@ unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
 unabstract (B b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
 unabstract t k = k [] t []
 
--- | Invariant: in apply ts annots, length annots == length ts - 1.
+-- | Invariant: in @apply t ts annots@, @length annots == length ts@.
 apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
 apply t [] _ = t
 apply t (x:xs) (a:annots) = apply (A t x %% a) xs annots
 apply _ _ _= error "Fewer annotations than number of applications."
 
--- | Turn nested applications into a list.
+-- | Decompose nested applications into a head and a list of arguments.
 unapply :: Expr id a -> (Expr id a -> [Expr id a] -> [a] -> r) -> r
 unapply t k = go [] [] t where
   go xs as (A t1 t2 a) = go (t2:xs) (a:as) t1

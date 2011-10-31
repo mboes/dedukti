@@ -72,6 +72,7 @@ say v msg = do v' <- parameter Config.verbosity
 io :: IO a -> DkM a
 io = liftIO
 
+-- | 'Control.Exception.onException' lifted to the 'DkM' monad.
 onException :: DkM a -> DkM b -> DkM a
 onException x y = do
   conf <- configuration

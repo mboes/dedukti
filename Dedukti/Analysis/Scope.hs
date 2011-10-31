@@ -43,9 +43,10 @@ instance Show IllegalEnvironment where
 
 instance Exception IllegalEnvironment
 
+-- | Check that top-level constants are declared only once.
 checkUniqueness :: Module Qid a -> DkM ()
 checkUniqueness (decls, rules) = do
-  say Verbose $ text "Checking that variables only appear once in rule environments ..."
+  say Verbose $ text "Checking that constants are declared only once ..."
   chk decls
   mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
     where chk bs = mapM_ (\x -> when (length x > 1)
@@ -60,6 +61,7 @@ initContext :: [Qid]                -- ^ declarations from other modules.
 initContext qids =
   Map.fromListWith AtomSet.union $ map (\qid -> (qid_qualifier qid, AtomSet.singleton (qid_stem qid))) qids
 
+-- | Check that all variables and constants are well scoped.
 checkScopes :: Context -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
   say Verbose $ text "Checking that all declarations are well scoped ..."

@@ -19,11 +19,18 @@ import Data.List (partition, isPrefixOf)
 import System.IO
 
 
-data FlagArity f = Nullary String f
-                 | Unary String (String -> f)
+-- | Flag information. The name of the flag should include any leading
+-- hyphens.
+data FlagArity f = Nullary String f -- ^ A flag of the form @--flag@
+                 | Unary String (String -> f) -- ^ A flag of the form @-fx@
 
+-- | Flags paired with a help string describing what they do. One ore
+-- more flags can have the same help string.
 type Description f = [([FlagArity f], String)]
 
+-- | Parse the arguments from the command line into a triple
+-- consisting of a list of options, a list of non options and a list
+-- of errors.
 parseCmdline :: Description f -> [String] -> ([f], [String], [String])
 parseCmdline desc args =
   let (hyphened, rest) = partition (\arg -> "-" `isPrefixOf` arg) args
@@ -44,9 +51,11 @@ parseCmdline desc args =
           lookupFlag name arg (_:desc) = lookupFlag name arg desc
           toFlag x | (name, arg) <- unpack x = lookupFlag name arg flagmap
 
+-- | Print short help message to stderr.
 printUsage :: Doc -> IO ()
 printUsage = hPutStrLn stderr . show
 
+-- | Print long help message to stdout.
 printHelp :: Doc -> Description f -> IO ()
 printHelp usage desc = do
   let flags = vsep (map pflag desc)

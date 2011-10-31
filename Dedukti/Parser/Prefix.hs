@@ -2,9 +2,9 @@
 -- Copyright : © 2009 CNRS - École Polytechnique - INRIA
 -- License   : GPL
 --
--- Parser for an alternative format for Dedukti source files using reverse
--- polish notation. This format has the advantage of being very easy to parse
--- efficiently.
+-- Parser for an alternative format for Dedukti source files using
+-- polish notation. This format has the advantage of being very easy
+-- to parse efficiently.
 
 module Dedukti.Parser.Prefix (Pa, parse) where
 

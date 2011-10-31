@@ -16,12 +16,15 @@ import Prelude hiding (head)
 import qualified Prelude
 
 
+-- | Left hand side of a rule.
 head :: TyRule id a -> Expr id a
 head (_ :@ (lhs :--> _)) = lhs
 
+-- | The head of the head of the rule.
 headConstant :: TyRule id a -> id
 headConstant r = unapply (head r) (\(V x _) _ _ -> x)
 
+-- | The patterns to which the head constant is applied.
 patterns :: TyRule id a -> [Expr id a]
 patterns r = unapply (head r) (\_ ts _ -> ts)
 

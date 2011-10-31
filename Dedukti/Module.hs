@@ -33,7 +33,9 @@ import qualified StringTable.Atom as Atom
 import StringTable.Atom (Atom)
 
 
--- | A generic stack-like datatype for representing hierarchical names.
+-- | A generic stack-like datatype for representing hierarchical
+-- names. Names components are hash consed (or "interned") for
+-- equality test in constant time and a smaller memory footprint.
 data Hierarchy = !Hierarchy :. {-# UNPACK #-} !Atom | Root
                  deriving (Eq, Ord, Show)
 
