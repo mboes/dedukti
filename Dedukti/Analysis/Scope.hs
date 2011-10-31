@@ -60,7 +60,7 @@ initContext :: [Qid]                -- ^ declarations from other modules.
 initContext qids =
   Map.fromListWith AtomSet.union $ map (\qid -> (qid_qualifier qid, AtomSet.singleton (qid_stem qid))) qids
 
-checkScopes :: forall a. Show a => Context -> Module Qid a -> DkM ()
+checkScopes :: Context -> Module Qid a -> DkM ()
 checkScopes env (decls, rules) = do
   say Verbose $ text "Checking that all declarations are well scoped ..."
   topenv <- foldM chkBinding env decls
