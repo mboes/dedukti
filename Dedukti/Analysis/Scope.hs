@@ -43,10 +43,10 @@ instance Show IllegalEnvironment where
 
 instance Exception IllegalEnvironment
 
--- | Check that top-level constants are declared only once.
+-- | Check that all environments, including the global one, are linear.
 checkUniqueness :: Module Qid a -> DkM ()
 checkUniqueness (decls, rules) = do
-  say Verbose $ text "Checking that constants are declared only once ..."
+  say Verbose $ text "Checking linearity of environments ..."
   chk decls
   mapM_ (\(env :@ _) -> chk (env_bindings env)) rules
     where chk bs = mapM_ (\x -> when (length x > 1)
