@@ -85,7 +85,7 @@ main = do
                      u <- usage
                      io $ printHelp u flagDescriptions
              | FlagVersion `elem` opts -> printVersion
-           _ | FlagMake `elem` opts -> do
+             | FlagMake `elem` opts -> do
                      unless (length files == 1) bailout
                      make [moduleFromPath (head files)]
              | otherwise -> do
