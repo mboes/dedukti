@@ -7,7 +7,7 @@
 -- should derive Show for all data types, then declare them instances
 -- of |Pretty| where appropriate.
 
-module Dedukti.Pretty (pretty) where
+module Dedukti.Pretty (Pretty(pretty)) where
 
 import Dedukti.Core
 import Dedukti.Module
