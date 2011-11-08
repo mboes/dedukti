@@ -7,6 +7,7 @@
 module Dedukti.Rule where
 
 import Dedukti.Core
+import qualified Dedukti.Reduction as Red
 import Data.List (groupBy, sortBy)
 import qualified Data.Stream as Stream
 import Control.Monad.State
@@ -18,22 +19,22 @@ import qualified Prelude
 
 -- | Left hand side of a rule.
 head :: TyRule id a -> Expr id a
-head (_ :@ (lhs :--> _)) = lhs
+head (_ :@ lhs :--> _) = lhs
 
 -- | The head of the head of the rule.
 headConstant :: TyRule id a -> id
-headConstant r = unapply (head r) (\(V x _) _ _ -> x)
+headConstant r = unabstract (head r) $ \_ t _ -> unapply t $ \(V x _) _ _ -> x
 
 -- | The patterns to which the head constant is applied.
-patterns :: TyRule id a -> [Expr id a]
-patterns r = unapply (head r) (\_ ts _ -> ts)
+patterns :: Ord id => TyRule id a -> [Expr id a]
+patterns r = unapply (Red.zeta (head r)) $ \_ ts _ -> ts
 
 -- | Group set of rules by head constant.
 group :: Eq id => [TyRule id a] -> [[TyRule id a]]
 group = groupBy f where
     f x y = headConstant x == headConstant y
 
-arity :: TyRule id a -> Int
+arity :: Ord id => TyRule id a -> Int
 arity = length . patterns
 
 -- | Combine declarations with their associated rules, if any.
