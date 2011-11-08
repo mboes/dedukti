@@ -30,6 +30,8 @@ instance Pretty id => Pretty (Expr id a) where
       pretty x <+> char ':' <+> parens (pretty dom) <+> text "->" <+> pretty ran
     pretty (B (x ::: dom) ran _) =
       pretty x <+> char ':' <+> pretty dom <+> text "->" <+> pretty ran
+    pretty (B (x := t') t _) =
+      text "let" <+> pretty x <+> char '=' <+> pretty t' <+> text "in" <+> pretty t
     pretty (A t1 t2 _) =
         let f = if isApplicative t1 then id else parens
             g = if isAtomic t2 then id else parens
