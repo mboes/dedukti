@@ -81,6 +81,7 @@ type Module id a = ([Binding id a], [TyRule id a])
 type family Id t
 type family A t
 
+type instance Id [t] = Id t
 type instance Id (Module id a) = id
 type instance Id (Binding id a) = id
 type instance Id (Rule id a) = id
@@ -88,6 +89,7 @@ type instance Id (TyRule id a) = id
 type instance Id (RuleSet id a) = id
 type instance Id (Expr id a) = id
 
+type instance A  [t] = A t
 type instance A  (Module id a) = a
 type instance A  (Binding id a) = a
 type instance A  (Rule id a) = a
@@ -271,6 +273,10 @@ instance Ord id => Transform (Expr id a) where
     descendM f (A t1 t2 a) = do
       return A `ap` f t1 `ap` f t2 `ap` return a
     descendM f t = return t
+
+instance Transform t => Transform [t] where
+  transformM f = mapM (transformM f)
+  descendM f = mapM (descendM f)
 
 -- | Pure bottom-up transformation on terms.
 transform :: Transform t => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t
