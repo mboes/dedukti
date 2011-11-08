@@ -139,18 +139,20 @@ primAppsP c = foldl' primAppP (primConP c)
 
 -- | Turn an expression into object code with types erased.
 code :: Em Expr -> Hs.Exp
-code (V x _)            = var x
 code (B (L x) t _)      | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
 code (B (x ::: ty) t _) | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
+code (B (x := t1) t2 _) | n <- varName x = [hs| let ((n)) = $(code t1) in $(code t2) |]
 code (A t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
+code (V x _)            = var x
 code Type               = [hs| Type |]
 
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
-term (V x _)            = var (x .$ "box")
 term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
 term (B (x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
-term (A t1 t2 _)        = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
+term (B (x := t1) t2 _) | n <- varName (x .$ "box") = [hs| TLet $(term t1) (\((n)) -> $(term t2)) |]
+term (A t1 t2 _)        = [hs| TApp $(term t1) $(term t2) |]
+term (V x _)            = var (x .$ "box")
 term Type               = [hs| TType |]
 
 typedAbstraction c x ty t = [hs| $c $(dom ty) (\((box)) -> $ran) |]

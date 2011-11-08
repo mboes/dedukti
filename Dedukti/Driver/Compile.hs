@@ -14,7 +14,8 @@ import Dedukti.DkM
 import Dedukti.Core
 import Dedukti.Analysis.Dependency
 import Dedukti.Analysis.Scope
-import Control.Applicative
+import Dedukti.Synthesis.ANF
+import Dedukti.Synthesis.CC
 import qualified Dedukti.CodeGen as CG
 import qualified Dedukti.CodeGen.Exts
 --import qualified Dedukti.CodeGen.Lua
@@ -22,6 +23,7 @@ import qualified Dedukti.Rule as Rule
 import qualified Dedukti.Analysis.Rule as Rule
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Set as Set
+import Control.Applicative
 
 
 -- | Qualify all occurrences of identifiers defined in current
@@ -53,6 +55,14 @@ populateInitialEnvironment deps =
 interface :: Pa Module -> B.ByteString
 interface (decls, _) = B.unlines (map (fromAtom . qid_stem . bind_name) decls)
 
+-- | Lift a pure code transformation to the 'DkM' monad.
+pass :: (Pretty t) => (t -> t) -> Doc -> (t -> DkM t)
+pass f s x = do
+  say Verbose s
+  let x' = f x
+  say Debug $ pretty x'
+  return x'
+
 -- | Emit Haskell code for one module.
 compile :: MName -> DkM ()
 compile mod = do
@@ -64,6 +74,7 @@ compile mod = do
 -- | Emit code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> DkM ()
 compileAST mod src@(decls, rules) = do
+  say Debug $ pretty $ Rule.ruleSets decls rules
   let deps = collectDependencies src
   -- For the purposes of scope checking, it is necessary to load in the
   -- environment all the declarations from immediate dependencies. For this
@@ -72,20 +83,29 @@ compileAST mod src@(decls, rules) = do
   say Verbose $ text "Populating environment for" <+> text (show mod) <+> text "..."
   extdecls <- populateInitialEnvironment deps
   say Verbose $ text "Checking" <+> text (show mod) <+> text "..."
-  checkUniqueness src
-  checkScopes extdecls src
-  Rule.checkOrdering rules
-  say Verbose $ text "Checking well formation of rule heads ..."
-  mapM_ Rule.checkHead rules
-  say Debug $ pretty $ Rule.ruleSets decls rules
+  {-# SCC "check" #-} do
+     {-# SCC "check/uniqueness" #-} checkUniqueness src
+     {-# SCC "check/scopes"     #-} checkScopes extdecls src
+     {-# SCC "check/ordering"   #-} Rule.checkOrdering rules
+     say Verbose $ text "Checking well formation of rule heads ..."
+     {-# SCC "check/heads"      #-} mapM_ Rule.checkHead rules
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
-  let rs = selfQualify mod (Rule.ruleSets decls rules)
+  rss <- {-# SCC "pass" #-} do
+        pass ({-# SCC "pass/qual"    #-} selfQualify mod)     (text "Self qualifying constants ...")
+    >=> pass ({-# SCC "pass/monadic" #-} descend monadic)     (text "Transformation to monadic form ...")
+    >=> pass ({-# SCC "pass/anf"     #-} descend anf)         (text "Reduction to administrative normal form ...")
+    >=> pass ({-# SCC "pass/cc"      #-} descend closureConv) (text "Closure converting ...")
+    >=> pass ({-# SCC "pass/hoist"   #-} descend hoist)       (text "Hoisting abstractions to toplevel ...")
+           $ Rule.ruleSets decls rules
   parameter Config.cg >>= \cg -> case cg of
     Just _ -> undefined
-    Nothing -> goCG (undefined :: Dedukti.CodeGen.Exts.Code) mod rs deps
+    Nothing -> {-# SCC "cg" #-} goCG (undefined :: Dedukti.CodeGen.Exts.Code) mod rss deps
   io $ B.writeFile (ifacePathFromModule mod) $ interface src
   where goCG :: forall g. CG.CodeGen g => g -> MName -> [RuleSet (Id g) (A g)] -> [MName] -> DkM ()
-        goCG _ mod rs deps = do
-          let code = map CG.emit rs :: [g]
-          io $ B.writeFile (objPathFromModule mod) $ CG.serialize mod deps $ CG.coalesce code
+        goCG _ mod rss deps = do
+          say Verbose $ text "Generating code ..."
+          let code = {-# SCC "cg/emit" #-} map CG.emit rss :: [g]
+          io $ ({-# SCC "cg/write"     #-} B.writeFile (objPathFromModule mod))
+             $ ({-# SCC "cg/serialize" #-} CG.serialize mod deps)
+             $ ({-# SCC "cg/coalesce"  #-} CG.coalesce code)
 

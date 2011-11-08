@@ -71,10 +71,10 @@ data Code = Var !Int
 
 data Term = TLam !(Term -> Term)
           | TPi  !Term !(Term -> Term)
+          | TLet !Term !(Term -> Term)
           | TApp !Term !Term
           | TType
           | Box Code Code
-          | UBox Term Code
             deriving Show
 
 instance Eq (Code -> Code)
@@ -134,10 +134,7 @@ synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
 synth n (TApp t1 (Box ty2 t2))
     | Pi tya f <- synth n t1,
       reflect (convertible n tya ty2) = f t2
-synth n (TApp t1 (UBox tty2 t2))
-    | Pi tya f <- synth n t1,
-      ty2 <- synth n tty2,
-      reflect (convertible n tya ty2) = f t2
+synth n (TLet t1 f) | ty <- synth n t1 = synth (n + 1) (f (Box ty (Var n)))
 synth n TType = Kind
 synth n t = throw SynthError
 
