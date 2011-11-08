@@ -88,7 +88,7 @@ executable dedukti
                        RecordWildCards, TypeSynonymInstances, ScopedTypeVariables
                        MultiParamTypeClasses,
                        TemplateHaskell, QuasiQuotes
-  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports -rtsopts
 
 
 executable dedukti-tests
