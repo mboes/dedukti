@@ -186,7 +186,8 @@ infixl 1 <%%%>
 abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
 abstract (b:bs) t (a:annots) = B b (abstract bs t annots) %% a
-abstract _ _ _ = error "Fewer annotations than number of variables."
+abstract bs _ as = error $ "abstract: " ++ show (length bs) ++ " bindings but only "
+                                        ++ show (length as) ++ " annotations."
 
 unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
 unabstract (B b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
