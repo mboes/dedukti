@@ -12,6 +12,7 @@ module Dedukti.DkM ( module Control.Monad
                    , configuration, parameter
                    , command
                    -- * pretty-printing combinators.
+                   , Doc
                    , Pretty(..), text, (<+>), (<>), int
                    , fillText
                    , E.Exception(..), Typeable, E.throw, io
