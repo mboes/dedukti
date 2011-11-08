@@ -1,4 +1,5 @@
--- Copyright © 2009 CNRS - École Polytechnique - INRIA
+-- Copyright © 2009 CNRS - École Polytechnique - INRIA.
+-- Copyright © 2011 Mathieu Boespflug.
 --
 -- Permission to use, copy, modify, and distribute this file for any
 -- purpose with or without fee is hereby granted, provided that the above
