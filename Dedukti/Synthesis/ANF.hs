@@ -45,6 +45,7 @@ monadic = runFresh . go where
 
 -- | Take the monadic calculus to A-normal form.
 anf :: Ord id => Expr id a -> Expr id a
+anf (B (x := t1) (V x' _) _) | x == x' = t1
 anf (B (x := t1) t2 a) = case anf t1 of
   B (y := t3) t4 a' -> B (y := t3) (anf (B (x := t4) t2 %% a')) %% a
   t1' -> B (x := t1') (anf t2) %% a
