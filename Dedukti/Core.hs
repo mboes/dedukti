@@ -160,7 +160,6 @@ annot (A _ _ a) = a
 annot (V _ a)   = a
 annot _ = error "No annotation."
 
-
 -- | Annotation operator.
 (%%) :: (a -> Expr id a) -> a -> Expr id a
 (%%) = ($)
@@ -197,7 +196,8 @@ unabstract t k = k [] t []
 apply :: Expr id a -> [Expr id a] -> [a] -> Expr id a
 apply t [] _ = t
 apply t (x:xs) (a:annots) = apply (A t x %% a) xs annots
-apply _ _ _= error "Fewer annotations than number of applications."
+apply t xs as = error $ "apply: " ++ show (length xs) ++ " arguments but only "
+                                  ++ show (length as) ++ " annotations."
 
 -- | Decompose nested applications into a head and a list of arguments.
 unapply :: Expr id a -> (Expr id a -> [Expr id a] -> [a] -> r) -> r
