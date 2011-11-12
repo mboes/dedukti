@@ -248,7 +248,7 @@ instance Ord id => Transform (RuleSet id a) where
         return RS `ap` return rs_name `ap` transformM f rs_type `ap` mapM (transformM f) rs_rules
 
     descendM f RS{..} =
-        return RS `ap` return rs_name `ap` descendM f rs_type `ap` mapM (descendM f) rs_rules
+        return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
 instance Ord id => Transform (Expr id a) where
     transformM f (B (L x) t a) = do
