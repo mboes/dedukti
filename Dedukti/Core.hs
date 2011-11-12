@@ -43,7 +43,7 @@ data Expr id a = B (Binding id a) (Expr id a) a -- ^ Bind an assumption
 infix 2 :::
 
 -- | A type decorating a variable, a type on its own, or an expression
--- defining a variable
+-- defining a variable.
 data Binding id a = L id             -- ^ Lambda binding
                   | id ::: Expr id a -- ^ Pi binding
                   | id := Expr id a  -- ^ Let binding
