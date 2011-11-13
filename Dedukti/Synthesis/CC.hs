@@ -8,7 +8,6 @@ module Dedukti.Synthesis.CC where
 
 import Dedukti.Core
 import Dedukti.Module
-import Control.Applicative ((<*>))
 import qualified Data.Set as Set
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -31,8 +30,8 @@ closureConv t = unabstract t (go (const abstract)) where
          go (\fvs2 bs t2' ->
               k (Set.delete x (fvs1 `Set.union` fvs2)) bs (B (x := t2') t1' a)) bs t2) bs t1
   go k bs (A t1 t2 a) = go (\fvs1 bs t1' ->
-                                go (\fvs2 bs t2' ->
-                                     k (fvs1 `Set.union` fvs2) bs (A t1' t2' a)) bs t2) bs t1
+                             go (\fvs2 bs t2' ->
+                                  k (fvs1 `Set.union` fvs2) bs (A t1' t2' a)) bs t2) bs t1
   -- If the variable is qualified then it is a constant of the global
   -- environment and should not be considered a free variable.
   go k bs (V x a) | Nothing <- provenance x = k (Set.singleton x) bs (V x a)
