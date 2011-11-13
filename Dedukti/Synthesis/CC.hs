@@ -21,7 +21,9 @@ closureConv t = unabstract t (go (const abstract)) where
         k' fvs bs' t1' as' =
           k (fvs Set.\\ Set.fromList (map bind_name bs)) bs
           (apply (abstract bxs (abstract bs' t1' %%% as') %%% nas) xs %%% nas) as
-          where lfvs = Set.toList fvs; bxs = map L lfvs; xs = map V lfvs <*> nas
+          where lfvs = Set.toList fvs
+                bxs = map L lfvs
+                xs = zipWith (%%) (map V lfvs) nas
     in unabstract t (go k')
   go k bs (A t1 t2 a) = go (\fvs1 bs t1' ->
                                 go (\fvs2 bs t2' ->
