@@ -69,7 +69,8 @@ compile mod = do
   say Verbose $ text "Parsing" <+> text (show mod) <+> text "..."
   let path = srcPathFromModule mod
   config <- configuration
-  compileAST mod =<< return (parse config path) `ap` io (B.readFile path)
+  compileAST mod =<<
+    {-# SCC "parse" #-} return (parse config path) `ap` io (B.readFile path)
 
 -- | Emit code for one module, starting from the AST.
 compileAST :: MName -> Pa Module -> DkM ()
