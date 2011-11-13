@@ -26,6 +26,10 @@ closureConv t = unabstract t (go (const abstract)) where
                 bxs = map L lfvs
                 xs = zipWith (%%) (map V lfvs) nas
     in unabstract t (go k')
+  go k bs (B (x := t2) t1 a) =
+    go (\fvs1 bs t1' ->
+         go (\fvs2 bs t2' ->
+              k (Set.delete x (fvs1 `Set.union` fvs2)) bs (B (x := t2') t1' a)) bs t2) bs t1
   go k bs (A t1 t2 a) = go (\fvs1 bs t1' ->
                                 go (\fvs2 bs t2' ->
                                      k (fvs1 `Set.union` fvs2) bs (A t1' t2' a)) bs t2) bs t1
@@ -43,6 +47,10 @@ hoist t = go (const abstract) 0 [] t %%% repeat nann
           let x = qid "l" .$ B.pack (show n) .$ "hoist"
           in unabstract t $ \bs t as ->
              go (\n lets t' -> k n (x := abstract bs t' as : lets) (V x %% nann)) (n + 1) lets t
+        go k n lets (B (x := t2) t1 a) =
+          go (\n lets' t1' ->
+               go (\n lets'' t2' ->
+                    k n lets'' (B (x := t2') t1' %% a)) n lets' t2) n lets t1
         go k n lets (A t1 t2 a) =
           go (\n lets' t1' ->
                go (\n lets'' t2' ->
