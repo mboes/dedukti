@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 -- | Close all abstractions in a term.
 closureConv :: Expr Qid Unannot -> Expr Qid Unannot
 closureConv t = unabstract t (go (const abstract)) where
+  go k bs t | isAtomic t = k Set.empty bs t
   go k bs t | isAbstraction t = \as ->
     let nas = repeat nann
         k' fvs bs' t1' as' =
@@ -32,13 +33,13 @@ closureConv t = unabstract t (go (const abstract)) where
   -- environment and should not be considered a free variable.
   go k bs (V x a) | Nothing <- provenance x = k (Set.singleton x) bs (V x a)
                   | otherwise = k Set.empty bs (V x a)
-  go k bs t = k Set.empty bs t
 
 -- | Replace every abstraction in the term with a placeholder variable and
 -- float the abstraction to the top of the term.
 hoist :: Expr Qid Unannot -> Expr Qid Unannot
 hoist t = go (const abstract) 0 [] t %%% repeat nann
-  where go k n lets t | isAbstraction t =
+  where go k n lets t | isAtomic t = k n lets t
+        go k n lets t | isAbstraction t =
           let x = qid "l" .$ B.pack (show n) .$ "hoist"
           in unabstract t $ \bs t as ->
              go (\n lets t' -> k n (x := abstract bs t' as : lets) (V x %% nann)) (n + 1) lets t
@@ -46,4 +47,3 @@ hoist t = go (const abstract) 0 [] t %%% repeat nann
           go (\n lets' t1' ->
                go (\n lets'' t2' ->
                     k n lets'' (A t1' t2' %% a)) n lets' t2) n lets t1
-        go k n lets t = k n lets t
