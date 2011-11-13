@@ -41,7 +41,7 @@ monadic = runFresh . go where
         b1 k' = if isApplicative t1 then k' t1' else B (x := t1') (k' (V x %% annot t1)) a
         b2 k' = if isAtomic t2      then k' t2' else B (y := t2') (k' (V y %% annot t2)) a
     return $ b1 $ \x -> b2 $ \y -> A x y a
-  go t = return t
+  go t | isAtomic t = return t
 
 -- | Take the monadic calculus to A-normal form.
 anf :: Ord id => Expr id a -> Expr id a
