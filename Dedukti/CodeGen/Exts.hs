@@ -51,7 +51,7 @@ instance CodeGen Record where
               -- declarations at top-level, so let's just call the code
               -- generation functions recursively.
               defs_rule n (env :@ lhs :--> rhs) =
-                  let f (x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
+                  let f (L x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
                       ruleCheck = let rule_box = varName (qid "rule" .$ "box")
                                   in Rec (qid "rule") 0 [[dec| ((rule_box)) = checkRule $(term lhs) $(term rhs) |]]
                       Bundle decls = coalesce $ foldr f [ruleCheck] (env_bindings env)
@@ -139,21 +139,21 @@ primAppsP c = foldl' primAppP (primConP c)
 
 -- | Turn an expression into object code with types erased.
 code :: Em Expr -> Hs.Exp
-code (B (L x) t _)      | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
-code (B (x ::: ty) t _) | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
-code (B (x := t1) t2 _) | n <- varName x = [hs| let ((n)) = $(code t1) in $(code t2) |]
+code (B (L x) t _)        | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
+code (B (P x ::: ty) t _) | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
+code (B (x := t1) t2 _)   | n <- varName x = [hs| let ((n)) = $(code t1) in $(code t2) |]
 code (A t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
 code (V x _)            = var x
 code Type               = [hs| Type |]
 
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
-term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
-term (B (x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
-term (B (x := t1) t2 _) | n <- varName (x .$ "box") = [hs| TLet $(term t1) (\((n)) -> $(term t2)) |]
-term (A t1 t2 _)        = [hs| TApp $(term t1) $(term t2) |]
-term (V x _)            = var (x .$ "box")
-term Type               = [hs| TType |]
+term (B (L x) t _)        | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
+term (B (P x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
+term (B (x := t1) t2 _)   | n <- varName (x .$ "box") = [hs| TLet $(term t1) (\((n)) -> $(term t2)) |]
+term (A t1 t2 _)          = [hs| TApp $(term t1) $(term t2) |]
+term (V x _)              = var (x .$ "box")
+term Type                 = [hs| TType |]
 
 typedAbstraction c x ty t = [hs| $c $(dom ty) (\((box)) -> $ran) |]
   where box = varName (x .$ "box")

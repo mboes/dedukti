@@ -19,19 +19,21 @@ textB = text . B.unpack
 
 instance Pretty id => Pretty (Binding id a) where
     pretty (L x) = pretty x
-    pretty (x ::: ty) = pretty x <+> char ':' <+> pretty ty
+    pretty (P x) = pretty x
     pretty (x := t) = pretty x <+> text ":=" <+> pretty t
+    pretty (b ::: ty) = pretty b <+> char ':' <+> pretty ty
 
     prettyList = vcat . map (\x -> pretty x <> dot)
 
 instance Pretty id => Pretty (Expr id a) where
-    pretty (B (L x) t _) = pretty x <+> text "=>" <+> pretty t
-    pretty (B (x ::: dom@(B _ _ _)) ran _) =
-      pretty x <+> char ':' <+> parens (pretty dom) <+> text "->" <+> pretty ran
-    pretty (B (x ::: dom) ran _) =
-      pretty x <+> char ':' <+> pretty dom <+> text "->" <+> pretty ran
+    pretty (B (L x) t _)        = pretty x <+> text "=>" <+> pretty t
+    pretty (B (L x ::: ty) t _) = pretty x <+> char ':'  <+> pretty ty <+> text "=>" <+> pretty t
+    pretty (B (P x) t _)        = pretty x <+> text "->" <+> pretty t
+    pretty (B (P x ::: ty) t _) = pretty x <+> char ':'  <+> pretty ty <+> text "->" <+> pretty t
     pretty (B (x := t') t _) =
       text "let" <+> pretty x <+> char '=' <+> pretty t' <+> text "in" <+> pretty t
+    pretty (B (x := t' ::: ty) t _) =
+      text "let" <+> pretty x <+> char ':' <+> pretty ty <+> char '=' <+> pretty t' <+> text "in" <+> pretty t
     pretty (A t1 t2 _) =
         let f = if isApplicative t1 then id else parens
             g = if isAtomic t2 then id else parens
@@ -54,7 +56,7 @@ instance (Eq a, Ord id, Pretty id) => Pretty (TyRule id a) where
     prettyList = vcat . map (\x -> pretty x <> dot)
 
 instance (Eq a, Ord id, Pretty id) => Pretty (RuleSet id a) where
-    pretty RS{..} = vcat (pretty (rs_name ::: rs_type) : map pretty rs_rules)
+    pretty RS{..} = vcat (pretty (L rs_name ::: rs_type) : map pretty rs_rules)
     prettyList = vcat . punctuate line . map pretty
 
 instance Pretty Qid where

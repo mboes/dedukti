@@ -37,7 +37,7 @@ tokens = filter (not . B.null) . B.splitWith isSpace
 step :: Token -> Stack -> Stack
 
 -- bindings
-step ":" (Expr (V x _) : Expr y : xs) = Binding (x ::: y) : xs
+step ":" (Expr (V x _) : Expr y : xs) = Binding (L x ::: y) : xs
 
 -- rules
 step "-->" (Env x : Expr y : Expr z : xs) = TyRule (fromBindings x :@ y :--> z) : xs
@@ -47,8 +47,8 @@ step "," (Binding x : Env y : xs) = Env (x:y) : xs
 step "[]" xs = Env [] : xs
 
 -- expressions
-step "=>"   (Binding (x ::: _) : Expr t : xs) = Expr (B (L x) t %% nann) : xs
-step "->"   (Binding (x ::: ty) : Expr t : xs) = Expr (B (x ::: ty) t %% nann) : xs
+step "=>"   (Binding (L x ::: _) : Expr t : xs) = Expr (B (L x) t %% nann) : xs
+step "->"   (Binding (L x ::: ty) : Expr t : xs) = Expr (B (P x ::: ty) t %% nann) : xs
 step "@"    (Expr t1 : Expr t2 : xs)    = Expr (A t1 t2 %% nann) : xs
 step "Type" xs                        = Expr Type : xs
 step v xs = case reverse (B.split '.' v) of

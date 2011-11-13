@@ -72,12 +72,13 @@ checkScopes env (decls, rules) = do
           notmem qid env = maybe False (AtomSet.notMember (qid_stem qid))
                         (Map.lookup (qid_qualifier qid) env)
           chkBinding env (L x) = return $ ins x env
-          chkBinding env (x ::: ty) = do
-            chkExpr env ty
-            return $ ins x env
+          chkBinding env (P x) = return $ ins x env
           chkBinding env (x := t) = do
             chkExpr env t
             return $ ins x env
+          chkBinding env (b ::: ty) = do
+            chkExpr env ty
+            chkBinding env b
           chkRule topenv r@(env :@ rule) = do
             let lhsvars = AtomSet.fromList [ qid_stem x | V x _ <- everyone (Rule.head r) ]
             mapM_ (\x -> when (qid_stem x `AtomSet.notMember` lhsvars) $
@@ -89,7 +90,7 @@ checkScopes env (decls, rules) = do
             return t
           chkExpr env (B (L x) t _) = do
             chkExpr (ins x env) t
-          chkExpr env (B (x ::: ty) t _)  = do
+          chkExpr env (B (P x ::: ty) t _)  = do
             chkExpr env ty
             chkExpr (ins x env) t
           chkExpr env t = descendM (chkExpr env) t

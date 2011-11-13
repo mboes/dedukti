@@ -44,9 +44,10 @@ infix 2 :::
 
 -- | A type decorating a variable, a type on its own, or an expression
 -- defining a variable.
-data Binding id a = L id             -- ^ Lambda binding
-                  | id ::: Expr id a -- ^ Pi binding
-                  | id := Expr id a  -- ^ Let binding
+data Binding id a = L id                       -- ^ Lambda binding
+                  | P id                       -- ^ Pi binding
+                  | id := Expr id a            -- ^ Let binding
+                  | Binding id a ::: Expr id a -- ^ Type annotated binding
                     deriving (Eq, Ord, Show)
 
 -- | A rewrite rule.
@@ -99,13 +100,17 @@ type instance A  (Expr id a) = a
 
 bind_name :: Binding id a -> id
 bind_name (L x) = x
-bind_name (x ::: _) = x
+bind_name (P x) = x
 bind_name (x := _) = x
+bind_name (b ::: _) = bind_name b
 
 -- | A lambda or Pi abstraction.
 isAbstraction :: Expr id a -> Bool
-isAbstraction (B (L _) _ _) = True
-isAbstraction (B (_ ::: _) _ _)  = True
+isAbstraction (B b _ _) = p b where
+  p (L _) = True
+  p (P _) = True
+  p (b ::: _) = p b
+  p _ = False
 isAbstraction _ = False
 
 isVariable :: Expr id a -> Bool
@@ -133,7 +138,7 @@ emptyEnv = Env [] Map.empty
 
 -- | Extend an environment with a new binding.
 (&) :: Ord id => Binding id a -> Env id a -> Env id a
-x ::: ty & Env bs map = Env ((x ::: ty) : bs) (Map.insert x ty map)
+L x ::: ty & Env bs map = Env ((L x ::: ty) : bs) (Map.insert x ty map)
 _ & Env _ _ = error "Binding is not a typing assumption."
 
 (!) :: Ord id => Env id a -> id -> Expr id a
@@ -222,11 +227,13 @@ instance Ord id => Transform (Module id a) where
 
 instance Ord id => Transform (Binding id a) where
     transformM f (L x) = return (L x)
-    transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
+    transformM f (P x) = return (P x)
     transformM f (x := t) = return (x :=) `ap` transformM f t
+    transformM f (b ::: ty) = return (:::) `ap` transformM f b `ap` transformM f ty
 
     descendM f (L x) = return (L x)
-    descendM f (x ::: ty) = return (x :::) `ap` f ty
+    descendM f (P x) = return (P x)
+    descendM f (b ::: ty) = return (:::) `ap` descendM f b `ap` f ty
     descendM f (x := t) = return (x :=) `ap` f t
 
 instance Ord id => Transform (TyRule id a) where
@@ -251,26 +258,20 @@ instance Ord id => Transform (RuleSet id a) where
         return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
 instance Ord id => Transform (Expr id a) where
-    transformM f (B (L x) t a) = do
+    transformM f (B b t a) = do
       t' <- transformM f t
-      f $ B (L x) t' a
-    transformM f (B (x ::: ty) t a) = do
-      ty' <- transformM f ty
-      t' <- transformM f t
-      f $ B (x ::: ty') t' a
+      b' <- transformM f b
+      f $ B b' t' a
     transformM f (A t1 t2 a) = do
       t1' <- transformM f t1
       t2' <- transformM f t2
       f $ A t1' t2' a
     transformM f t = f t
 
-    descendM f (B (L x) t a) = do
+    descendM f (B b t a) = do
       t' <- f t
-      return $ B (L x) t' a
-    descendM f (B (x ::: ty) t a) = do
-      ty' <- f ty
-      t' <- f t
-      return $ B (x ::: ty') t' a
+      b' <- descendM f b
+      return $ B b' t' a
     descendM f (A t1 t2 a) = do
       return A `ap` f t1 `ap` f t2 `ap` return a
     descendM f t = return t

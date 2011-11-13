@@ -81,7 +81,7 @@ executable dedukti
                        Stream >= 0.3 && < 0.3.2,
                        hmk >= 0.9.7,
                        stringtable-atom >= 0.0.6
-  extensions:          CPP, EmptyDataDecls, PatternGuards,
+  extensions:          CPP, EmptyDataDecls, PatternGuards, TupleSections,
                        GeneralizedNewtypeDeriving, DeriveDataTypeable,
                        TypeFamilies, LiberalTypeSynonyms,
                        FlexibleInstances, FlexibleContexts, OverloadedStrings,

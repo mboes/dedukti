@@ -38,8 +38,9 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
                          , x `Set.member` defs = V (qualify mod x) %% a
           f defs (B (L x) t a) =
               B (L x) (f (Set.delete x defs) t) %% a
-          f defs (B (x ::: ty) t a) =
-              B (x ::: f defs ty) (f (Set.delete x defs) t) %% a
+          f defs (B (P x ::: ty) t a) =
+              B (P x ::: f defs ty) (f (Set.delete x defs) t) %% a
+          f defs (B _ _ _) = error $ "selfQualify: unrecognized binding."
           f defs t = descend (f defs) (t :: Pa Expr)
 
 -- | Read the interface file of each module name to collect the declarations
@@ -109,4 +110,3 @@ compileAST mod src@(decls, rules) = do
           io $ ({-# SCC "cg/write"     #-} B.writeFile (objPathFromModule mod))
              $ ({-# SCC "cg/serialize" #-} CG.serialize mod deps)
              $ ({-# SCC "cg/coalesce"  #-} CG.coalesce code)
-

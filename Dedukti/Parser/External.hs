@@ -102,7 +102,7 @@ toplevel =
 -- | Binding construct.
 --
 -- > binding ::= id ":" term
-binding = ((:::) <$> ident <* reservedOp ":" <*> term)
+binding = ((\x ty -> L x ::: ty) <$> ident <* reservedOp ":" <*> term)
           <?> "binding"
 
 -- | Top-level declarations.
@@ -115,8 +115,8 @@ declaration = (binding <* dot)
 --
 -- > domain ::= id ":" applicative
 -- >          | applicative
-domain = (    ((:::) <$> try (ident <* reservedOp ":") <*> applicative)
-          <|> ((qid "hole" .$ "parser" :::) <$> applicative))
+domain = (    ((,) <$> try (ident <* reservedOp ":") <*> applicative)
+          <|> ((qid "hole" .$ "parser",) <$> applicative))
          <?> "domain"
 
 -- |
@@ -133,12 +133,12 @@ sort = Type <$ reserved "Type"
 -- >        | domain "=>" term
 -- >        | applicative
 term = do
-  d@(x ::: ty) <- domain
+  d@(x,ty) <- domain
   choice [ pi d <?> "pi"
          , lambda d <?> "lambda"
          , return ty ]
-    where pi d = B d <$ reservedOp "->" <*> term <%%> nann
-          lambda (x ::: _) = B (L x) <$ reservedOp "=>" <*> term <%%> nann
+    where pi (x, ty)    = B (P x ::: ty) <$ reservedOp "->" <*> term <%%> nann
+          lambda (x, _) = B (L x) <$ reservedOp "=>" <*> term <%%> nann
 
 -- | Constituents of an applicative form.
 --
