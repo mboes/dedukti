@@ -96,8 +96,8 @@ compileAST mod src@(decls, rules) = do
         pass ({-# SCC "pass/qual"    #-} selfQualify mod)     (text "Self qualifying constants ...")
     >=> pass ({-# SCC "pass/monadic" #-} descend monadic)     (text "Transformation to monadic form ...")
     >=> pass ({-# SCC "pass/anf"     #-} descend anf)         (text "Reduction to administrative normal form ...")
-    >=> pass ({-# SCC "pass/cc"      #-} descend closureConv) (text "Closure converting ...")
-    >=> pass ({-# SCC "pass/hoist"   #-} descend hoist)       (text "Hoisting abstractions to toplevel ...")
+--    >=> pass ({-# SCC "pass/cc"      #-} descend closureConv) (text "Closure converting ...")
+--    >=> pass ({-# SCC "pass/hoist"   #-} descend hoist)       (text "Hoisting abstractions to toplevel ...")
            $ Rule.ruleSets decls rules
   parameter Config.cg >>= \cg -> case cg of
     Just _ -> undefined

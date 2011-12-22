@@ -19,6 +19,7 @@
 
 module Dedukti.Runtime
     ( Code(..), Term(..), ap
+    , reflect
     , convertible
     , bbox, sbox, obj
     , start, stop
@@ -34,6 +35,8 @@ import Data.Time.Clock
 import Text.PrettyPrint.Leijen
 import System.Exit
 import System.Posix.Process (exitImmediately)
+-- For catching exceptions in pure code.
+import System.IO.Unsafe
 
 
 -- Exceptions
@@ -93,7 +96,13 @@ type Prop = forall r. r -> r
 
 -- | Check that a predicate really evaluates to True.
 reflect :: Prop -> Bool
-reflect k | r <- k True = r
+reflect k = unsafePerformIO $ catch (return $ k True) handler
+  where handler :: SomeException -> IO Bool
+        handler = const $ return False
+
+-- | Reflect only true predicates.
+reflect' :: Prop -> Bool
+reflect' k | r <- k True = r
 
 convertible :: Int -> Code -> Code -> Prop
 convertible n t1 t2 k | conv n t1 t2 = k
@@ -134,8 +143,8 @@ synth n (Box ty _) = ty
 synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
 synth n (TApp t1 (Box ty2 t2))
     | Pi tya f <- synth n t1,
-      reflect (convertible n tya ty2) = f t2
-synth n (TLet t1 f) | ty <- synth n t1 = synth (n + 1) (f (Box ty (Var n)))
+      reflect' (convertible n tya ty2) = f t2
+synth n (TLet tt1 t1 f) | ty <- synth n t1 = synth (n + 1) (f (Box ty (Var n)))
 synth n TType = Kind
 synth n t = throw SynthError
 
@@ -146,14 +155,13 @@ checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) h
             throw e
 
 checkRule :: Term -> Term -> Term
-checkRule lhs rhs | ty <- synth 0 lhs, reflect (check 0 rhs ty) = emptyBox
+checkRule lhs rhs | ty <- synth 0 lhs, reflect' (check 0 rhs ty) = emptyBox
                   | otherwise = throw $ RuleError
 
 start :: IO UTCTime
 start = do
   putStrLn "Start."
   getCurrentTime
-
 
 stop :: UTCTime -> IO ()
 stop t = do

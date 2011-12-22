@@ -233,8 +233,8 @@ instance Ord id => Transform (Binding id a) where
 
     descendM f (L x) = return (L x)
     descendM f (P x) = return (P x)
-    descendM f (b ::: ty) = return (:::) `ap` descendM f b `ap` f ty
     descendM f (x := t) = return (x :=) `ap` f t
+    descendM f (b ::: ty) = return (:::) `ap` descendM f b `ap` f ty
 
 instance Ord id => Transform (TyRule id a) where
     transformM f (env :@ rule) =
@@ -248,6 +248,7 @@ instance Ord id => Transform (TyRule id a) where
 instance Ord id => Transform (Rule id a) where
     transformM f (lhs :--> rhs) =
         return (:-->) `ap` transformM f lhs `ap` transformM f rhs
+
     descendM f (lhs :--> rhs) = return (:-->) `ap` f lhs `ap` f rhs
 
 instance Ord id => Transform (RuleSet id a) where
