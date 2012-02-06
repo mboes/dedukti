@@ -207,46 +207,33 @@ unapply t k = go [] [] t where
 
 
 class Ord (Id t) => Transform t where
-    -- | Effectful bottom-up transformation on terms.
+    -- | Effectful bottom-up transformation on terms. A default for
+    -- 'transformM' in terms of 'descendM' for all instances other than
+    -- @Expr id a@.
     transformM :: Monad m => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
+    transformM f = descendM (transformM f)
 
     -- | Helper function for top-down transformations.
     descendM :: Monad m => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
 
 instance Ord id => Transform (Module id a) where
-    transformM f (decls, rules) =
-        return (,) `ap` mapM (transformM f) decls `ap` mapM (transformM f) rules
-
     descendM f (decls, rules) =
         return (,) `ap` mapM (descendM f) decls `ap` mapM (descendM f) rules
 
 instance Ord id => Transform (Binding id a) where
-    transformM f (L x) = return (L x)
-    transformM f (x ::: ty) = return (x :::) `ap` transformM f ty
-    transformM f (x := t) = return (x :=) `ap` transformM f t
-
     descendM f (L x) = return (L x)
     descendM f (x ::: ty) = return (x :::) `ap` f ty
     descendM f (x := t) = return (x :=) `ap` f t
 
 instance Ord id => Transform (TyRule id a) where
-    transformM f (env :@ rule) =
-        return (:@) `ap` (return fromBindings `ap` mapM (transformM f) (env_bindings env)) `ap`
-               transformM f rule
-
     descendM f (env :@ rule) =
         return (:@) `ap` (return fromBindings `ap` mapM (descendM f) (env_bindings env)) `ap`
                descendM f rule
 
 instance Ord id => Transform (Rule id a) where
-    transformM f (lhs :--> rhs) =
-        return (:-->) `ap` transformM f lhs `ap` transformM f rhs
     descendM f (lhs :--> rhs) = return (:-->) `ap` f lhs `ap` f rhs
 
 instance Ord id => Transform (RuleSet id a) where
-    transformM f RS{..} =
-        return RS `ap` return rs_name `ap` transformM f rs_type `ap` mapM (transformM f) rs_rules
-
     descendM f RS{..} =
         return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
@@ -276,7 +263,6 @@ instance Ord id => Transform (Expr id a) where
     descendM f t = return t
 
 instance Transform t => Transform [t] where
-  transformM f = mapM (transformM f)
   descendM f = mapM (descendM f)
 
 -- | Pure bottom-up transformation on terms.
