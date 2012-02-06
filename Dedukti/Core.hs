@@ -238,18 +238,7 @@ instance Ord id => Transform (RuleSet id a) where
         return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
 instance Ord id => Transform (Expr id a) where
-    transformM f (B (L x) t a) = do
-      t' <- transformM f t
-      f $ B (L x) t' a
-    transformM f (B (x ::: ty) t a) = do
-      ty' <- transformM f ty
-      t' <- transformM f t
-      f $ B (x ::: ty') t' a
-    transformM f (A t1 t2 a) = do
-      t1' <- transformM f t1
-      t2' <- transformM f t2
-      f $ A t1' t2' a
-    transformM f t = f t
+    transformM f = f <=< descendM (transformM f)
 
     descendM f (B (L x) t a) = do
       t' <- f t
