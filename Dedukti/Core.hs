@@ -209,7 +209,7 @@ unapply t k = go [] [] t where
 class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms. A default for
     -- 'transformM' in terms of 'descendM' for all instances other than
-    -- @Expr id a@.
+    -- @Expr id a@ is provided.
     transformM :: Monad m => (Expr (Id t) (A t) -> m (Expr (Id t) (A t))) -> t -> m t
     transformM f = descendM (transformM f)
 
