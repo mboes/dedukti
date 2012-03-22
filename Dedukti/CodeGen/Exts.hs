@@ -73,7 +73,7 @@ instance CodeGen Record where
                     ++ [Hs.qualStmt [hs| putStrLn $finishmsg |]]
 
     serialize mod deps (Bundle decls) =
-        B.pack $ prettyPrintWithMode defaultMode {layout = PPInLine} $
+        B.pack $ prettyPrintWithMode defaultMode {layout = PPOffsideRule} $
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing Nothing) deps
               runtime = Hs.ImportDecl (*) (Hs.ModuleName "Dedukti.Runtime") False False Nothing Nothing Nothing
@@ -149,11 +149,11 @@ code Type               = [hs| Type |]
 term :: Em Expr -> Hs.Exp
 term (V x _)            = var (x .$ "box")
 term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
-term (B (x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
+term (B (x ::: ty) t _) = typedAbstraction x ty (term t)
 term (A t1 t2 _)        = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
 term Type               = [hs| TType |]
 
-typedAbstraction c x ty t = [hs| $c $(dom ty) (\((box)) -> $ran) |]
+typedAbstraction x ty t = [hs| TPi $(dom ty) (\((box)) -> $ran) |]
   where box = varName (x .$ "box")
         ran = let n = varName x
               in [hs| let ((n)) = obj $(Hs.var box) in $t |]
