@@ -148,10 +148,15 @@ code Type               = [hs| Type |]
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
 term (V x _)            = var (x .$ "box")
-term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
+term (B (L x) t _)      = lambdaAbstraction x (term t)
 term (B (x ::: ty) t _) = typedAbstraction x ty (term t)
 term (A t1 t2 _)        = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
 term Type               = [hs| TType |]
+
+lambdaAbstraction x t = [hs| TLam (\((box)) -> $ran) |]
+  where box = varName (x .$ "box")
+        ran = let n = varName x
+              in [hs| let ((n)) = obj $(Hs.var box) in $t |]
 
 typedAbstraction x ty t = [hs| TPi $(dom ty) (\((box)) -> $ran) |]
   where box = varName (x .$ "box")
