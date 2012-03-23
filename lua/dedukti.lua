@@ -35,7 +35,7 @@ function ap(a, b)
 end
 
 function obj(t)
-  assert(t.tk && t.tk == tbox);
+  assert(t.tk and t.tk == tbox);
   return t.tbox[2];
 end
 
@@ -91,7 +91,10 @@ function synth(n, t)
     return c.cpi[2](b[2]);
   elseif t.tk == tpi and t.tpi[1].tk == tbox
      and t.tpi[1].tbox[1].tk == ttype then
-    return 42;
+    local v = mkcode(cvar, n);
+    return synth(n+1, t.tpi[2](v));
+  else
+    error("Type synthesis failed.");
   end
 end
 
