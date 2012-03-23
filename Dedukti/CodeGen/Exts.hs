@@ -150,6 +150,7 @@ term :: Em Expr -> Hs.Exp
 term (V x _)            = var (x .$ "box")
 term (B (L x) t _)      = lambdaAbstraction x (term t)
 term (B (x ::: ty) t _) = typedAbstraction x ty (term t)
+term (A t1 t2 _)        | isVariable t2 = [hs| TApp $(term t1) $(term t2) |]
 term (A t1 t2 _)        = [hs| TApp $(term t1) (UBox $(term t2) $(code t2)) |]
 term Type               = [hs| TType |]
 
