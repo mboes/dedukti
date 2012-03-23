@@ -118,7 +118,7 @@ clause rule =
        else Hs.Match (*) (Hs.name "__") (map (pattern env) (Rule.patterns lrule))
             Nothing (Hs.GuardedRhss [Hs.GuardedRhs (*) (guards constraints) (code rhs)]) Hs.noBinds
     where guards = map (\(x, x') -> Hs.qualStmt $
-                                    [hs| convertible 0 $(var x) $(var x') |])
+                                    [hs| reflect (convertible 0 $(var x) $(var x')) |])
           qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match

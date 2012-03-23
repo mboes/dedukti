@@ -19,6 +19,7 @@
 module Dedukti.Runtime
     ( Code(..), Term(..), ap
     , convertible
+    , reflect
     , bbox, sbox, obj
     , start, stop
     , checkDeclaration
@@ -138,7 +139,7 @@ synth n (TApp t1 (UBox tty2 t2))
 synth n TType = Kind
 synth n t = throw SynthError
 
-checkDeclaration :: String -> Term -> IO ()
+checkDeclaration :: String -> a -> IO ()
 checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) handler
     where handler (SomeException e) = do
             putStrLn $ "Error during checking of " ++ x ++ "."
