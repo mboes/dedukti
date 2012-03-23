@@ -70,8 +70,6 @@ local two =
     end
   };
 local twoty = mkarr(mkarr(aty, aty), mkarr(aty, aty));
-printc(0, twoty);
-io.write("\n");
 print("Checking Church's two: "..tostring(check(0, two, twoty)));
 
 -- vi: expandtab
