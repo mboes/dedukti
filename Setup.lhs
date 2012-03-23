@@ -6,9 +6,4 @@
 > import System.FilePath
 > import System.Process
 >
-> main = defaultMainWithHooks hooks
->   where hooks = simpleUserHooks { Simple.runTests = Main.runTests }
->
-> runTests :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
-> runTests _ _ _ lbi = system testprog >> return ()
->   where testprog = (buildDir lbi) </> "dedukti-tests" </> "dedukti-tests"
+> main = defaultMainWithHooks simpleUserHooks
