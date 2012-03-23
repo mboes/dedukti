@@ -109,9 +109,6 @@ convertible n t1 t2 k | conv n t1 t2 = k
         conv n Kind Kind = True
         conv n _ _ = False
 
--- | A box in which we didn't put anything.
-emptyBox = Box undefined undefined
-
 bbox, sbox :: Term -> Code -> Code -> Term
 
 -- | A big box holds terms of sort Type or Kind
@@ -147,8 +144,8 @@ checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) h
             putStrLn $ "Error during checking of " ++ x ++ "."
             throw e
 
-checkRule :: Term -> Term -> Term
-checkRule lhs rhs | ty <- synth 0 lhs, reflect (check 0 rhs ty) = emptyBox
+checkRule :: Term -> Term -> ()
+checkRule lhs rhs | ty <- synth 0 lhs, reflect (check 0 rhs ty) = ()
                   | otherwise = throw $ RuleError
 
 start :: IO UTCTime
