@@ -20,9 +20,7 @@ function mkcode(kind, ob) -- Building code.
   assert(kind == clam or kind == cpi or kind == capp
       or kind == ctype or kind == ckind or kind == cvar
       or kind == ccon); -- I miss type safety.
-  local c = { ck = kind };
-  c[kind] = ob;
-  return c;
+  return { ck = kind, [kind] = ob };
 end
 
 function ap(a, b)
