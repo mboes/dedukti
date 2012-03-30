@@ -18,14 +18,14 @@ import qualified Data.ByteString.Lazy.Char8 as B
 textB = text . B.unpack
 
 instance Pretty id => Pretty (Binding id a) where
-    pretty (L x) = pretty x
+    pretty (L x ty) = pretty x <+> char ':' <+> pretty ty
     pretty (x ::: ty) = pretty x <+> char ':' <+> pretty ty
     pretty (x := t) = pretty x <+> text ":=" <+> pretty t
 
     prettyList = vcat . map (\x -> pretty x <> dot)
 
 instance Pretty id => Pretty (Expr id a) where
-    pretty (B (L x) t _) = pretty x <+> text "=>" <+> pretty t
+    pretty (B (L x ty) t _) = pretty x <> char ':' <> parens (pretty ty) <+> text "=>" <+> pretty t
     pretty (B (x ::: dom@(B _ _ _)) ran _) =
       pretty x <+> char ':' <+> parens (pretty dom) <+> text "->" <+> pretty ran
     pretty (B (x ::: dom) ran _) =

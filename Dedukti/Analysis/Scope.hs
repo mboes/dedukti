@@ -14,6 +14,7 @@ import qualified Dedukti.Rule as Rule
 import Dedukti.Pretty ()
 import Dedukti.DkM
 import Data.List (sort, group)
+import qualified Data.Traversable as T
 import qualified Data.Map as Map
 import qualified StringTable.AtomSet as AtomSet
 
@@ -71,7 +72,9 @@ checkScopes env (decls, rules) = do
                         (AtomSet.singleton (qid_stem qid)) env
           notmem qid env = maybe False (AtomSet.notMember (qid_stem qid))
                         (Map.lookup (qid_qualifier qid) env)
-          chkBinding env (L x) = return $ ins x env
+          chkBinding env (L x ty) = do
+            chkExpr env `T.mapM` ty
+            return $ ins x env
           chkBinding env (x ::: ty) = do
             chkExpr env ty
             return $ ins x env
@@ -87,7 +90,8 @@ checkScopes env (decls, rules) = do
           chkExpr env t@(V x _) = do
             when (x `notmem` env) (throw $ ScopeError x)
             return t
-          chkExpr env (B (L x) t _) = do
+          chkExpr env (B (L x ty) t _) = do
+            chkExpr env `T.mapM` ty
             chkExpr (ins x env) t
           chkExpr env (B (x ::: ty) t _)  = do
             chkExpr env ty

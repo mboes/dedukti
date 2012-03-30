@@ -34,8 +34,8 @@ selfQualify mod rsets = let defs = Set.fromList (map rs_name rsets)
                                (map (\RS{..} -> RS{rs_name = qualify mod rs_name, ..}) rsets)
     where f defs (V x a) | Nothing <- provenance x
                          , x `Set.member` defs = V (qualify mod x) %% a
-          f defs (B (L x) t a) =
-              B (L x) (f (Set.delete x defs) t) %% a
+          f defs (B (L x ty) t a) =
+              B (L x (f defs `fmap` ty)) (f (Set.delete x defs) t) %% a
           f defs (B (x ::: ty) t a) =
               B (x ::: f defs ty) (f (Set.delete x defs) t) %% a
           f defs t = descend (f defs) (t :: Pa Expr)

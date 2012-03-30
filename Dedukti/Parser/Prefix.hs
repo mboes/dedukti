@@ -47,10 +47,10 @@ step "," (Binding x : Env y : xs) = Env (x:y) : xs
 step "[]" xs = Env [] : xs
 
 -- expressions
-step "=>"   (Binding (x ::: _) : Expr t : xs) = Expr (B (L x) t %% nann) : xs
+step "=>"   (Binding (x ::: ty) : Expr t : xs) = Expr (B (L x (Just ty)) t %% nann) : xs
 step "->"   (Binding (x ::: ty) : Expr t : xs) = Expr (B (x ::: ty) t %% nann) : xs
-step "@"    (Expr t1 : Expr t2 : xs)    = Expr (A t1 t2 %% nann) : xs
-step "Type" xs                        = Expr Type : xs
+step "@"    (Expr t1 : Expr t2 : xs)           = Expr (A t1 t2 %% nann) : xs
+step "Type" xs                                 = Expr Type : xs
 step v xs = case reverse (B.split '.' v) of
   var : quals -> let mod = hierarchy (reverse quals)
                  in Expr (V (qualify mod (qid var)) %% nann) : xs
