@@ -1,0 +1,49 @@
+prop : Type.
+eps : prop -> Type.
+
+implies : prop -> prop -> prop.
+
+nat : Type.
+nat_ : prop.
+
+bool : Type.
+bool_ : prop.
+
+true : bool.
+false : bool.
+
+isTrue : bool -> Type.
+trueisTrue : isTrue true.
+
+
+[] eps nat_ --> nat. 
+[] eps bool_ --> bool.
+[a:prop,b:prop] eps (implies a b) --> eps a -> eps b.
+
+unfold : nat -> p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p.
+fold   : (p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p) -> nat.
+
+[pi:p:prop -> eps p -> (nat -> eps p -> eps p) -> eps p] unfold (fold pi) --> pi.
+
+0 : nat.
+S : nat -> nat.
+
+[]      0   --> fold (p => u => v => u).
+[n:nat] S n --> fold (p => u => v => v n (unfold n p u v)). 
+
+pred : nat -> nat.
+[n:nat] pred n --> unfold n nat_ 0 (m => _ => m).
+
+iszero : nat -> bool.
+[n:nat] iszero n --> unfold n bool_ true (_ => _ => false).
+
+eq : nat -> nat -> bool.
+[n:nat] eq n --> unfold n (implies nat_ bool_) iszero (_ => f => m => unfold m bool_ false (p => _ => f p)).
+
+
+test1 : nat.
+[] test1 --> S (S (S (S (S 0)))). 
+
+test2 : isTrue (eq test1 test1).
+[] test2 --> trueisTrue.
+
