@@ -7,6 +7,7 @@
 module Dedukti.Synthesis.CC where
 
 import Dedukti.Core
+import Dedukti.Pretty
 import Dedukti.Module
 import Control.Applicative ((<*>))
 import qualified Data.Set as Set
