@@ -16,7 +16,7 @@ category:       Theorem Provers, Compilers/Interpreters
 license:        GPL
 license-file:   COPYING
 cabal-version:  >= 1.6.0
-build-type:     Custom
+build-type:     Simple
 tested-with:    GHC ==6.10, GHC ==7.0.2
 data-files:     t/bug.dk
                 t/coc.dk
@@ -35,10 +35,6 @@ extra-source-files:   doc/mkfile
                       doc/manual.texi.in
                       doc/fdl.texi
                       doc/references.texi
-
-flag test
-  description: Compile test harness (requires test-framework).
-  default:     False
 
 source-repository head
   type:     git
@@ -90,15 +86,10 @@ executable dedukti
                        TemplateHaskell, QuasiQuotes
   ghc-options:         -W -fno-warn-incomplete-patterns -fno-warn-unused-matches -rtsopts
 
-
-executable dedukti-tests
-  main-is:             Test.hs
-  if !flag(test)
-    buildable: False
-  else
-    buildable: True
-    build-depends:       directory, filepath, process,
-                         test-framework >= 0.2 && < 0.3
-    extensions:          DeriveDataTypeable, MultiParamTypeClasses,
-                         RecordWildCards
-    ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
+test-suite smoke
+  type: exitcode-stdio-1.0
+  main-is: Test.hs
+  build-depends:       directory, filepath, process,
+                       test-framework >= 0.2
+  extensions:          DeriveDataTypeable, MultiParamTypeClasses, RecordWildCards
+  ghc-options:         -fwarn-unused-binds -fwarn-unused-imports
