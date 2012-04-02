@@ -53,7 +53,7 @@ eq_S2 : coc.etype (coc.dotpi1 nat_ (x : nat
 
 pred : nat -> nat.
 
-[] pred --> nat_rec nat_ 0 (x:nat => nat => x).
+[] pred --> nat_rec nat_ 0 (x:nat => _:nat => x).
 
 pred2 :  nat -> nat.
 
