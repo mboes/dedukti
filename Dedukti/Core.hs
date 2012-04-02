@@ -240,13 +240,10 @@ instance Ord id => Transform (RuleSet id a) where
 instance Ord id => Transform (Expr id a) where
     transformM f = f <=< descendM (transformM f)
 
-    descendM f (B (L x) t a) = do
+    descendM f (B b t a) = do
       t' <- f t
-      return $ B (L x) t' a
-    descendM f (B (x ::: ty) t a) = do
-      ty' <- f ty
-      t' <- f t
-      return $ B (x ::: ty') t' a
+      b' <- descendM f b
+      return $ B b' t' a
     descendM f (A t1 t2 a) = do
       return A `ap` f t1 `ap` f t2 `ap` return a
     descendM f t = return t
