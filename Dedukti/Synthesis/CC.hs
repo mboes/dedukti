@@ -18,7 +18,7 @@ closureConv :: Expr Qid Unannot -> Expr Qid Unannot
 closureConv t = unabstract t (go (closed abstract)) where
   -- Check that the given term is closed at toplevel.
   closed k fvs | Set.null fvs = k
-               | otherwise = k -- \ _ t _ -> error $ "Term not closed: \n" ++ show (pretty t)
+               | otherwise = \ _ t _ -> error $ "Term not closed: \n" ++ show (pretty t)
   go k bs t | isAbstraction t = \as ->
     let nas = repeat nann
         k' fvs bs' t1' as' =
