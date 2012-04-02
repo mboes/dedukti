@@ -113,9 +113,9 @@ make modules = do
   config <- configuration
   let targets = map (pathFromModule ".o") modules
       run :: Rule DkM a -> Rule IO a
-      run Rule{..} = Rule{ recipe = fmap (\f x -> runDkM (f x) config) recipe
-                         , isStale = \x y -> runDkM (isStale x y) config
-                         , .. }
+      run Rule{..} = Rule { recipe = fmap (\f x -> runDkM (f x) config) recipe
+                          , isStale = \x y -> runDkM (isStale x y) config
+                          , .. }
   rs <- process cmp <$> rules modules
   -- Depending on whether we have several cores or not, we either call
   -- mkConcurrent to perform all the tasks concurrently, or call mk to create

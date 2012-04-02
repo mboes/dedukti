@@ -103,8 +103,8 @@ function :: Em RuleSet -> Hs.Decl
 function (RS x _ []) = Hs.nameBind (*) (varName (x .$ "c")) (constant x)
 function (RS x _ rs) = Hs.sfun (*) (varName (x .$ "c")) [] (Hs.UnGuardedRhs rhs) (Hs.binds [f])
     where n = Rule.arity (head rs)
-          occs = Stream.take n (Stream.map Hs.var variables)
           pats = Stream.take n variables
+          occs = map Hs.var pats
           rhs = foldr (\x y -> [hs| Lam (\((x)) -> $y) |]) (Hs.metaFunction "__" occs) pats
           f | n > 0     = Hs.FunBind (map clause rs ++ [defaultClause x n])
             | otherwise = Hs.FunBind (map clause rs)
