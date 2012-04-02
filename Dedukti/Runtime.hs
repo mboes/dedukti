@@ -19,6 +19,7 @@
 
 module Dedukti.Runtime
     ( Code(..), Term(..), ap
+    , reflect
     , convertible
     , bbox, sbox, obj
     , start, stop
