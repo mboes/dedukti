@@ -18,7 +18,6 @@
 
 module Dedukti.Runtime
     ( Code(..), Term(..), Pair(..), ap
-    , termOf, codeOf
     , convertible
     , bbox, sbox
     , start, stop
@@ -73,17 +72,15 @@ data Code = Var !Int
 instance Eq (Code -> Code)
 
 data Term = TLam !(Maybe Term) !(Pair -> Term)
+          | TLet !Pair !(Pair -> Term)
           | TPi  !Term !(Pair -> Term)
           | TApp !Term !Pair
           | TType
           | Box Code Code -- For typechecking purposes, not user generated.
             deriving Show
 
-newtype Pair = Pair (Term, Code)
-               deriving Show
-
-termOf (Pair (t, _)) = t
-codeOf (Pair (_, c)) = c
+data Pair = Pair Term Code
+            deriving Show
 
 ap :: Code -> Code -> Code
 ap (Lam f) t = f t
@@ -116,7 +113,7 @@ box sorts ty ty_code obj_code
     | synth 0 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw SortError
 
-mkpair n ty = Pair (Box ty (Var n), Var n)
+mkpair n ty = Pair (Box ty (Var n)) (Var n)
 
 check :: Int -> Term -> Code -> ()
 check n (TLam _ f) (Pi a f') = check (n + 1) (f (mkpair n a)) (f' (Var n))
@@ -125,12 +122,14 @@ check n t ty = convertible n (synth n t) ty
 synth :: Int -> Term -> Code
 synth n (Box ty _) = ty
 synth n (TPi (Box Type tya) f) = synth (n + 1) (f (mkpair n tya))
-synth n (TApp t1 (Pair (t2, c2)))
+synth n (TApp t1 (Pair t2 c2))
     | Pi tya f <- synth n t1
     , () <- check n t2 tya = f c2
+synth n (TLet (Pair t tc) f)
+    | ty <- synth n t = synth (n + 1) (f (Pair (Box ty tc) tc))
 synth n TType = Kind
 synth n (TLam (Just (Box Type ty)) f) =
-    Pi ty (\xc -> synth (n + 1) (f (Pair (Box ty xc, xc))))
+    Pi ty (\xc -> synth (n + 1) (f (Pair (Box ty xc) xc)))
 synth n t = throw SynthError
 
 checkDeclaration :: String -> a -> IO ()

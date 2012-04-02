@@ -142,6 +142,7 @@ code :: Em Expr -> Hs.Exp
 code (V x _)            = var (x .$ "c")
 code (B (L x _) t _)    | n <- varName (x .$ "c") = [hs| Lam (\((n)) -> $(code t)) |]
 code (B (x ::: ty) t _) | n <- varName (x .$ "c") = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
+code (B (x := t1) t2 _) | n <- varName (x .$ "c") = [hs| let ((n)) = $(code t1) in $(code t2) |]
 code (A t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
 code Type               = [hs| Type |]
 
@@ -150,15 +151,19 @@ term :: Em Expr -> Hs.Exp
 term (V x _)            = var (x .$ "t")
 term (B (L x ty) t _)   = lambdaAbstraction x ty (term t)
 term (B (x ::: ty) t _) = typedAbstraction x ty (term t)
-term (A t1 t2 _)        = [hs| TApp $(term t1) (Pair ($(term t2), $(code t2))) |]
+term (B (x := t1) t2 _) = letBinding x t1 (term t2)
+term (A t1 t2 _)        = [hs| TApp $(term t1) (Pair $(term t2) $(code t2)) |]
 term Type               = [hs| TType |]
 
-lambdaAbstraction x ty t = [hs| TLam $tyterm (\(Pair (((xt)), ((xc)))) -> $t) |]
+letBinding x t1 t = [hs| TLet (Pair $(term t1) $(code t1)) (\(Pair ((xt)) ((xc))) -> $t) |]
+  where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
+
+lambdaAbstraction x ty t = [hs| TLam $tyterm (\(Pair ((xt)) ((xc))) -> $t) |]
   where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
         tyterm = case ty of Nothing -> [hs| Nothing |]
                             Just ty -> [hs| Just $ sbox $(term ty) Type $(code ty) |]
 
-typedAbstraction x ty t = [hs| TPi $(dom ty) (\(Pair (((xt)), ((xc)))) -> $t) |]
+typedAbstraction x ty t = [hs| TPi $(dom ty) (\(Pair ((xt)) ((xc))) -> $t) |]
   where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
         dom ty = if isVariable ty
                  then term ty else [hs| sbox $(term ty) Type $(code ty) |]

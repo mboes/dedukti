@@ -190,7 +190,6 @@ abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
 abstract (b:bs) t (a:annots) = B b (abstract bs t annots) %% a
 abstract bs _ as = error $ "abstract: " ++ show (length bs) ++ " bindings but only "
-                                        ++ show (length as) ++ " annotations."
 
 unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
 unabstract (B b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
@@ -236,7 +235,7 @@ instance Ord id => Transform (Rule id a) where
 
 instance Ord id => Transform (RuleSet id a) where
     descendM f RS{..} =
-        return RS `ap` return rs_name `ap` descendM f rs_type `ap` descendM f rs_rules
+        return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
 instance Ord id => Transform (Expr id a) where
     transformM f = descendM (transformM f) >=> f
