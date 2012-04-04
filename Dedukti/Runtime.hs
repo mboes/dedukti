@@ -128,6 +128,7 @@ box sorts ty ty_code obj_code
 
 check :: Int -> Term -> Code -> Prop
 check n (TLam f) (Pi a f') = check (n + 1) (f (Box a (Var n))) (f' (Var n))
+check n (TLet t1 f) ty | ty1 <- synth n t1 = check (n + 1) (f (Box ty1 (Var n))) ty
 check n t ty = convertible n (synth n t) ty
 
 synth :: Int -> Term -> Code
@@ -136,7 +137,6 @@ synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
 synth n (TApp t1 (Box ty2 t2))
     | Pi tya f <- synth n t1,
       reflect (convertible n tya ty2) = f t2
-synth n (TLet t1 f) | ty <- synth n t1 = synth (n + 1) (f (Box ty (Var n)))
 synth n TType = Kind
 synth n t = throw SynthError
 
