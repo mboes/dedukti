@@ -43,16 +43,16 @@ instance CodeGen Record where
     data Bundle Record = Bundle [Hs.Decl]
 
     emit rs@(RS x ty rules) =
-        Rec x (length rules) (function rs : def_ty : def_box : zipWith defs_rule [0..] rules)
-        where (tyname, boxname) = (varName (x .$ "ty"), varName (x .$ "box"))
+        Rec x (length rules) (def_ty : function rs : def_t : zipWith defs_rule [0..] rules)
+        where [tyname, tname, cname] = map (varName . (x .$)) ["ty", "t", "c"]
               def_ty  = [dec| ((tyname)) = $(code ty) |]
-              def_box = [dec| ((boxname)) = bbox $(term ty) $(Hs.var tyname) $(var x) |]
+              def_t = [dec| ((tname)) = bbox $(term ty) $(Hs.var tyname) $(Hs.var cname) |]
               -- Checking rules involves much of the same work as checking all
               -- declarations at top-level, so let's just call the code
               -- generation functions recursively.
               defs_rule n (env :@ lhs :--> rhs) =
                   let f (x ::: ty) rs = (emit (RS x ty []) :: Record) : rs
-                      ruleCheck = let rule_box = varName (qid "rule" .$ "box")
+                      ruleCheck = let rule_box = varName (qid "rule" .$ "t")
                                   in Rec (qid "rule") 0 [[dec| ((rule_box)) = checkRule $(term lhs) $(term rhs) |]]
                       Bundle decls = coalesce $ foldr f [ruleCheck] (env_bindings env)
                       rule = varName (x .$ "rule" .$ B.pack (show n))
@@ -63,7 +63,7 @@ instance CodeGen Record where
         where main = [dec| main = $checks |]
               checks = Hs.Do (concatMap rules records ++ map declaration records)
               declaration r = let desc = Hs.strE $ show $ pretty $ unqualify $ rec_name r
-                                in Hs.qualStmt [hs| checkDeclaration $desc $(var (rec_name r .$ "box")) |]
+                              in Hs.qualStmt [hs| checkDeclaration $desc $(var (rec_name r .$ "t")) |]
               rules (Rec _ 0 _) = []
               rules (Rec x nr _) =
                 let startmsg = Hs.strE $ "Starting rule " ++ show (pretty (unqualify x)) ++ "."
@@ -73,7 +73,7 @@ instance CodeGen Record where
                     ++ [Hs.qualStmt [hs| putStrLn $finishmsg |]]
 
     serialize mod deps (Bundle decls) =
-        B.pack $ prettyPrintWithMode defaultMode {layout = PPInLine} $
+        B.pack $ prettyPrintWithMode defaultMode {layout = PPOffsideRule} $
         Hs.Module (*) (modname mod) [] Nothing Nothing imports decls
         where imports = runtime : map (\m -> Hs.ImportDecl (*) (modname m) True False Nothing Nothing Nothing) deps
               runtime = Hs.ImportDecl (*) (Hs.ModuleName "Dedukti.Runtime") False False Nothing Nothing Nothing
@@ -100,8 +100,8 @@ xencode qid =
                       | otherwise = B.singleton x
 
 function :: Em RuleSet -> Hs.Decl
-function (RS x _ []) = Hs.nameBind (*) (varName x) (constant x)
-function (RS x _ rs) = Hs.sfun (*) (varName x) [] (Hs.UnGuardedRhs rhs) (Hs.binds [f])
+function (RS x _ []) = Hs.nameBind (*) (varName (x .$ "c")) (constant x)
+function (RS x _ rs) = Hs.sfun (*) (varName (x .$ "c")) [] (Hs.UnGuardedRhs rhs) (Hs.binds [f])
     where n = Rule.arity (head rs)
           pats = Stream.take n variables
           occs = map Hs.var pats
@@ -117,9 +117,9 @@ clause rule =
             Nothing (Hs.UnGuardedRhs (code rhs)) Hs.noBinds
        else Hs.Match (*) (Hs.name "__") (map (pattern env) (Rule.patterns lrule))
             Nothing (Hs.GuardedRhss [Hs.GuardedRhs (*) (guards constraints) (code rhs)]) Hs.noBinds
-    where guards = map (\(x, x') -> Hs.qualStmt $
-                                    [hs| reflect (convertible 0 $(var x) $(var x')) |])
-          qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh", i + 1)) 0
+    where guards = let tt = Hs.pApp (Hs.name "()") []
+                   in map (\(x, x') -> Hs.Generator (*) tt [hs| convertible 0 $(var (x .$ "c")) $(var (x' .$ "c")) |])
+          qids = Stream.unfold (\i -> ((qid $ B.pack $ show i) .$ "fresh" .$ "c", i + 1)) 0
 
 defaultClause :: Id Record -> Int -> Hs.Match
 defaultClause x n =
@@ -129,7 +129,7 @@ defaultClause x n =
 constant c = [hs| Con $(Hs.strE $ show $ pretty c) |]
 
 pattern :: Em Env -> Em Expr -> Hs.Pat
-pattern env (V x _) | x `isin` env = Hs.pvar (varName x)
+pattern env (V x _) | x `isin` env = Hs.pvar (varName (x .$ "c"))
 pattern env expr = unapply expr (\(V x _) xs _ -> primAppsP x (map (pattern env) xs))
 
 -- | Build a pattern matching constant.
@@ -139,26 +139,32 @@ primAppsP c = foldl' primAppP (primConP c)
 
 -- | Turn an expression into object code with types erased.
 code :: Em Expr -> Hs.Exp
-code (B (L x) t _)      | n <- varName x = [hs| Lam (\((n)) -> $(code t)) |]
-code (B (x ::: ty) t _) | n <- varName x = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
-code (B (x := t1) t2 _) | n <- varName x = [hs| let ((n)) = $(code t1) in $(code t2) |]
+code (V x _)            = var (x .$ "c")
+code (B (L x _) t _)    | n <- varName (x .$ "c") = [hs| Lam (\((n)) -> $(code t)) |]
+code (B (x ::: ty) t _) | n <- varName (x .$ "c") = [hs| Pi $(code ty) (\((n)) -> $(code t)) |]
+code (B (x := t1) t2 _) | n <- varName (x .$ "c") = [hs| let ((n)) = $(code t1) in $(code t2) |]
 code (A t1 t2 _)        = [hs| ap $(code t1) $(code t2) |]
-code (V x _)            = var x
 code Type               = [hs| Type |]
 
 -- | Turn a term into its Haskell representation, including all types.
 term :: Em Expr -> Hs.Exp
-term (B (L x) t _)      | n <- varName (x .$ "box") =  [hs| TLam (\((n)) -> $(term t)) |]
-term (B (x ::: ty) t _) = typedAbstraction [hs| TPi |] x ty (term t)
-term (B (x := t1) t2 _) | n <- varName (x .$ "box") = [hs| TLet $(term t1) (\((n)) -> $(term t2)) |]
-term (A t1 t2 _)        = [hs| TApp $(term t1) $(term t2) |]
-term (V x _)            = var (x .$ "box")
+term (V x _)            = var (x .$ "t")
+term (B (L x ty) t _)   = lambdaAbstraction x ty (term t)
+term (B (x ::: ty) t _) = typedAbstraction x ty (term t)
+term (B (x := t1) t2 _) = letBinding x t1 (term t2)
+term (A t1 t2 _)        = [hs| TApp $(term t1) (Pair $(term t2) $(code t2)) |]
 term Type               = [hs| TType |]
 
-typedAbstraction c x ty t = [hs| $c $(dom ty) (\((box)) -> $ran) |]
-  where box = varName (x .$ "box")
-        ran = let n = varName x
-              in [hs| let ((n)) = obj $(Hs.var box) in $t |]
+letBinding x t1 t = [hs| TLet (Pair $(term t1) $(code t1)) (\(Pair ((xt)) ((xc))) -> $t) |]
+  where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
+
+lambdaAbstraction x ty t = [hs| TLam $tyterm (\(Pair ((xt)) ((xc))) -> $t) |]
+  where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
+        tyterm = case ty of Nothing -> [hs| Nothing |]
+                            Just ty -> [hs| Just $ sbox $(term ty) Type $(code ty) |]
+
+typedAbstraction x ty t = [hs| TPi $(dom ty) (\(Pair ((xt)) ((xc))) -> $t) |]
+  where (xt, xc) = (varName (x .$ "t"), varName (x .$ "c"))
         dom ty = if isVariable ty
                  then term ty else [hs| sbox $(term ty) Type $(code ty) |]
 

@@ -95,9 +95,9 @@ ident = qid . B.pack <$> identifier
 -- >            | eof
 toplevel =
     whiteSpace *>
-    (    (rule *> toplevel) -- Rules are accumulated by side-effect.
-     <|> ((:) <$> declaration <*> toplevel)
-     <|> (eof *> return []))
+        choice [ rule *> toplevel -- Rules are accumulated by side effect.
+               , (:) <$> declaration <*> toplevel
+               , eof *> return [] ]
 
 -- | Binding construct.
 --
@@ -111,13 +111,14 @@ binding = ((:::) <$> ident <* reservedOp ":" <*> term)
 declaration = (binding <* dot)
               <?> "declaration"
 
--- | Left hand side of an abstraction or a product.
+-- | Left hand side of a product or a lambda.
 --
--- > domain ::= id ":" applicative
--- >          | applicative
-domain = (    ((:::) <$> try (ident <* reservedOp ":") <*> applicative)
-          <|> ((qid "hole" .$ "parser" :::) <$> applicative))
-         <?> "domain"
+-- > domain ::= [id ":"] applicative "->"
+-- >          | id [":" applicative] "=>"
+domain = try (lambda <* reservedOp "=>") <|> try (pi <* reservedOp "->")
+    where lambda = L <$> ident <*> optionMaybe (reservedOp ":" *> applicative) <?> "lambda"
+          pi = (:::) <$> (try (ident <* reservedOp ":") <|> return (qid "hole" .$ "parser"))
+                     <*> applicative <?> "pi"
 
 -- |
 -- > sort ::= "Type"
@@ -125,20 +126,12 @@ sort = Type <$ reserved "Type"
 
 -- | Terms and types.
 --
--- We first try to parse as the domain of a lambda or pi. If we
--- later find out there was no arrow after the domain, then we take
--- the domain to be an expression, and return that.
+-- We first try to parse the term as a pi or lambda binding. If it fails,
+-- we parse the rest as an applicative.
 --
--- > term ::= domain "->" term
--- >        | domain "=>" term
+-- > term ::= domain term
 -- >        | applicative
-term = do
-  d@(x ::: ty) <- domain
-  choice [ pi d <?> "pi"
-         , lambda d <?> "lambda"
-         , return ty ]
-    where pi d = B d <$ reservedOp "->" <*> term <%%> nann
-          lambda (x ::: _) = B (L x) <$ reservedOp "=>" <*> term <%%> nann
+term = (B <$> domain <*> term <%%> nann) <|> applicative
 
 -- | Constituents of an applicative form.
 --

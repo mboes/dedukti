@@ -30,6 +30,7 @@ module Dedukti.Core
 import Control.Applicative
 import Control.Monad.Identity
 import Control.Monad.State
+import qualified Data.Traversable as T
 import qualified Data.Map as Map
 
 
@@ -44,9 +45,9 @@ infix 2 :::
 
 -- | A type decorating a variable, a type on its own, or an expression
 -- defining a variable
-data Binding id a = L id             -- ^ Lambda binding
-                  | id ::: Expr id a -- ^ Pi binding
-                  | id := Expr id a  -- ^ Let binding
+data Binding id a = L id (Maybe (Expr id a)) -- ^ Lambda binding
+                  | id ::: Expr id a         -- ^ Pi binding
+                  | id := Expr id a          -- ^ Let binding
                     deriving (Eq, Ord, Show)
 
 -- | A rewrite rule.
@@ -82,6 +83,7 @@ type family Id t
 type family A t
 
 type instance Id [t] = Id t
+type instance Id (Maybe t) = Id t
 type instance Id (Module id a) = id
 type instance Id (Binding id a) = id
 type instance Id (Rule id a) = id
@@ -90,6 +92,7 @@ type instance Id (RuleSet id a) = id
 type instance Id (Expr id a) = id
 
 type instance A  [t] = A t
+type instance A  (Maybe t) = A t
 type instance A  (Module id a) = a
 type instance A  (Binding id a) = a
 type instance A  (Rule id a) = a
@@ -98,13 +101,13 @@ type instance A  (RuleSet id a) = a
 type instance A  (Expr id a) = a
 
 bind_name :: Binding id a -> id
-bind_name (L x) = x
+bind_name (L x _) = x
 bind_name (x ::: _) = x
 bind_name (x := _) = x
 
 -- | A lambda or Pi abstraction.
 isAbstraction :: Expr id a -> Bool
-isAbstraction (B (L _) _ _) = True
+isAbstraction (B (L _ _) _ _) = True
 isAbstraction (B (_ ::: _) _ _)  = True
 isAbstraction _ = False
 
@@ -186,7 +189,6 @@ abstract :: [Binding id a] -> Expr id a -> [a] -> Expr id a
 abstract [] t _ = t
 abstract (b:bs) t (a:annots) = B b (abstract bs t annots) %% a
 abstract bs _ as = error $ "abstract: " ++ show (length bs) ++ " bindings but only "
-                                        ++ show (length as) ++ " annotations."
 
 unabstract :: Expr id a -> ([Binding id a] -> Expr id a -> [a] -> r) -> r
 unabstract (B b t a) k = unabstract t (\bs t' as -> k (b:bs) t' (a:as))
@@ -205,7 +207,6 @@ unapply t k = go [] [] t where
   go xs as (A t1 t2 a) = go (t2:xs) (a:as) t1
   go xs as t = k t xs as
 
-
 class Ord (Id t) => Transform t where
     -- | Effectful bottom-up transformation on terms. A default for
     -- 'transformM' in terms of 'descendM' for all instances other than
@@ -218,17 +219,17 @@ class Ord (Id t) => Transform t where
 
 instance Ord id => Transform (Module id a) where
     descendM f (decls, rules) =
-        return (,) `ap` mapM (descendM f) decls `ap` mapM (descendM f) rules
+        return (,) `ap` descendM f decls `ap` descendM f rules
 
 instance Ord id => Transform (Binding id a) where
-    descendM f (L x) = return (L x)
+    descendM f (L x t) = return (L x) `ap` T.mapM f t
     descendM f (x ::: ty) = return (x :::) `ap` f ty
     descendM f (x := t) = return (x :=) `ap` f t
 
 instance Ord id => Transform (TyRule id a) where
     descendM f (env :@ rule) =
-        return (:@) `ap` (return fromBindings `ap` mapM (descendM f) (env_bindings env)) `ap`
-               descendM f rule
+        return (:@) `ap` (return fromBindings `ap` descendM f (env_bindings env))
+                    `ap` descendM f rule
 
 instance Ord id => Transform (Rule id a) where
     descendM f (lhs :--> rhs) = return (:-->) `ap` f lhs `ap` f rhs
@@ -238,18 +239,17 @@ instance Ord id => Transform (RuleSet id a) where
         return RS `ap` return rs_name `ap` f rs_type `ap` descendM f rs_rules
 
 instance Ord id => Transform (Expr id a) where
-    transformM f = f <=< descendM (transformM f)
+    transformM f = descendM (transformM f) >=> f
 
-    descendM f (B b t a) = do
-      t' <- f t
-      b' <- descendM f b
-      return $ B b' t' a
-    descendM f (A t1 t2 a) = do
-      return A `ap` f t1 `ap` f t2 `ap` return a
+    descendM f (B b t a) = return B `ap` descendM f b `ap` f t `ap` return a
+    descendM f (A t1 t2 a) = return A `ap` f t1 `ap` f t2 `ap` return a
     descendM f t = return t
 
 instance Transform t => Transform [t] where
-  descendM f = mapM (descendM f)
+    descendM f = T.mapM (descendM f)
+
+instance Transform a => Transform (Maybe a) where
+    descendM f = T.mapM (descendM f)
 
 -- | Pure bottom-up transformation on terms.
 transform :: Transform t => (Expr (Id t) (A t) -> Expr (Id t) (A t)) -> t -> t

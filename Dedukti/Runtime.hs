@@ -18,10 +18,9 @@
 -- inference function.
 
 module Dedukti.Runtime
-    ( Code(..), Term(..), ap
-    , reflect
+    ( Code(..), Term(..), Pair(..), ap
     , convertible
-    , bbox, sbox, obj
+    , bbox, sbox
     , start, stop
     , checkDeclaration
     , checkRule) where
@@ -71,34 +70,26 @@ data Code = Var !Int
           | Kind
             deriving (Eq, Show)
 
-data Term = TLam !(Term -> Term)
-          | TPi  !Term !(Term -> Term)
-          | TLet !Term !(Term -> Term)
-          | TApp !Term !Term
+instance Eq (Code -> Code)
+
+data Term = TLam !(Maybe Term) !(Pair -> Term)
+          | TLet !Pair !(Pair -> Term)
+          | TPi  !Term !(Pair -> Term)
+          | TApp !Term !Pair
           | TType
-          | Box Code Code
+          | Box Code Code -- For typechecking purposes, not user generated.
             deriving Show
 
-instance Eq (Code -> Code)
+data Pair = Pair Term Code
+            deriving Show
 
 ap :: Code -> Code -> Code
 ap (Lam f) t = f t
 ap t1 t2 = App t1 t2
 
-obj :: Term -> Code
-obj (Box _ obj) = obj
-
--- | In the runtime, predicates are represented in half CPS, taking a success
--- continuation but throw an exception on failure.
-type Prop = forall r. r -> r
-
--- | Check that a predicate really evaluates to True.
-reflect :: Prop -> Bool
-reflect k | r <- k True = r
-
-convertible :: Int -> Code -> Code -> Prop
-convertible n t1 t2 k | conv n t1 t2 = k
-                      | otherwise = throw $ ConvError (prettyOpen n t1) (prettyOpen n t2)
+convertible :: Int -> Code -> Code -> ()
+convertible n t1 t2 | conv n t1 t2 = ()
+                    | otherwise = throw $ ConvError (prettyCode n t1) (prettyCode n t2)
   where conv n (Var x) (Var x') = x == x'
         conv n (Con c) (Con c') = c == c'
         conv n (Lam t) (Lam t') =
@@ -110,9 +101,6 @@ convertible n t1 t2 k | conv n t1 t2 = k
         conv n Type Type = True
         conv n Kind Kind = True
         conv n _ _ = False
-
--- | A box in which we didn't put anything.
-emptyBox = Box undefined undefined
 
 bbox, sbox :: Term -> Code -> Code -> Term
 
@@ -126,56 +114,58 @@ box sorts ty ty_code obj_code
     | synth 0 ty `elem` sorts = Box ty_code obj_code
     | otherwise = throw SortError
 
-check :: Int -> Term -> Code -> Prop
-check n (TLam f) (Pi a f') = check (n + 1) (f (Box a (Var n))) (f' (Var n))
-check n (TLet t1 f) ty | ty1 <- synth n t1 = check (n + 1) (f (Box ty1 (Var n))) ty
+mkpair n ty = Pair (Box ty (Var n)) (Var n)
+
+check :: Int -> Term -> Code -> ()
+check n (TLam _ f) (Pi a f') = check (n + 1) (f (mkpair n a)) (f' (Var n))
+check n (TLet (Pair t tc) f) ty
+    | tyt <- synth n t = check (n + 1) (f (Pair (Box tyt tc) tc)) ty
 check n t ty = convertible n (synth n t) ty
 
 synth :: Int -> Term -> Code
 synth n (Box ty _) = ty
-synth n (TPi (Box Type tya) f) = synth (n + 1) (f (Box tya (Var n)))
-synth n (TApp t1 (Box ty2 t2))
-    | Pi tya f <- synth n t1,
-      reflect (convertible n tya ty2) = f t2
+synth n (TPi (Box Type tya) f) = synth (n + 1) (f (mkpair n tya))
+synth n (TApp t1 (Pair t2 c2))
+    | Pi tya f <- synth n t1
+    , () <- check n t2 tya = f c2
 synth n TType = Kind
+synth n (TLam (Just (Box Type ty)) f) =
+    Pi ty (\xc -> synth (n + 1) (f (Pair (Box ty xc) xc)))
 synth n t = throw SynthError
 
-checkDeclaration :: String -> Term -> IO ()
+checkDeclaration :: String -> a -> IO ()
 checkDeclaration x t = catch (evaluate t >> putStrLn ("Checked " ++ x ++ ".")) handler
     where handler (SomeException e) = do
             putStrLn $ "Error during checking of " ++ x ++ "."
             throw e
 
-checkRule :: Term -> Term -> Term
-checkRule lhs rhs | ty <- synth 0 lhs, reflect (check 0 rhs ty) = emptyBox
+checkRule :: Term -> Term -> ()
+checkRule lhs rhs | ty <- synth 0 lhs, () <- check 0 rhs ty = ()
                   | otherwise = throw $ RuleError
+
+-- Function utilites.
 
 start :: IO UTCTime
 start = do
   putStrLn "Start."
   getCurrentTime
 
-
 stop :: UTCTime -> IO ()
 stop t = do
   t' <- getCurrentTime
   let total = diffUTCTime t' t
   putStrLn $ "Stop. Runtime: " ++ show total
-  -- Use Posix exitImmediately rather than System.Exit to really exit GHCi.
-  exitImmediately ExitSuccess
+  exitImmediately ExitSuccess -- Use Posix exitImmediately rather than System.Exit to really exit GHCi.
 
 -- Pretty printing.
 
-instance Pretty Code where
-  pretty = prettyOpen 0
-
-prettyOpen n (Var x) = text (show x)
-prettyOpen n (Con c) = text (show c)
-prettyOpen n (Lam f) =
-  parens (int n <+> text "=>" <+> prettyOpen (n + 1) (f (Var n)))
-prettyOpen n (Pi ty1 ty2) =
-  parens (int n <+> colon <+> prettyOpen n ty1 <+> text "->" <+> prettyOpen (n + 1) (ty2 (Var n)))
-prettyOpen n (App t1 t2) =
-  parens (prettyOpen n t1 <+> prettyOpen n t2)
-prettyOpen n Type = text "Type"
-prettyOpen n Kind = text "Kind"
+prettyCode n (Var x) = text (show x)
+prettyCode n (Con c) = text (show c)
+prettyCode n (Lam f) =
+    parens (int n <+> text "=>" <+> prettyCode (n + 1) (f (Var n)))
+prettyCode n (Pi ty1 ty2) =
+    parens (int n <+> colon <+> prettyCode n ty1 <+> text "->" <+> prettyCode (n + 1) (ty2 (Var n)))
+prettyCode n (App t1 t2) =
+    parens (prettyCode n t1 <+> prettyCode n t2)
+prettyCode n Type = text "Type"
+prettyCode n Kind = text "Kind"

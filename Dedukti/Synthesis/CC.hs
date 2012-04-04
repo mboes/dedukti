@@ -7,7 +7,6 @@
 module Dedukti.Synthesis.CC where
 
 import Dedukti.Core
-import Dedukti.Pretty
 import Dedukti.Module
 import Control.Applicative ((<*>))
 import qualified Data.Set as Set
@@ -16,16 +15,13 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 -- | Close all abstractions in a term.
 closureConv :: Expr Qid Unannot -> Expr Qid Unannot
-closureConv t = unabstract t (go (closed abstract)) where
-  -- Check that the given term is closed at toplevel.
-  closed k fvs | Set.null fvs = k
-               | otherwise = \ _ t _ -> error $ "Term not closed: \n" ++ show (pretty t)
+closureConv t = unabstract t (go (const abstract)) where
   go k bs t | isAbstraction t = \as ->
     let nas = repeat nann
         k' fvs bs' t1' as' =
           k (fvs Set.\\ Set.fromList (map bind_name bs)) bs
           (apply (abstract bxs (abstract bs' t1' %%% as') %%% nas) xs %%% nas) as
-          where lfvs = Set.toList fvs; bxs = map L lfvs; xs = map V lfvs <*> nas
+          where lfvs = Set.toList fvs; bxs = map (`L` Nothing) lfvs; xs = map V lfvs <*> nas
     in unabstract t (go k')
   go k bs (A t1 t2 a) = go (\fvs1 bs t1' ->
                                 go (\fvs2 bs t2' ->
