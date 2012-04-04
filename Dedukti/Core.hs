@@ -13,7 +13,7 @@ module Dedukti.Core
     , Id, A
     -- * Convenience functions
     , bind_name
-    , isAbstraction, isVariable, isAtomic, isApplicative
+    , isAbstraction, isVariable, isAtomic, isApplicative, isKind
     -- * Environments
     , emptyEnv, env_bindings, env_domain, env_codomain, (&), (!)
     , isin, fromBindings
@@ -125,6 +125,15 @@ isAtomic _ = False
 isApplicative :: Expr id a -> Bool
 isApplicative (A _ _ _) = True
 isApplicative t = isAtomic t
+
+-- | A kind always ends with Type. Note that this test will give a false
+-- negative if Type is renamed using a let, but this normally should never
+-- happen.
+isKind :: Expr id a -> Bool
+isKind (B (_ ::: _) t _) = isKind t
+isKind (B (_ := _) t _) = isKind t
+isKind Type = True
+isKind _ = False
 
 env_bindings (Env bs _) = bs
 env_domain (Env bs map) = Map.keys map
