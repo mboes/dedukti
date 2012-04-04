@@ -87,6 +87,7 @@ compileAST mod src@(decls, rules) = do
      {-# SCC "check/uniqueness" #-} checkUniqueness src
      {-# SCC "check/scopes"     #-} checkScopes extdecls src
      {-# SCC "check/ordering"   #-} Rule.checkOrdering rules
+     {-# SCC "check/arity"      #-} Rule.checkArity rules
      say Verbose $ text "Checking well formation of rule heads ..."
      {-# SCC "check/heads"      #-} mapM_ Rule.checkHead rules
   say Verbose $ text "Compiling" <+> text (show mod) <+> text "..."
