@@ -131,6 +131,8 @@ synth n (TApp t1 (Pair t2 c2))
 synth n TType = Kind
 synth n (TLam (Just (Box Type ty)) f) =
     Pi ty (\xc -> synth (n + 1) (f (Pair (Box ty xc) xc)))
+synth n (TLet (Pair t tc) f)
+    | tyt <- synth n t = synth (n + 1) (f (Pair (Box tyt tc) tc))
 synth n t = throw SynthError
 
 checkDeclaration :: String -> a -> IO ()
