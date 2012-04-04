@@ -35,9 +35,9 @@ closureConv t = unabstract t (go (const abstract)) where
 -- | Replace every abstraction in the term with a placeholder variable and
 -- float the abstraction to the top of the term.
 hoist :: Expr Qid Unannot -> Expr Qid Unannot
-hoist t = go (const abstract) 0 [] t %%% repeat nann
-  -- We maintain a depth counter and a breadth counter as we recurse down the
-  -- term, for generating globally unique names without threading state.
+hoist t = cleanup $ go (const abstract) 0 [] t %%% repeat nann
+  -- We maintain a depth counter as we recurse down the term, for generating
+  -- globally unique names without threading state.
   where go k n lets t | isAbstraction t =
           let x = qid "l" .$ B.pack (show n) .$ "hoist"
           in unabstract t $ \bs t as ->
@@ -47,3 +47,5 @@ hoist t = go (const abstract) 0 [] t %%% repeat nann
                go (\n lets'' t2' ->
                     k n lets'' (A t1' t2' %% a)) n lets' t2) n lets t1
         go k n lets t = k n lets t
+        cleanup (B (x := t1) (V x' _) _) | x == x' = t1
+        cleanup t = t
