@@ -104,14 +104,14 @@ convertible n t1 t2 | conv n t1 t2 = ()
 
 bbox, sbox :: Term -> Code -> Code -> Term
 
--- | A big box holds terms of sort Type or Kind
-bbox = box [Type, Kind]
+-- | A big box holds terms of sort Kind.
+bbox = box Kind
 
 -- | A small box holds terms of sort Type.
-sbox = box [Type]
+sbox = box Type
 
-box sorts ty ty_code obj_code
-    | synth 0 ty `elem` sorts = Box ty_code obj_code
+box sort ty ty_code obj_code
+    | () <- check 0 ty sort = Box ty_code obj_code
     | otherwise = throw SortError
 
 mkpair n ty = Pair (Box ty (Var n)) (Var n)

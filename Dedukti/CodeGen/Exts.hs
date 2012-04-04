@@ -46,7 +46,8 @@ instance CodeGen Record where
         Rec x (length rules) (def_ty : function rs : def_t : zipWith defs_rule [0..] rules)
         where [tyname, tname, cname] = map (varName . (x .$)) ["ty", "t", "c"]
               def_ty  = [dec| ((tyname)) = $(code ty) |]
-              def_t = [dec| ((tname)) = bbox $(term ty) $(Hs.var tyname) $(Hs.var cname) |]
+              def_t | isKind ty = [dec| ((tname)) = bbox $(term ty) $(Hs.var tyname) $(Hs.var cname) |]
+                    | otherwise = [dec| ((tname)) = sbox $(term ty) $(Hs.var tyname) $(Hs.var cname) |]
               -- Checking rules involves much of the same work as checking all
               -- declarations at top-level, so let's just call the code
               -- generation functions recursively.
